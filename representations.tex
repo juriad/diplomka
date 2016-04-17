@@ -1,0 +1,113 @@
+\chapter{Representations}
+
+
+\section{Succinct Data Structures}
+
+In a universe $U$ every object can be represented as a sequence of $\lceil \log |U| \rceil$, which we will for convenience call $N$, bits simply by ordering all objects and encoding their number in binary.
+Although this encoding is optimal in terms of the space used, it is rarely useful for more advanced operations than iterations over the objects in the universe and reconstruction of the original object.
+
+Many operations cannot be supported unless the object is fully decoded into a more traditional form first; others can be processed on the encoded object however their time complexity is worse than optimal.
+
+An \emph{implicit data structure} for a universe $U$ is a data structure which has space complexity $ \log |U| + O(1) $ bits of space.
+Examples of such data structures are heaps implemented as arrays; the internal navigation and realization of operations consists in pure arithmetic computation, swaps, and comparisons.
+
+The part ``bits of space'' is important because in case of implicit data structures, the additional constant number of bits don't even allow to represent a pointer.
+Size of each pointer is word size from the definition of RAM, which is at least $\lceil \log |U| \rceil$ in order to support indexing of the whole memory.
+
+Restriction on at most constant additional space is often too strict.
+A \emph{succinct data structures} is a data structure whose space complexity is $ \log |U| + o(\log |U|) $ bits of space.
+Examples are some restricted classes of graphs, such as planar graphs, and trees.
+
+A \emph{compact data structure} is a data structure which uses $ O(\log |U|) $ bits of space.
+Sometimes it is easier to design a compact rather than a succinct data structure.
+Edges in general graphs have two ends; in order to support efficient traversal of the edges, it seems logical to store every edge twice.
+
+% TODO do we need the last clause?
+From now on, we will describe only succinct data structures, unless we state otherwise.
+
+\section{Storage}
+
+There are two distinct approaches to representing data structures as bit strings depending on how they are stored.
+We formulate them in terms of graphs.
+
+The \emph{systematic approach} splits the encoding into two parts: the data sufficient for reconstruction of the data structure, and auxiliary indices which help to realize or speed up queries on the data structure.
+The first part is usually made by traversal or decomposition of the data structure and itself can answer to some queries on neighborhood of the active vertex.
+Indices then store additional information which is often intended to offer precomputed jumps for queries which cannot be answered locally.
+The size of the indices is dominated by the size of the data.
+
+The \emph{non-systematic encoding} cannot be split into such two parts.
+The organization of data itself allows all kinds of queries to be supported in desired time.
+
+Both approaches have advantages and disadvantages.
+In systematic approach it is easy to add another index and thereby support new operations.
+It is also possible to drop indices which are not necessary for particular use-cases making the encoded data structure a little smaller.
+Sometimes it can be beneficial to save only the data while computing all of the indices when the data structure is first used.
+
+Non-systematic representations are designed with the set of supported operations on one's mind.
+It is not possible to remove support for any operation in order to spare some space.
+Adding support of a new operation which was not planned beforehand requires its composition of from the supported operations or adding an index, which results in a hybrid data structure.
+
+\section{Basic Techniques}
+
+There are a few techniques which are used in every data structure.
+The idea of most of them is simple, however when combined together they pose a strong tool.
+
+\subsection{Pointers}
+
+Succinct data structure is a string of bits.
+In order to give it a meaning, we often needs to think about parts of the string: the data and the indices.
+
+% TODO formulate as lemma
+As long as we have at most $K = o(\frac{N}{\log N})$ parts which together satisfy the space requirement of a succinct data structure, we can afford to add a small table to the beginning which addresses the individual parts, and still fit into the desired space.
+If all the parts add up to $N + o(N)$ bits, the total size of the table is $K \lceil \log (N + o(N)) \rceil \le K \log N + K \log o(N) + K \le K \log N = o(N))$.
+
+There are stored offsets of the bits where individual parts start.
+Each offset is in range from $0$ to size of the structure.
+We can look at this offset as a local pointer whose size depends on the range which it shall point into.
+
+Pointers which have different sizes allow us to decompose a big structure into small blocks.
+There will be a lot of pointers withing blocks, however they require only a small size, and pointers between blocks, which are big in space but used only seldom.
+
+\subsection{Precomputation}
+
+The goal of most succinct data structures is to perform queries in constant time.
+Even if this was possible on high level, in the end the query must be processed on data of size of a machine word.
+(Remember that we use word RAM as a model of computation.)
+
+Let's assume that we have a block of data of $B$ bits.
+Let's also have parameters of the query on block of such size; these parameters have size $P$ bits in total.
+And an expected result of size $R$ bits.
+As long as $B+P+\log R = o(\log N)$, we can afford to precompute result of all possible queries while still having a succinct data structure.
+
+We represent this as a table -- denoted as a triplet $(B, P, R)$ -- with records of size $R$ bits.
+There are exactly $2^{B+P} = o(N))$ such records.
+Lookup is easy: $B$ and $P$ bits are concatenated and multiplied by $R$, which gives the offset of $R$ bits of result.
+
+% TODO four Russians
+This technique is known as \url{https://en.wikipedia.org/wiki/Method_of_Four_Russians}.
+
+\subsubsection{Example}
+
+Assume a bit string of length $N$ bits.
+For each block of $B = \lceil\frac{\log N}{2}\rceil$ bits, we want to run a range query asking for number of ones.
+The query has a parameter $end$ of size $\lceil \log {B} \rceil$ bits, and result of the same size.
+The size of the table is then $O(\sqrt{N} \log N \log\log N) = o(N)$.
+
+This example is one of building blocks used in design of the \emph{rank index}.
+
+\subsection{Index Without Data}
+
+Let's assume that we want to support an operation on derived data.
+Instead of counting ones, as in the previous example, we could want to count transitions from zero to one.
+We can easily construct each $w$ bits of such bit string as $b' = ~b \& b<<1$ (plus overflow from the next block).
+And on top of this bit string we build the rank index.
+Although the index is small, $o(N)$, the data is too big $N$, making our data structure compact and not succinct.
+
+We solve it by keeping the small index but dropping the data.
+Whenever the algorithm asks for a block the data, it only wants $w$ bits at a time, which we can compute on the fly with a constant slow down.
+This technique works in general; we don't need to know how the operation works as long as we are able to provide it on request any chunk of $w$ bits of memory.
+
+\subsection{Space Complexity Analysis}
+
+Sometimes it is easier to think about \emph{density} of an index (or its part) in bits per bit of data.
+Then a succinct index is such index which has a constant number of parts with each of them accounting to $o(1)$ bits per $1$ bit of data.

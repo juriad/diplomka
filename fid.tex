@@ -1,0 +1,140 @@
+\chapter{Fully Indexed Dictionary}
+
+\def\ph{\textvisiblespace}
+
+\emph{Fully Indexed Dictionary (FID)} is a data structure which allows the following operations:
+\begin{itemize}
+	\item \emph{$inspect(i)$} returns symbol $\ph$ on position $i$;
+	\item \emph{$rank_{\ph}(i)$} returns number of $\ph$ symbols in the bit string on positions $[0, i]$;
+	\item \emph{$select_{\ph}(i)$} which returns position of $i$-th symbol $\ph$ in the bit string.
+\end{itemize}
+
+If the data structure is systematic, the implementation of inspect is trivial -- it only accesses $i$-th bit of a bit string.
+We mention it because we will show a non-systematic FID which needs to implement it in a non-trivial way.
+
+\section{Traditional FID}
+
+% TODO ref
+One way how to realize such data structure has already been mentioned in section XYZ.
+It is a traditional and systematic approach which is well studied including practical implementation.
+We design two distinct indices, for rank and select.
+Moreover we will need two instances of each index in order to support rank and select on an arbitrary symbol in the bit string.
+
+\subsection{Rank}
+
+We split the bit string into blocks and blocks into small blocks.
+
+We design the size $b$ of small blocks so that we can precompute look-up table for rank on small blocks.
+The query has a parameter: the position inside the small block and returns number of symbols until specified position.
+We set $b = \frac{\log N}{2}$, which makes the size of the look-up table $(b, \lceil \log b \rceil, \lceil \log (b + 1) \rceil)$ asymptotically $O(\sqrt{N} \log N \log \log N) = o(N)$.
+
+Blocks represent chunks of bit string of size $B$, which is assumed to be a multiple of $b$.
+They answer the rank query at a block scale using small blocks and an additional precomputed array.
+This array $block$ has $\frac{B}{b}$ items each of size $\lceil \log (B + 1) \rceil$ containing ranks at positions which are multiples $b$ -- it is calculated as prefix sums of results on small blocks shifted by one, which means that the small block is accounted only when the position $i$ is greater than the end of it.
+The sizes of all block arrays sum to $\lceil \frac{N}{B} \frac{B}{b} \lceil \log (B + 1) \rceil$.
+When $B$ is set to $\lceil \log^2 N \rceil$, the size is asymptotically $O(\frac{N}{\log N} \log \log N) = o(N)$.
+
+We do the same on the level of whole bit string.
+The array $global$ has $\lceil \frac{N}{B} \rceil$ items each of size $\lceil \log (N+1) \rceil$ resulting in size asymptotically $O(\frac{N}{\log^2 N} \log{N} = O(\frac{N}{\log N} = o(N))$.
+
+\subsubsection{Algorithm}
+
+First we find the index of the block $iB$ and use to index the array $global$.
+Then we find the index of the small block $ib$ within the block $iB$ and use it to index the array $blocks[iB]$.
+Finally we use the part of the bit string of the small block and the offset of the position $i$ within the small block.
+These three numbers added together give the desired rank.
+
+\subsubsection{Implementation Details}
+
+In a real life implementation we can replace the look-up table with special hardware instruction called \verb|POPCNT| where it exists and by a bit manipulation arithmetics elsewhere.
+We can also set $b = 64$ on modern computers to use the native word size.
+In order to minimize the space required by the index, it is necessary to tweak the block size as a function of $N$: it is desired that both arrays have the same size.
+
+\subsection{Select}
+
+The select operation is similar to rank operation but it has to deal with blocks of different sizes.
+The basic schema is:
+We split the bit string into \emph{blocks} and store offsets of the blocks withing the bit string.
+If a block is sparse, we store a list of offsets of all \ph{} in it.
+Otherwise we process the block with a look-up table.
+
+The whole bit string is split into blocks beginning with \ph{} each containing $B$ symbols \ph{} with the exception of the last one.
+The $global$ array contains offset of all blocks.
+We call a block \emph{sparse} if its size is greater than or equal to $K$ bits, otherwise it is called \emph{dense}.
+This property can be easily tested from difference of two consecutive offsets in $global$.
+
+If a block is sparse, we store block-local offsets of all symbols \ph{} in an array $block\_enum$.
+We will deal with dense blocks later, once we discuss the constraints on $B$ and $K$ and set their values.
+For the space density of $global$ the following must hold:
+\begin{gather*}
+\frac{\frac{N}{B} \log N}{N} = \frac{\log N}{B} = o(1) \\
+B = \omega(\log N)
+\end{gather*}
+
+Each offset in the enumeration of a sparse block can be in range $[0, N-1]$ resulting in up to $\log N$ bits of space.
+We have a lower bound on size of a block ($K$) which allows us to phrase a constraint on the upper bound on the block density.
+\begin{gather*}
+\frac{B \log N}{K} = o(1) \\
+K = \omega(B \log N)
+\end{gather*}
+
+Since we want to set $B$ and $K$ as smallest possible, a sensible choice is $B = \log N \log \log N$ and $K = (\log N \log \log N) \log N \log \log N = B^2 $.
+There is one more structure which needs to be noted: an array of pointers $blocks$ to representations of blocks.
+However its space is the same as of the $global$ array.
+
+We continue in a similar fashion with a dense block.
+We split it into \emph{small blocks} each containing $b$ symbols \ph, with the exception of the last one.
+Each dense block has an array $block$ of block-local offsets of beginnings of small blocks.
+A small block is called \emph{sparse} if its size is greater than or equal to $k$ bits, and \emph{dense} otherwise, which can again be tested using the $block$ array.
+
+If a small block is sparse, we store small-block-local offsets of all symbols \ph{} in an array $small\_block\_enum$.
+An array $small\_blocks$ pointing to representations of small blocks exist.
+The lower bound on size of a dense block is $B$ bits.
+The constraints on $b$ from definition of $block$ is:
+\begin{gather*}
+\frac{\frac{B}{b} \log K}{B} = \frac{\log K}{b} = o(1) \\
+b = \omega(\log K) = \omega(\log(\log N \log \log N)^2) = \omega(\log \log N)
+\end{gather*}
+
+Each offset in the enumeration of a sparse small block can be in range $[0, K-1]$ resulting in up to $\log K$ bits of space.
+The lower bound on size of a block used for calculating the index density is $k$.
+\begin{gather*}
+\frac{b \log K}{k} = o(1) \\
+k = \omega(b\log K)
+\end{gather*}
+
+We choose:
+\begin{align*}
+b &= \log \log N \log \log \log N \\
+k &= (\log \log N \log \log \log N) \log(\log N \log \log N)^2 \log \log \log N = b^2
+\end{align*}
+
+It is necessary to state the constraint on $small\_blocks$ array which contains $\frac{B}{b}$ pointers of size $l$.
+Since the representation of sparse small blocks is succinct, it is smaller than $K$ per block.
+The size $l$ of the pointer is $\log K$, and therefore the size of the whole array poses the same constraint as the array $block$.
+
+We have been neglecting the case of dense small blocks; now we show how it is treated.
+Dense small blocks are limited to size $k = o(\log N)$, which makes it possible to process them using a precomputed look-up table.
+Only one look-up table is sufficient because all dense small blocks can be padded from right to the same size, while retaining the same result.
+No additional per dense small block structure is necessary; the pointer in $small\_blocks$ will contain a dummy value.
+
+\subsection{Algorithm}
+
+For given parameter $i$ we find in which block it is contained by division by $B$ and note the reminder as a block-local index.
+In the array $global$ we find the offset of such block.
+We access the representation of the block via $blocks$
+If the block is sparse, we index the array $block\_enum$ of all occurrences obtaining the block-local offset; together with the block offset they form the answer.
+
+If the block is dense, we find in which small block it lays by division by $b$ and note the small-block-local index.
+In the array $block$ we find the block-local offset of the small block.
+If the small block is sparse, we index the array $small\_block\_enum$ to obtain the small-block-local offset; together with the block offset and small block offset they form the answer.
+If the small block is dense, we use the look-up table to find the small-block-local offset; the answer is computed in similar fashion as in the previous case.
+
+\subsection{Implementation Details}
+
+% TODO recompute
+
+Unfortunately the dense small block becomes less than $\log N $ for $N \ge 2^{127333}$, which is more than modern computers can handle.
+We can do several adjustments as we did in case of rank.
+For all practical uses -- assuming $N < 2^{40}$, the size of the dense small block is less than $1694$ bits, which can be processed in steps of size of the machine word, which is $64$ bits, resulting in less than $27$ steps.
+We replace the precomputed table by \verb|POPCNT| and \verb|PDEP| instructions on modern procesors.

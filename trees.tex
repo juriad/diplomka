@@ -1,0 +1,50 @@
+\chapter{Trees}
+
+A tree can be stored as a bit string in several different ways.
+A tree can also be encoded using various traversal methods resulting in sequence of zeros and ones, or often opening and closing parentheses, which is equivalent.
+The other method is based on decomposition of the tree into smaller subtrees, reusing some concepts from indices used in the first method.
+
+\section{Indices}
+
+All basic navigation in trees is realized as a composition of simple operations on bit strings.
+
+
+
+
+
+\section{LOUDS}
+
+The first method discovered was introduced by Jacobson in YEAR.
+It is based on algorithm BFS and noting degrees of individual vertices.
+
+
+\section{BP}
+
+Balanced parentheses representation is defined recursively.
+A leaf is encoded a pair of parentheses.
+An inner vertex is encoded as a concatenated list of encoding of children enclosed by a pair of parentheses.
+
+% TODO an example of a tree with BP encoding
+
+Each vertex is associated with the first opening parenthesis of its representation.
+Simple navigation in the tree relative to a vertex $v$ which is at position $i$.
+
+The subtree rooted in the current vertex is fully contained in the substring $BP[i, find\_close(i)]$.
+The vertex is a leaf if $BP[i+1]$ is a close parenthesis.
+The first child is at position $i+1$ unless the vertex is a leaf.
+The vertex is the root if $i$ is equal to $0$.
+The vertex has next siblings if it is not the root and $BP[find\_close(i) + 1]$ is an open parenthesis.
+If the vertex has a next sibling, then it is at position $find\_close(i) + 1$.
+The vertex has previous siblings if it is not the root and $BP[i-1]$ is a close parenthesis.
+If the vertex has a previous sibling, then it is at position $find\_open(i-1)$.
+
+\section{DFUDS}
+
+Depth-First Unary Degree Sequence is defined recursively:
+A leaf is encoded as a closing parenthesis.
+An inner vertex is encoded as a $degree-1$ opening parentheses followed by a single closing parenthesis and concatenating encoding of the children.
+For convenience, one opening parenthesis is prepended to make the sequence of parentheses balanced.
+
+% TODO as lemma
+Lemma.
+This encoding gives balanced string of parentheses.
