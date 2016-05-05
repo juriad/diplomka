@@ -1,4 +1,4 @@
-\chapter{Representations}
+\chapter{Foundations}
 
 
 \section{Succinct Data Structures}
@@ -57,16 +57,22 @@ The idea of most of them is simple, however when combined together they pose a s
 Succinct data structure is a string of bits.
 In order to give it a meaning, we often needs to think about parts of the string: the data and the indices.
 
-% TODO formulate as lemma
-As long as we have at most $K = o(\frac{N}{\log N})$ parts which together satisfy the space requirement of a succinct data structure, we can afford to add a small table to the beginning which addresses the individual parts, and still fit into the desired space.
-If all the parts add up to $N + o(N)$ bits, the total size of the table is $K \lceil \log (N + o(N)) \rceil \le K \log N + K \log o(N) + K \le K \log N = o(N))$.
+\begin{lemma}
+	Let $K = o(\frac{N}{\log N})$ be number of bit strings $S_1, \ldots, S_K$ and $N_1, \dots, N_K$ their lengths which sum up to $N$.
+	Then we can combine all bit strings into a single bit string $S$ while maintaining succinctness and constant time access to the individual bit strings.
+	Typically $K = O(1)$.
+\end{lemma}
+\begin{proof}
+	The new bit string $S$ starts with a header in form of a table and continues with concatenated bit strings $S_1, \ldots, S_K$ without any delimiters.
+	The table contains $K$ offsets of all the original bit strings within $S$ ignoring the space taken by the header.
+	Each offset is encoded as a binary number using $\lceil \log N \rceil$ bits, which results in the table having size $K \lceil \log (N) \rceil = o(N)$.
+\end{proof}
 
-There are stored offsets of the bits where individual parts start.
-Each offset is in range from $0$ to size of the structure.
+We stored offsets of the bits where the individual substrings start.
 We can look at this offset as a local pointer whose size depends on the range which it shall point into.
 
 Pointers which have different sizes allow us to decompose a big structure into small blocks.
-There will be a lot of pointers withing blocks, however they require only a small size, and pointers between blocks, which are big in space but used only seldom.
+There will be a lot of pointers withing blocks, however they require only a small size, and pointers between blocks, which are large in space but used only seldom.
 
 \subsection{Precomputation}
 
@@ -80,13 +86,13 @@ And an expected result of size $R$ bits.
 As long as $B+P+\log R = o(\log N)$, we can afford to precompute result of all possible queries while still having a succinct data structure.
 
 We represent this as a table -- denoted as a triplet $(B, P, R)$ -- with records of size $R$ bits.
-There are exactly $2^{B+P} = o(N))$ such records.
+There are exactly $2^{B+P} = o(N)$ such records.
 Lookup is easy: $B$ and $P$ bits are concatenated and multiplied by $R$, which gives the offset of $R$ bits of result.
 
 % TODO four Russians
 This technique is known as \url{https://en.wikipedia.org/wiki/Method_of_Four_Russians}.
 
-\subsubsection{Example}
+\subsubsection{\label{sss:precomputation-example}Example}
 
 Assume a bit string of length $N$ bits.
 For each block of $B = \lceil\frac{\log N}{2}\rceil$ bits, we want to run a range query asking for number of ones.
@@ -99,7 +105,7 @@ This example is one of building blocks used in design of the \emph{rank index}.
 
 Let's assume that we want to support an operation on derived data.
 Instead of counting ones, as in the previous example, we could want to count transitions from zero to one.
-We can easily construct each $w$ bits of such bit string as $b' = ~b \& b<<1$ (plus overflow from the next block).
+We can easily construct each $w$ bits of such bit string as $b' = ~b \& (b<<1)$ (plus an adjustment for what overflows from the next block).
 And on top of this bit string we build the rank index.
 Although the index is small, $o(N)$, the data is too big $N$, making our data structure compact and not succinct.
 

@@ -12,4 +12,4 @@ clean:
 	rm -f thesis.pdf
 
 show: thesis.pdf
-	zathura $<
+	zathura --synctex-forward=0:0:$< $<

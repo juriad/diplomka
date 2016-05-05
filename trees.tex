@@ -1,6 +1,26 @@
 \chapter{Trees}
 
-A tree can be stored as a bit string in several different ways.
+
+
+\section{Succinct trees}
+
+There are many ways to represent 
+
+\subsection{Universe}
+
+
+\subsection{Representations}
+
+A tree can be stored as a bit string in several different ways:
+\begin{itemize}
+	\item Level-Order Unary Degree Sequence -- a simple heap-like structure which supports the basic navigational queries requiring only rank and select;
+	\item Balanced Parentheses -- uses the natural mapping between ordinal trees and matching parentheses;
+	\item Depth-First Unary Degree Sequence -- combination of the previous two approaches offering an alternative mapping to matching parentheses;
+	\item Fully-Functional -- a data structure built on top of matching parentheses using different primitives then rank and select;
+	\item Tree Covering -- recursive decomposition of the tree into smaller trees which are then encoded;
+\end{itemize}
+
+
 A tree can also be encoded using various traversal methods resulting in sequence of zeros and ones, or often opening and closing parentheses, which is equivalent.
 The other method is based on decomposition of the tree into smaller subtrees, reusing some concepts from indices used in the first method.
 
