@@ -13,16 +13,24 @@ We define several operations which were not possible in the general case, namely
 
 \section{Fully Indexed Dictionary}
 
+\todo{fix off by ones}
+\todo{define properly pred, succ, prev, next}
+
 \emph{Fully Indexed Dictionary (FID)} is a data structure which allows the following operations:
 \begin{itemize}
 	\item \emph{$inspect(S, i)$} returns the symbol on position $i$ in bit string $S$;
-	\item \emph{$rank_{\ph}(S, i)$} returns number of $\ph$ symbols in the bit string $S$ on positions $[0, i]$;
-	\item \emph{$select_{\ph}(S, i)$} returns position of $i$-th symbol $\ph$ in the bit string $S$.
+	\item \emph{$rank_{\ph}(S, i)$} returns number of $\ph$ symbols in the bit string $S$ on positions $[0, i]$.
+	If $i < 0$, it returns $0$; if $i \ge N$, it returns $rank_{\ph}(S, N-1)$.
+	\item \emph{$select_{\ph}(S, n)$} returns position of $n$-th symbol $\ph$ in the bit string $S$.
+	If $n \le 0$, it returns $-1$; if $n > rank_{\ph}(S, N - 1)$, it returns $N$.
+	\listpart{We define four more derived operations, which we use for their convenience.}
 	\item \emph{$pred_{\ph}(S, i)$} defines predecessor search as position $j : max(j), j \le i, S[j] = \ph$.
 	This operations can be implemented using the previous ones:
 	$$ pred_{\ph}(S, i) = select_{\ph}(S, rank_{\ph}(S, i)) $$
 	\item \emph{$succ_{\ph}(S, i)$} is successor search similar to the predecessor search; returns position $j: min(j), j \ge i, S[j] = \ph$.
 	$$ succ_{\ph}(S, i) = \textrm{if}\ inspect(S, i) = {\ph}\ \textrm{then}\ i \ \textrm{else}\ select_{\ph}(S, rank_{\ph}(S, i) + 1) $$
+	\item \emph{$prev_{\ph}(S, i)$} returns position of the previous symbol $\ph$.
+	\item \emph{$prev_{\ph}(S, i)$} returns position of the next symbol $\ph$.
 \end{itemize}
 
 Unless it is ambiguous, we omit the first argument specifying the bit string on which the operation is performed.

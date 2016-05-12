@@ -1,5 +1,60 @@
 \chapter{Foundations}
 
+\section{Model of Computation}
+
+We state our results for a version of \emph{Random Access Machine}, which resembles current computers however in its definition it is better equipped for dealing with bit strings.
+
+RAM has access to two types of memory:
+\begin{itemize}
+	\item \textbf{Main memory} which forms a sequence of bits.
+	The sequence is potentially unbounded and fill with zeros when the program starts.
+	
+	The constant $w$ depends on the space complexity $S$ of the problem which is being solved.
+	A lower bound of $w \ge \lceil \log S \rceil$ is necessary in order to allow access to any piece of memory which is used during the computation.
+	We usually assume that $w = \Theta(\log S)$ as working with larger words would make the model too powerful.
+	\item Constant number of \textbf{registers}; each of them stores $w$ bits, which we call a \emph{machine word} or simply a \emph{word}.
+\end{itemize}
+
+The instructions supported by the RAM are:
+\begin{enumerate}
+	\item Program flow control used for determining what instruction to process next.
+	\begin{itemize}
+		\item \textbf{Termination}: $\textrm{halt}$ \\
+		Stops the program immediately.
+		\item \textbf{Jumps}: $label{:}\ instruction, \textrm{goto}\ label, \textrm{goto}\ label\ \textrm{if}\ a$ \\
+		Continues with execution of the instruction at the specified label.
+		In the latter case, it goes to the label only if $a$ is $true$, otherwise it continues with the next instruction.
+		\item \textbf{Functions}: $\textrm{function}\ fn(args\ldots), \textrm{return}\ a$ \\
+		Defines a function $fn$ with a constant number of arguments, possibly zero.
+		A function has access to the main memory but not to any registers which were used by its caller.
+		Each function ends with a return instruction followed by a value.
+		After a return, the program continues with an instruction which follows the one which initiated the call.
+	\end{itemize}
+	\item Work with memory:
+	\begin{itemize}
+		\item \textbf{Read}: $register \gets Memory[position, length]$ \\
+		Reads $length \le w$ consecutive bits from memory starting at $position$.
+		Once they are read, it stores them in a named $register$ right aligned and padded with zeros from left.
+		\item \textbf{Write}: $Memory[position, length] \gets a$ \\
+		Overwrites $length$ bits of memory with the $length$ least significant bits of the value of $a$ in memory at given $position$.
+		\item \textbf{Section}: $register \gets a[position, length]$ \\
+		Similar to reading from memory but operates on registers.
+	\end{itemize}
+	\item Operators on registers; the resulting value is always stored to a register: $register \gets operation$:
+	\begin{itemize}
+		\item \textbf{Arithmetic}: $a + b, a - b, a \cdot b, a \mathbin{/} b, a \% b$ \\
+		All overflows are silently discarded; the division is integral.
+		\item \textbf{Bitwise}: $a \bitand b, a \bitor b, a \bitxor b, \bitnot a, a \bitlsh b, a \bitrsh b$ \\
+		Bit shifts are padded with zeros.
+		\item \textbf{Boolean}: $a \booland b, a \boolor b, \boolnot a$ \\
+		Integers are implicitly converted to boolean ($0 \Leftrightarrow false$) and booleans to integers ($true \Rightarrow 1; false \Rightarrow 0$).
+		\item \textbf{Relational}: $a < b, a \le b, a > b, a \ge b, a = b, a \ne b$ \\
+		The result is a boolean value.
+		\item \textbf{Function call}: $fn(args\ldots)$ \\
+		Calls a function $fn$, provides it required number of arguments.
+	\end{itemize}
+\end{enumerate}
+All single letter arguments can be either names of the registers or constants of size $w$ bits.
 
 \section{Succinct Data Structures}
 
@@ -78,7 +133,6 @@ There will be a lot of pointers withing blocks, however they require only a smal
 
 The goal of most succinct data structures is to perform queries in constant time.
 Even if this was possible on high level, in the end the query must be processed on data of size of a machine word.
-(Remember that we use word RAM as a model of computation.)
 
 Let's assume that we have a block of data of $B$ bits.
 Let's also have parameters of the query on block of such size; these parameters have size $P$ bits in total.
@@ -101,11 +155,14 @@ The size of the table is then $O(\sqrt{N} \log N \log\log N) = o(N)$.
 
 This example is one of building blocks used in design of the \emph{rank index}.
 
-\subsection{Index Without Data}
+\subsection{\label{ss:index-without-data}Index Without Data}
 
 Let's assume that we want to support an operation on derived data.
-Instead of counting ones, as in the previous example, we could want to count transitions from zero to one.
-We can easily construct each $w$ bits of such bit string as $b' = ~b \& (b<<1)$ (plus an adjustment for what overflows from the next block).
+Instead of counting ones, as in the previous example, we could want to count transitions from zero to one in bit string $S$.
+We can define a new bit string $T$ as:
+$$ T = \bitnot S \bitand (S \bitlsh 1)$$
+Any $w$ consecutive bits can be calculated in constant time; mind the adjustment for overflows and string ends.
+
 And on top of this bit string we build the rank index.
 Although the index is small, $o(N)$, the data is too big $N$, making our data structure compact and not succinct.
 
