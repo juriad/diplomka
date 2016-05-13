@@ -202,7 +202,7 @@ This leads to wasting a bit per object, which sums up to a lot if we store an ar
 However if the object is stored inside a data structure, we can attempt to store some bits directly and let the data structure handle the rest, which call the \emph{spill}.
 
 
-\section{Operations on Balanced Parentheses}
+\section{\label{s:op-bp}Operations on Balanced Parentheses}
 
 Because we often store sequences of parentheses which are correctly matched, we don't think about bits one/zero but alias the values of the bits with opening and closing parentheses.
 The operations rank and select are still well defined with the minor difference that they are defined for parentheses instead of bits.

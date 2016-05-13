@@ -28,7 +28,6 @@ A tree can be stored as a bit string in several different ways:
 \end{itemize}
 
 We define operations which we discuss in context of various representations of the tree.
-We call the operations stated in bold as necessary for \emph{basic navigation queries}.
 
 \noindent\begin{tabularx}{\textwidth}{|L{0.7}|L{1.3}|}
 	\hline
@@ -43,9 +42,9 @@ We call the operations stated in bold as necessary for \emph{basic navigation qu
 	$*\_last(i) \rightarrow j$, \newline
 	$*\_size() \rightarrow n$
 	& These are general operations which we may want to support on various parts of the tree.
-	All operations can be expressed using rank and select, however those are not always available. \\ \hline \hline
+	All operations can be expressed using rank, select, and size, however those are not always available. \\ \hline \hline
 	
-	$vertex\_*$ operations
+	$global\_*$ operations
 	& The rank and select operations come in four flavors based on method of the tree traversal and when the vertex is assigned its number:
 	pre-order, in-order, post-order in case of DFS, and level-order in case of BFS. \\ \hline
 	
@@ -71,6 +70,7 @@ We call the operations stated in bold as necessary for \emph{basic navigation qu
 	$is\_ancestor(i, j) \rightarrow b$, \newline
 	$level\_ancestor(i, l) \rightarrow j$, \newline
 	$lca(i_1, i_2) \rightarrow j$
+	$distance(i_1, i_2) \rightarrow n$
 	& The operation $lca$ stands for Lowest Common Ancestor.
 	Ancestral operations are usually hard to support and require specialized indices. \\ \hline
 	
@@ -128,6 +128,7 @@ However we follow the representation as it was originally proposed.
 In order to support basic navigation queries in this representation, we add rank and select indices to turn it into a FID.
 We formulate all the operations in terms of one-based numbering of vertices.
 Zero-based implementation are also possible \todo{ref} and it even can compete the other representations.
+\todo{Engineering the LOUDS representation}
 Because of the correspondence between ones and zeros, we can easily change between them.
 
 \begin{algorithmic}
@@ -141,6 +142,8 @@ Because of the correspondence between ones and zeros, we can easily change betwe
 	\State \Return{$select_0(rank_1(i) + 1)$}
 \EndFunction
 \end{algorithmic}
+
+The global rank and select operations are one based rank and selects on the underlying bit string.
 
 We know that the one of vertex is within the representation of its parent and the zero ends the list of ones belonging to its children.
 Support of the queries is easy:
@@ -230,15 +233,23 @@ Using $D$ we can support $level\_rank$, $level\_select$ (and thereby all general
 
 \begin{algorithmic}
 \Function{level\_rank}{$i$}
-	\State $z \gets prev_1(D, i)$ \Comment{Terminal zero of the previous level}
-	\State \Return{$rank_1(S, i) - rank_1(S, z)$}
+	\State $prev_0 \gets prev_1(D, i)$ \Comment{Terminal zero of the previous level}
+	\State \Return{$rank_1(S, i) - rank_1(S, prev_0)$}
 \EndFunction
 \end{algorithmic}
 
 \begin{algorithmic}
 \Function{level\_select}{$i, l$}
-	\State $z \gets select_1(D, l)$ \Comment{Terminal zero of the previous level}
-	\State \Return{$select_1(S, rank_1(S, z) + l)$}
+	\State $prev_0 \gets select_1(D, l)$ \Comment{Terminal zero of the previous level}
+	\State \Return{$select_1(S, rank_1(S, prev_0) + l)$}
+\EndFunction
+\end{algorithmic}
+
+\begin{algorithmic}
+\Function{level\_size}{$l$}
+	\State $prev_0 \gets select_1(D, l)$ \Comment{Terminal zero of the previous level}
+	\State $next_0 \gets select_1(D, l + 1)$ \Comment{Terminal zero of the next level}
+	\State \Return{$rank_1(S,  next_0) - rank_1(S, prev_0)$}
 \EndFunction
 \end{algorithmic}
 
@@ -288,13 +299,13 @@ Such table merrily captures the repeated computation of finding last inner verte
 \EndFunction
 \end{algorithmic}
 
-\subsection{Leaf Queries}
+\subsection{\label{ss:leaf-queries}Leaf Queries}
 
 Tree data structures often allows traversal of leaves in left to right fashion.
 This seems to be impossible to support in our LOUDS representation.
 Instead, we support enumeration of leaves and access to leaves in BFS order.
 Although we defined the operations in sheer generality to be performed on a subtree of the tree, we allow no such restriction here.
-When incorporate the depth index, we can parametrize the operations by depth of the leaves -- a pair of minimum and maximum depth: $dp = (min, max): min \le max$; either part can be left unbounded.
+When incorporate the depth index, we can parametrize the operations by depth of the leaves -- a pair of minimum and maximum depth: $dp = (min, max): min \le max$; either value can be left unbounded.
 
 \begin{lemma}
 	Whenever there are two consecutive zeros in LOUDS representation, the latter one is associated with a leaf.
@@ -312,9 +323,9 @@ As we have already mentioned, we build rank and select indices on top of this ca
 
 \begin{algorithmic}
 \Function{leaf\_size}{$dp$}
-	\State $first \gets level\_lmost(dp.min)$ \Comment{First vertex matching $dp$}
+	\State $first \gets level\_first(dp.min)$ \Comment{First vertex matching $dp$}
 	\State $first_0 \gets to\_zeros(first)$
-	\State $last_0 \gets to\_zeros(level\_rmost(dp.max))$
+	\State $last_0 \gets to\_zeros(level\_last(dp.max))$
 	\State \Return $rank_1(L, last_0) - rank_1(L, first_0) + is\_leaf(first)$
 \EndFunction
 \end{algorithmic}
@@ -326,7 +337,7 @@ As we have already mentioned, we build rank and select indices on top of this ca
 	\ElsIf{$not\ is\_leaf(i)$}
 		\State \Return{$-1$}
 	\Else
-		\State $first_0 \gets to\_zeros(level\_lmost(dp.min))$
+		\State $first_0 \gets to\_zeros(level\_first(dp.min))$
 		\State $rank_1(L, to\_zeros(i)) - rank_1(L, first_0)$
 	\EndIf
 \EndFunction
@@ -337,8 +348,8 @@ As we have already mentioned, we build rank and select indices on top of this ca
 	\If{$n \ge leaf\_size(dp)$}
 		\State \Return{$-1$}
 	\Else
-		\State $first_0 \gets to\_zeros(level\_lmost(dp.min))$
-		\State $offset \gets rank(L, first_0)$
+		\State $first_0 \gets to\_zeros(level\_first(dp.min))$
+		\State $offset \gets rank_1(L, first_0)$
 		\State \Return{$to\_ones(select_1(L, n + offset))$}
 	\EndIf
 \EndFunction
@@ -352,23 +363,145 @@ On he other hand its easy implementation requiring only two types of indices mak
 
 \section{BP}
 
-Balanced parentheses representation is defined recursively.
-A leaf is encoded a pair of parentheses.
-An inner vertex is encoded as a concatenated list of encoding of children enclosed by a pair of parentheses.
+In the previous section, we have seen that it is possible to build a succinct data structure for storing trees which requires only rank and select queries from the underlying bit string.
+Here we focus on a different schema which exploits the property that the two symbols associated with a vertex are correctly matched in the bit string, for which we utilize the match and enclose operations which we developed earlier in \ref{s:op-bp}.
 
-% TODO an example of a tree with BP encoding
+The representation is based on Depth-First Search and follows two rules:
+\begin{enumerate}
+	\item When we enter a vertex from its parent, we \emph{open} it, which is denoted in the representation by an opening parenthesis.
+	\item When we leave a vertex to its parent, we \emph{close} it, which is denoted by a closing parenthesis.
+\end{enumerate}
+Although the root vertex does not have a parent, we open and close it as if it had one.
 
-Each vertex is associated with the first opening parenthesis of its representation.
-Simple navigation in the tree relative to a vertex $v$ which is at position $i$.
+\begin{algorithmic}
+\Function{construct}{$R$}
+	\State $S \gets \{R\}$ \Comment{The stack is initialized with the root of the tree}
+	\While{$V \gets S$}
+		\If{$V.state = UNSEEN$} \Comment{We came from its parent}
+			\State $ S \gets \{V\}$ \Comment{We return to $V$ after all its children}
+			\State $V.state \gets OPEN$
+			\State $write("1")$
+			\State $ S \gets children(V)$
+		\ElsIf{$V.state = OPEN$} \Comment{All children has been processed}
+			\State $V.state \gets CLOSED$
+			\State $write("0")$
+		\EndIf
+	\EndWhile
+\EndFunction
+\end{algorithmic}
 
-The subtree rooted in the current vertex is fully contained in the substring $BP[i, find\_close(i)]$.
-The vertex is a leaf if $BP[i+1]$ is a close parenthesis.
-The first child is at position $i+1$ unless the vertex is a leaf.
-The vertex is the root if $i$ is equal to $0$.
-The vertex has next siblings if it is not the root and $BP[find\_close(i) + 1]$ is an open parenthesis.
-If the vertex has a next sibling, then it is at position $find\_close(i) + 1$.
-The vertex has previous siblings if it is not the root and $BP[i-1]$ is a close parenthesis.
-If the vertex has a previous sibling, then it is at position $find\_open(i-1)$.
+An alternative definition of this schema can be expressed recursively:
+\begin{enumerate}
+	\item A leaf is encoded with a pair of parentheses.
+	\item An inner vertex is encoded as a concatenated list of encodings of its children enclosed by a pair of parentheses.
+\end{enumerate}
+From this definition, we can see that each subtree occupies a continuous substring.
+
+\bigskip
+
+We associate each vertex with its opening parenthesis; because of the symmetry in comparison to LOUDS representation, there is no reason to choose opening or closing parentheses over the others.
+By using the operation $match$ we can easily switch between these two.
+
+We can immediately support pre-order and post-order global ranks and selects as one-based and zero-based ranks and selects on the underlying bit string $S$.
+We show implementation of the operations which do not need any auxiliary index and can be expressed using only the primitives provided by $S$.
+
+\todo{Use \textbackslash{}mathit pretty much everywhere}
+
+\begin{algorithmic}
+\Function{is\_root}{$i$}
+	\State \Return{$i = 0$}
+\EndFunction
+\end{algorithmic}
+
+\begin{algorithmic}
+\Function{is\_leaf}{$i$}
+	\State \Return{$S[i+1] = ')'$} \Comment{Is the parenthesis immediately closed?}
+\EndFunction
+\end{algorithmic}
+
+\begin{algorithmic}
+\Function{parent}{$i$}
+	\If{$is\_root(i)$}
+		\State \Return{$-1$}
+	\Else
+		\State \Return{$enclose(i)$}
+	\EndIf
+\EndFunction
+\end{algorithmic}
+
+Neither $degree$ nor $child\_rank$ nor $child\_select$ is possible; we therefore resort to implementation of the rest of the $child\_*$ operations:
+
+\begin{algorithmic}
+\Function{child\_first}{$i$}
+	\If{$is\_leaf(i)$}
+		\State \Return{$-1$}
+	\Else
+		\State \Return{$i+1$}
+	\EndIf
+\EndFunction
+\end{algorithmic}
+
+\begin{algorithmic}
+\Function{child\_last}{$i$}
+	\If{$is\_leaf(i)$}
+		\State \Return{$-1$}
+	\Else
+		\State \Return{$find\_close(i) - 1$}
+	\EndIf
+\EndFunction
+\end{algorithmic}
+
+\begin{algorithmic}
+\Function{child\_next}{$i$}
+	\State {$n = find\_close(i) + 1$}
+	\If{$S[n] = ')'$}
+		\State \Return{$-1$}
+	\Else
+		\State \Return{$n$}
+	\EndIf
+\EndFunction
+\end{algorithmic}
+
+\begin{algorithmic}
+\Function{child\_prev}{$i$}
+	\If{$S[i - 1] = '('$}
+		\State \Return{$-1$}
+	\Else
+		\State \Return{$find\_open(i - 1)$}
+	\EndIf
+\EndFunction
+\end{algorithmic}
+
+The other supported operations are:
+\begin{algorithmic}
+\Function{depth}{$i$}
+	\State \Return{$paren\_depth(i)$}
+\EndFunction
+\end{algorithmic}
+
+\begin{algorithmic}
+\Function{is\_ancestor}{$i, j$}
+	\State \Return{$i \le j \booland find\_close(i) \ge j$}
+\EndFunction
+\end{algorithmic}
+
+\begin{algorithmic}
+\Function{subtree\_size}{$i$}
+	\State \Return{$rank_1(find\_close(i)) - rank_1(i) + 1$}
+\EndFunction
+\end{algorithmic}
+
+\bigskip
+
+Various indices were proposed to extend the set of supported operations.
+\todo{Refs: Balanced Parentheses Strike Back}
+\begin{itemize}
+	\item index support for $child\_rank$ and $child\_select$;
+	\item index support for $lca$, $distance$ and $height$, ($deepest\_vertex$, \todo{maybe, check});
+	\item index support for $level\_ancestor$;
+	\item index support for querying unrestricted leaves.
+	We showed the technique in \ref{ss:leaf-queries} where we were looking for the pattern $0\mathbf{0}$, whereas here it would be $\textbf{(})$.
+\end{itemize}
 
 \section{DFUDS}
 
@@ -377,6 +510,9 @@ A leaf is encoded as a closing parenthesis.
 An inner vertex is encoded as a $degree-1$ opening parentheses followed by a single closing parenthesis and concatenating encoding of the children.
 For convenience, one opening parenthesis is prepended to make the sequence of parentheses balanced.
 
-% TODO as lemma
-Lemma.
-This encoding gives balanced string of parentheses.
+\begin{lemma}
+This encoding gives indeed a balanced string of parentheses.
+\end{lemma}
+\begin{proof}
+\todo{proof}
+\end{proof}
