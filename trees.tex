@@ -14,20 +14,40 @@ When we design a succinct data structure for ordinal trees, we are limited by th
 In the traditional data structures, each edge of the tree is stored twice as a pointer of size $w$.
 Even if we did not need any other space to manage the vertex structures, the space occupied by the edges takes $\Omega (n \log n)$.
 
-In this chapter we show several data succinct structures which overcome the logarithmic factor introduced by pointers and get close to the optimum space complexity.
+In this chapter we show several succinct data structures which overcome the logarithmic factor introduced by pointers and get close to the optimum space complexity.
 
 \section{Representations}
 
 A tree can be stored as a bit string in several different ways:
 \begin{itemize}
-	\item Level-Order Unary Degree Sequence -- a simple heap-like structure which supports the basic navigation queries requiring only rank and select;
-	\item Balanced Parentheses -- uses the natural mapping between ordinal trees and matching parentheses;
-	\item Depth-First Unary Degree Sequence -- combination of the previous two approaches offering an alternative mapping to matching parentheses;
+	\item Level-Order Unary Degree Sequence -- a heap-like structure which supports the basic navigation queries requiring only rank and select.
+	\item Balanced Parentheses -- uses the natural mapping between ordinal trees and matching parentheses.
+	\item Depth-First Unary Degree Sequence -- combination of the previous two approaches offering an alternative mapping to matching parentheses.
 	\item Fully-Functional -- a data structure built on top of a sequence of matching parentheses, however it uses different primitives then rank and select;
 	\item Tree Covering -- recursive decomposition of the tree into smaller trees which are then encoded;
 \end{itemize}
 
+LOUDS is the oldest representation with most limitations on supported operations, which it compensates by its simplicity.
+The biggest limitation are subtree-restricted queries and ancestor queries because of storage of the vertices by levels, which causes each subtree to be spread in the representation.
+
+With match and enclose operations available on parentheses, the BP representation was invented.
+It supports the queries which were not possible before, however it pays for it by using multiple indices, which are necessary even for simple child queries.
+DFUDS representation is a hybrid representation, which takes the better parts of both previous ones.
+The navigation queries are fully supported while it retains the locality of subtrees.
+Authors often compete and equip their DFUDS or BP structures with more indices that support operations with which the other representation comes.
+
+There are two direction where the development of succinct data structures for trees continued.
+Later in time but closer in representation is so called fully functional approach which keeps the storage from either BP or DFUDS, however it changes the set of primitives of the underlying data structure.
+Rank and select are only implications of more general \emph{linear search operations}; ancestral queries are translated to range minimum queries.
+
+Finally, we can decompose the tree into smaller trees; each level uses different encoding and stores relative information.
+There were many decompositions proposed, trying to maintain the number of smaller trees limited and their sizes balanced.
+
+\subsection{Operations}
+
 We define operations which we discuss in context of various representations of the tree.
+
+\todo{rank and select are counted from 1, sort of}
 
 \noindent\begin{tabularx}{\textwidth}{|L{0.7}|L{1.3}|}
 	\hline
@@ -44,7 +64,7 @@ We define operations which we discuss in context of various representations of t
 	& These are general operations which we may want to support on various parts of the tree.
 	All operations can be expressed using rank, select, and size, however those are not always available. \\ \hline \hline
 	
-	$global\_*$ operations
+	$\{pre,post,in,lo\}\_*$ operations
 	& The rank and select operations come in four flavors based on method of the tree traversal and when the vertex is assigned its number:
 	pre-order, in-order, post-order in case of DFS, and level-order in case of BFS. \\ \hline
 	
@@ -85,11 +105,18 @@ Although it often is the same as position of a specific symbol related to the ve
 If the number of the vertex matters, the user is advised to use one of the ranking operations which map the vertices into an interval $[0, n-1]$.
 This can be necessary if we want to interact with other structures, such as addressing the value of the vertex stored in an external table.
 
+\bigskip
+
+We now describe how all the representations work and how they support various subsets of the defined operations.
+
 \section{LOUDS}
 
 The first method of storing an ordinal tree succinctly was first described by Jacobson in \todo{article}.
 The encoding of the tree is based on its vertices reporting their degrees in unary system.
 Vertices are processed in by levels; the representation is prefixed by \verb|10|:
+
+\todo{Operations on Deque}
+
 \begin{algorithmic}
 \Function{construct}{$R$}
 	\State $Q \gets \{R\}$ \Comment{The queue is initialized with the root of the tree}
@@ -143,7 +170,7 @@ Because of the correspondence between ones and zeros, we can easily change betwe
 \EndFunction
 \end{algorithmic}
 
-The global rank and select operations are one based rank and selects on the underlying bit string.
+The level-order rank and select operations are one-based rank and select on the underlying bit string.
 
 We know that the one of vertex is within the representation of its parent and the zero ends the list of ones belonging to its children.
 Support of the queries is easy:
@@ -380,11 +407,11 @@ Although the root vertex does not have a parent, we open and close it as if it h
 		\If{$V.state = UNSEEN$} \Comment{We came from its parent}
 			\State $ S \gets \{V\}$ \Comment{We return to $V$ after all its children}
 			\State $V.state \gets OPEN$
-			\State $write("1")$
+			\State $write("(")$
 			\State $ S \gets children(V)$
 		\ElsIf{$V.state = OPEN$} \Comment{All children has been processed}
 			\State $V.state \gets CLOSED$
-			\State $write("0")$
+			\State $write(")")$
 		\EndIf
 	\EndWhile
 \EndFunction
@@ -402,7 +429,7 @@ From this definition, we can see that each subtree occupies a continuous substri
 We associate each vertex with its opening parenthesis; because of the symmetry in comparison to LOUDS representation, there is no reason to choose opening or closing parentheses over the others.
 By using the operation $match$ we can easily switch between these two.
 
-We can immediately support pre-order and post-order global ranks and selects as one-based and zero-based ranks and selects on the underlying bit string $S$.
+We can immediately support pre-order and post-order ranks and selects as opening-based and closing-based ranks and selects on the underlying bit string $S$.
 We show implementation of the operations which do not need any auxiliary index and can be expressed using only the primitives provided by $S$.
 
 \todo{Use \textbackslash{}mathit pretty much everywhere}
@@ -419,6 +446,8 @@ We show implementation of the operations which do not need any auxiliary index a
 \EndFunction
 \end{algorithmic}
 
+\subsubsection{Basic Navigation Queries}
+
 \begin{algorithmic}
 \Function{parent}{$i$}
 	\If{$is\_root(i)$}
@@ -429,7 +458,7 @@ We show implementation of the operations which do not need any auxiliary index a
 \EndFunction
 \end{algorithmic}
 
-Neither $degree$ nor $child\_rank$ nor $child\_select$ is possible; we therefore resort to implementation of the rest of the $child\_*$ operations:
+Neither $degree$ nor $child\_rank$ nor $child\_select$ is possible to support without an additional index; we therefore resort to implementation of the rest of the $child\_*$ operations:
 
 \begin{algorithmic}
 \Function{child\_first}{$i$}
@@ -472,7 +501,10 @@ Neither $degree$ nor $child\_rank$ nor $child\_select$ is possible; we therefore
 \EndFunction
 \end{algorithmic}
 
-The other supported operations are:
+\subsubsection{Other Operation}
+
+Other natively supported operations use the property that a subtree of $v$ is fully contained in the representation of $v$.
+
 \begin{algorithmic}
 \Function{depth}{$i$}
 	\State \Return{$paren\_depth(i)$}
@@ -491,28 +523,227 @@ The other supported operations are:
 \EndFunction
 \end{algorithmic}
 
+The group of operations consisting of $lca$, $distance$, $height$ and $deepest\_vertex$ has one thing in common: they all can be solved by a single additional index.
+\todo{lca}
+
+\begin{algorithmic}
+\Function{lca}{$i_1, i_2$}
+	\If{$is\_ancestor(i_1, i_2)$}
+		\State \Return{$i_1$}
+	\ElsIf{$is\_ancestor(i_2, i_1)$}
+		\State \Return{$i_2$}
+	\Else
+		\State \Return{$enclose(i_1, i_2)$}
+	\EndIf
+\EndFunction
+\end{algorithmic}
+
+\begin{algorithmic}
+\Function{distance}{$i_1, i_2$}
+	\State $a \gets lca(i_1, i_2)$
+	\State \Return{$depth(i_1) + depth(i_2) - 2 depth(a)$}
+\EndFunction
+\end{algorithmic}
+
+\begin{algorithmic}
+\Function{deepest\_vertex}{$i$}
+	\State \Return{$RMQ(i, match(i))$}
+\EndFunction
+\end{algorithmic}
+
+\begin{algorithmic}
+\Function{height}{$i$}
+	\State \Return{$depth(deepest\_vertex(i)) - depth(i)$}
+\EndFunction
+\end{algorithmic}
+
 \bigskip
 
-Various indices were proposed to extend the set of supported operations.
+Various indices were proposed to extend the set of supported operations beyond what we have shown.
 \todo{Refs: Balanced Parentheses Strike Back}
 \begin{itemize}
 	\item index support for $child\_rank$ and $child\_select$;
-	\item index support for $lca$, $distance$ and $height$, ($deepest\_vertex$, \todo{maybe, check});
 	\item index support for $level\_ancestor$;
 	\item index support for querying unrestricted leaves.
-	We showed the technique in \ref{ss:leaf-queries} where we were looking for the pattern $0\mathbf{0}$, whereas here it would be $\textbf{(})$.
+	We showed the technique in \ref{ss:leaf-queries} where we were looking for the pattern $0\underline{0}$, whereas for BP it would be $\underline{(})$.
 \end{itemize}
 
 \section{DFUDS}
 
-Depth-First Unary Degree Sequence is defined recursively:
+\emph{Depth-First Unary Degree Sequence} is a hybrid encoding with advantages from both LOUDS (child queries are natively supported) and BP (each subtree is stored locally instead of being spread throughout the encoding).
+The encoding is defined recursively:
 A leaf is encoded as a closing parenthesis.
-An inner vertex is encoded as a $degree-1$ opening parentheses followed by a single closing parenthesis and concatenating encoding of the children.
+An inner vertex is encoded as a $degree$ opening parentheses followed by a single closing parenthesis and concatenated encoding of its children.
 For convenience, one opening parenthesis is prepended to make the sequence of parentheses balanced.
 
+\todo{formalize queue}
+
+\begin{algorithmic}
+\Function{construct}{$R$}
+	\State $S \gets \{R\}$ \Comment{The stack is initialized with the root of the tree}
+	\State $write("(")$
+	\While{$V \gets S$}
+%		\If{$V.state = UNSEEN$} \Comment{We came from its parent}
+%			\State $V.state \gets OPEN$
+%			\State $S \gets \{V\}$ \Comment{We return to $V$ after all its children}
+			\ForAll{$C \gets children(V)$}
+				\State $write("(")$
+			\EndFor
+			\State $ S \gets children(V)$
+			\State $write(")")$
+%		\ElsIf{$V.state = OPEN$} \Comment{All children has been processed}
+%			\State $V.state \gets CLOSED$
+%		\EndIf
+	\EndWhile
+\EndFunction
+\end{algorithmic}
+
 \begin{lemma}
-This encoding gives indeed a balanced string of parentheses.
+	This encoding gives indeed a balanced string of parentheses.
 \end{lemma}
 \begin{proof}
-\todo{proof}
+	Each subtree lacks one opening parenthesis at the beginning to be correctly matched string of parentheses.
+	
+	The proof goes by induction.
+	The claim holds for a leaf, which is only a closing parenthesis, which misses its matching opening one.
+	
+	We assume, that the claim holds for all $degree$ subtrees $T_1, \ldots, T_d$ of vertex $v$.
+	Vertex $v$ contains $degree$ opening and one closing parenthesis.
+	The closing one matches the last opening one, leaving $degree - 1$ of be matched with the excessive ones in the subtrees.
+	$T_1, \ldots, T_{d-1}$ gets matched, leaving one closing parenthesis in $T_d$ unmatched, which is the one that the claim requires.
+	
+	The only unmatched parenthesis is matched in the end with the artificially prepended one.
 \end{proof}
+
+We associate each vertex with the first symbol of its representation.
+Then it is easy to test whether a vertex is a leaf or not.
+
+\begin{algorithmic}
+\Function{is\_root}{$i$}
+	\State \Return{$i = 1$}
+\EndFunction
+\end{algorithmic}
+
+\begin{algorithmic}
+\Function{is\_leaf}{$i$}
+	\State \Return{$S[i] = ')'$} \Comment{Is the parenthesis a closing one?}
+\EndFunction
+\end{algorithmic}
+
+For the following operation, the crucial observations are:
+\begin{enumerate}
+	\item The opening parentheses in the degree sequence matches closing parentheses immediately preceding to child representation.
+	\item In a subtree of a vertex $v$, the last closing parenthesis, which represents the last leaf, matches a parenthesis in a degree sequence of $v$'s parent.
+\end{enumerate}
+
+We first define a helper functions which navigate from any position in vertex representation to its beginning (which is the symbol associated with the vertex) and to its end (which is always a closing parenthesis).
+
+\begin{algorithmic}
+\Function{to\_beginning}{$p$}
+	\If{$p = 0$}
+		\State \Return{$-1$} \Comment{The representation of root starts at position 1}
+	\ElsIf{$prev_)(p) < 0$}
+		\State \Return{$1$} \Comment{Correction for the root}
+	\Else
+		\State \Return{$prev_)(p) + 1$}
+	\EndIf
+\EndFunction
+\end{algorithmic}
+
+\begin{algorithmic}
+\Function{to\_end}{$p$}
+	\If{$p = 0$}
+		\State \Return{$-1$}
+	\Else
+		\State \Return{$succ_)(p)$}
+	\EndIf
+\EndFunction
+\end{algorithmic}
+
+Using these function we can support pre-order rank and select queries.
+Post-order operations are not supported.
+
+\begin{algorithmic}
+\Function{pre\_rank}{$i$}
+	\State \Return{$rank_)(to_end(i))$}
+\EndFunction
+\end{algorithmic}
+
+\begin{algorithmic}
+\Function{pre\_select}{$i$}
+	\State \Return{$to\_beginning(select_)(i))$}
+\EndFunction
+\end{algorithmic}
+
+\subsection{Basic Navigation Queries}
+
+\begin{algorithmic}
+\Function{parent}{$i$}
+	\If{$is\_root(i)$}
+		\State \Return{$-1$}
+	\Else
+		\State $p \gets find\_open(i - 1)$ \Comment{Inside parent's degree sequence}
+		\State \Return{$to\_beginning(p)$}
+	\EndIf
+\EndFunction
+\end{algorithmic}
+
+\begin{algorithmic}
+\Function{degree}{$i$}
+	\State \Return{$to\_end(i) - i$}
+\EndFunction
+\end{algorithmic}
+
+\begin{algorithmic}
+\Function{child\_rank}{$i$}
+	\If{$is\_root(i)$}
+		\State \Return{$-1$}
+	\Else
+		\State $p \gets find\_open(i - 1)$
+		\State \Return{$to\_end(p) - p$}
+	\EndIf
+\EndFunction
+\end{algorithmic}
+
+\begin{algorithmic}
+\Function{child\_select}{$i, n$}
+	\If{$is\_leaf(i)$}
+		\State \Return{$-1$}
+	\Else
+		\State $p \gets to\_end(i) - n$
+		\State \Return{$find\_close(p) + 1$}
+	\EndIf
+\EndFunction
+\end{algorithmic}
+
+\subsubsection{Other operations}
+
+\begin{algorithmic}
+\Function{is\_ancestor}{$i, j$}
+	\If{$is\_leaf(i)$}
+		\State \Return{$i = j$}
+	\Else
+		\State $end \gets find\_close(enclose(i))$ \Comment{Last one in unmatched in the subtree}
+		\State \Return{$j \ge i \booland j \le end$}
+	\EndIf
+\EndFunction
+\end{algorithmic}
+
+\begin{algorithmic}
+\Function{subtree\_size}{$i$}
+	\If{$is\_leaf(i)$}
+		\State \Return{$1$}
+	\Else
+		\State $end \gets find\_close(enclose(i))$ \Comment{Last one in unmatched in the subtree}
+		\State \Return{$rank_)(end) - rank_)(i)$}
+	\EndIf
+\EndFunction
+\end{algorithmic}
+
+\subsubsection{Comparison of BP and DFUDS}
+
+\todo{comparison}
+
+\section{FF}
+
+One way how to deal with the limitations of the previous 

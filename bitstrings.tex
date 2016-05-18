@@ -217,7 +217,7 @@ Because of the additional structure which stems from the balanced property, we d
 	\item \emph{$excess(i)$} returns the difference between number of opening and closing parentheses until position $i$.
 	The operation depth can be implemented using ranks as: $$excess(i) = rank_((i) - rank_)(i)$$
 	\item \emph{$paren\_depth(i)$} returns depth of parentheses pair $i, match(i)$.
-	It is defined as: $$paren\_depth(i) = excess(find\_open(i))$$
+	It is defined as: $$paren\_depth(i) = excess(find\_open(i)) - 1$$
 	\item \emph{$enclose(i)$} returns position of an opening parenthesis which tightly encloses the pair $i, match(i)$.
 	The result of enclose does not have to exist, however such situation is easy to test using excess.
 	The following holds:
@@ -228,21 +228,21 @@ Because of the additional structure which stems from the balanced property, we d
 		match(k) &> find\_close(i)
 	\end{align*}
 	Sometimes enclose can be generalized:
-	\item \emph{$enclose(i, j)$} returns position of an opening parenthesis which tightly encloses the pairs $i, match(i)$ and $j, match(j)$.
-	This operation is much more powerful than enclose, because it allows to solve the problem of lowest common ancestor.
+	\item \emph{$enclose(i_1, i_2)$} returns position of an opening parenthesis $j$ which tightly encloses the pairs $i_1, match(i_1)$ and $i_2, match(i_2)$.
 	\begin{align*}
-	k &= enclose(i, j)\\
-	excess(k) &\le min(excess(find\_open(i)), excess(find\_open(j))) - 1 \\
-	k &< min(find\_open(i), find\_open(j)) \\
-	match(j) &> max(find\_close(i), find\_close(j))
+	j &= enclose(i_1, i_2)\\
+	excess(j) &\le min(excess(find\_open(i_1)), excess(find\_open(i_2))) - 1 \\
+	j &< min(find\_open(i_1), find\_open(i_2)) \\
+	match(j) &> max(find\_close(i_1), find\_close(i_2))
 	\end{align*}
-	The result exists only if both $i$ and $j$ are in the same subtree, which is hard to test beforehand.
-	
 	This operation is indeed a generalization of one-parameter enclose:
 	$$enclose(i, i) = enclose(i)$$
+	
+	The result does not have to exists in general sequence of correctly matched parentheses, however in all our cases there is going to be only one parentheses pair having $paren_depth$ equal to zero.
+	\item \emph{$rmq(i, j)$} returns the left-most position $i \le m \le j$ where $paren\_depth(m)$ is the least possible.
+	Similarly we define \emph{$RMQ(i, j)$} returning the position of the maximum.
+	The operation $rmq$ can be used to derive the two-parameter version of $enclose$.
 \end{itemize}
-
-The balanced parentheses which we are going to represent have one more property: there exists only one pair $i, match(i)$ such that $depth(i) =	 0$.
 
 \subsection{Structure for match, enclose}
 
@@ -349,5 +349,100 @@ Note that we have no special requirements on operations supported by $S$ and $P$
 
 \todo{The only missing part for the description of the index to be complete is the representation of $P'$ on both levels together with its support of rank and select operations.}
 
+\subsection{Range Minimum/Maximum Queries}
 
+We show how to support $rmq$ on a string of matched parentheses however it can be generalized to other types of bit strings.
+We derive an array $A$ from the original bit string $S$; in case of correctly matched parentheses, we interpret each number $A[i]$ as the depth of a parentheses pair $i, match(i)$.
+For each position $i \in [0, 2n-1]$ in the array, $ A[i] = paren\_depth(i)$.
 
+Note that both opening and closing parentheses are assigned the same number, which is in contrast to usually assigned $excess(i)$, which assigns an opening parenthesis number larger by one than to the closing one.
+This small detail also means that the difference of $A[i]$ and $A[i+1]$ can be $-1$, $0$ or $1$.
+We don't store the array $A$ explicitly, we compute each individual value on request in constant time.
+Also note that despite formulating the algorithm for minimum, the maximum would work the same way.
+
+\begin{lemma}
+We can solve $rmq(S, i, j)$ (and $RMQ$) whenever $j - i + 1 \le \frac{\log n}{2}$ in constant time.
+\end{lemma}
+\begin{proof}
+The values $A[i + k], 0 < k \le j - i + 1 $ can be derived from $A[i + k - 1]$ and $S[i + k]$ and $S[i + k - 1]$.
+$$A[i + k] = A[i + k - 1] - (S[i + k - 1] = ')') + (S[i + k] = '(')$$
+By iterating the rule, we can express all $A[i + k], 0 < k \le j - i + 1 $ depending on $A[i]$ and $S[i, j - i + 1]$.
+
+For the purpose of $rmq$, the exact value does not matter, which allows us to shift $A[i]$ to $0$.
+The result of $rmq$ depends now only on the block $S[i, j - i + 1]$.
+
+By the precondition of the lemma, the block has size at most $\frac{\log n}{2}$, which makes it possible to use it as an index to a look-up table.
+The look-up table is parametrized by the length of the block, which is the value of $j - i + 1$, which becomes encoded into $O(\log \log n)$ bits.
+This is necessary because of the zero-padding of words in our definition of RAM.
+The table simply returns the position $k$.
+\end{proof}
+
+We follow with a lemma which will allow us to construct two level inter-block structure which solves the $rmq$ on the global scale.
+
+\begin{lemma}\label{lemma:rmq2}
+Given an array $P$ of $p$ positions of minima (maxima) in blocks on lower level, we can solve the $rmq$ ($RMQ$) on full blocks in constant time requiring only $O(p \log^2 p)$ bits of memory.
+\end{lemma}
+\begin{proof}
+Let's call $l = j - i + 1$ number of blocks over which the query spans.
+We distinguish two cases:
+\begin{enumerate}
+	\item $l = 2^k$ is a power of two.
+	In such case we simply use a value from a precomputed table.
+	This table records the index of the block containing the minimum for each $i$ and $k$, which adds up to $O(p \log^2 p)$ bits.
+	\item $l$ is not a power of two.
+	We can cover the query on $l$ blocks by two queries each spanning $2^k$ blocks where $k = \lfloor \log l \rfloor$.
+	The two queries can overlap however that causes no problem as we are only looking for a minimum of their answers.
+	\begin{align*}
+	p_1 &= rmq_P(P, i, i + 2^k - 1) \\
+	p_2 &= rmq_P(P, j - 2^k + 1, j) \\
+	rmq_P(I, i, j) &=
+	\begin{cases}
+	p_1 & \textrm{if}\ A[P[p_1]] \le A[P[p_2]]\\
+	p_2 & \textrm{if}\ \textrm{otherwise}
+	\end{cases}
+	\end{align*}
+	\todo{formulate as an algorithm}
+	We gather both candidates for the block containing the minimum and return the one which has a smaller value, while preferring the left one.
+\end{enumerate}
+\end{proof}
+
+\subsubsection{Decomposition and Algorithm}
+
+We start with description of the top level.
+We split the bit string $S$ into blocks of size $B$; for each block we store position of its minimum in an array $P_1$, which requires $O(\frac{n}{B} \log B)$ bits of memory.
+We build the $rmq$ structure by lemma \ref{lemma:rmq2} on top of this array, which adds another $O(\frac{n}{B} \log^2 \frac{n}{B})$ bits of memory.
+
+The next level starts with blocks of size $B$ which are split into small blocks of size $\frac{\log n}{2}$.
+For all small blocks in a block $i$ we precompute an array $P2[i]$ of positions of minima; this array uses $O(\frac{B}{\log n} \log \log n)$ bits per block.
+On top of this array we build again the $rmq$ structure, which uses $O(\frac{B}{\log n} \log^2 \frac{B}{\log n})$ bits per block.
+
+In order to keep all densities $o(1)$, we set $B = \log^3 n$.
+
+When we process the query, we first split the interval $[i, j]$ into:
+\begin{enumerate}
+	\item up to one interval of blocks which are fully contained;
+	\item up to two intervals of small blocks each within a single partially contained block.
+	All the small blocks are fully contained in the interval $[i,j]$;
+	\item up to two small blocks which are not fully contained in any small block.
+\end{enumerate}
+
+We find distinct candidates for minimum in (1) and (2) by querying the $rmq$ structures and in (3) by using a look-up table.
+Once we gather all candidates, we return the one with the lowest value.
+
+\subsubsection{Two-parameter Enclose}
+
+Without loss of generality, we assume that both $i_1$ and $i_2$ are opening parentheses and that $i_1 \le i_2$.
+We first check if $i_2$ is enclosed by $i_1$; in such case we simply reduce the operation to a one-parameter enclose and end.
+
+Now $i_1$ and $i_2$ are not contained within each other.
+By definition, we are looking for a parentheses pair $j, match(j)$ which spans over the interval from $min(i_1, i_2)$ to $match(max(i_1, i_2))$.
+$i$ also has the property that it contains two parentheses pairs $p_1 < p_2$ such that, each of them contains one of $i_1$, $i_2$ and $paren\_depth(p_1) = paren\_depth(p_2) = paren\_depth(j) + 1$.
+
+We observe that the following holds for $find\_close(p_1)$:
+\begin{itemize}
+	\item it is contained in the interval $i_1, i_2$;
+	\item it has the minimum depth on such interval;
+	\item either it or $i_1$ is the left-most parenthesis having such depth.
+\end{itemize}
+These properties allow us to find a parenthesis which is tightly enclosed by $j$ and reduce the query to a one-parameter enclose.
+$$ enclose(rmq(i_1, i_2)) $$
