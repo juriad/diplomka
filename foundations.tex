@@ -32,7 +32,7 @@ The instructions supported by the RAM are:
 	\end{itemize}
 	\item Work with memory:
 	\begin{itemize}
-		\item \textbf{Read}: $register \gets Memory[position, length]$ \\
+		\item \textbf{Read}: $register \gets Memory[position, length]$ \\ \todo{Change to $[position .. end\_position]$}
 		Reads $length \le w$ consecutive bits from memory starting at $position$.
 		Once they are read, it stores them in a named $register$ right aligned and padded with zeros from left.
 		\item \textbf{Write}: $Memory[position, length] \gets a$ \\

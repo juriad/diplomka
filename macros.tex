@@ -108,6 +108,8 @@
 \algrenewtext{ElsIf}[1]{\algorithmicelse\ \algorithmicif\ #1\textbf{:}}
 \algrenewtext{Else}{\algorithmicelse\textbf{:}}
 
+\algnewcommand\Break{\textbf{Break}}
+
 \let\percent\%
 \def\%{\ifmmode\mathbin{\percent}\else\percent\fi}
 
@@ -121,5 +123,8 @@
 \newcommand{\boolnot}{\mathord{\textrm{not}\,}}
 \newcommand{\booland}{\mathbin{\textrm{and}}}
 \newcommand{\boolor}{\mathbin{\textrm{or}}}
+
+\DeclareMathOperator*{\argmin}{arg\,min}
+\DeclareMathOperator*{\argmax}{arg\,max}
 
 \usepackage{expdlist}

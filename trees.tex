@@ -523,8 +523,7 @@ Other natively supported operations use the property that a subtree of $v$ is fu
 \EndFunction
 \end{algorithmic}
 
-The group of operations consisting of $lca$, $distance$, $height$ and $deepest\_vertex$ has one thing in common: they all can be solved by a single additional index.
-\todo{lca}
+The group of operations consisting of $lca$, $distance$, $height$ and $deepest\_vertex$ has one thing in common: they all can be solved by solved by range queries.
 
 \begin{algorithmic}
 \Function{lca}{$i_1, i_2$}
@@ -547,7 +546,7 @@ The group of operations consisting of $lca$, $distance$, $height$ and $deepest\_
 
 \begin{algorithmic}
 \Function{deepest\_vertex}{$i$}
-	\State \Return{$RMQ(i, match(i))$}
+	\State \Return{$RMQi(i, match(i))$}
 \EndFunction
 \end{algorithmic}
 
@@ -564,7 +563,7 @@ Various indices were proposed to extend the set of supported operations beyond w
 \begin{itemize}
 	\item index support for $child\_rank$ and $child\_select$;
 	\item index support for $level\_ancestor$;
-	\item index support for querying unrestricted leaves.
+	\item index support for querying leaves in a subtree.
 	We showed the technique in \ref{ss:leaf-queries} where we were looking for the pattern $0\underline{0}$, whereas for BP it would be $\underline{(})$.
 \end{itemize}
 
@@ -615,6 +614,8 @@ For convenience, one opening parenthesis is prepended to make the sequence of pa
 	The only unmatched parenthesis is matched in the end with the artificially prepended one.
 \end{proof}
 
+\subsection{Basic Navigation Queries}
+
 We associate each vertex with the first symbol of its representation.
 Then it is easy to test whether a vertex is a leaf or not.
 
@@ -632,7 +633,7 @@ Then it is easy to test whether a vertex is a leaf or not.
 
 For the following operation, the crucial observations are:
 \begin{enumerate}
-	\item The opening parentheses in the degree sequence matches closing parentheses immediately preceding to child representation.
+	\item The opening parentheses in the degree sequence matches the closing parentheses immediately preceding a child representation.
 	\item In a subtree of a vertex $v$, the last closing parenthesis, which represents the last leaf, matches a parenthesis in a degree sequence of $v$'s parent.
 \end{enumerate}
 
@@ -660,6 +661,16 @@ We first define a helper functions which navigate from any position in vertex re
 \EndFunction
 \end{algorithmic}
 
+\begin{algorithmic}
+\Function{to\_last}{$p$} \Comment{Navigates to the end of the subtree representation}
+	\If{$is\_leaf(i)$}
+		\State \Return{$p$}
+	\Else
+		\State \Return{$find\_close(enclose(to\_beginning(p)))$}
+	\EndIf
+\EndFunction
+\end{algorithmic}
+
 Using these function we can support pre-order rank and select queries.
 Post-order operations are not supported.
 
@@ -674,8 +685,6 @@ Post-order operations are not supported.
 	\State \Return{$to\_beginning(select_)(i))$}
 \EndFunction
 \end{algorithmic}
-
-\subsection{Basic Navigation Queries}
 
 \begin{algorithmic}
 \Function{parent}{$i$}
@@ -716,15 +725,14 @@ Post-order operations are not supported.
 \EndFunction
 \end{algorithmic}
 
-\subsubsection{Other operations}
+\subsection{Other operations}
 
 \begin{algorithmic}
 \Function{is\_ancestor}{$i, j$}
 	\If{$is\_leaf(i)$}
 		\State \Return{$i = j$}
 	\Else
-		\State $end \gets find\_close(enclose(i))$ \Comment{Last one in unmatched in the subtree}
-		\State \Return{$j \ge i \booland j \le end$}
+		\State \Return{$j \ge i \booland j \le to\_last(i)$}
 	\EndIf
 \EndFunction
 \end{algorithmic}
@@ -734,16 +742,380 @@ Post-order operations are not supported.
 	\If{$is\_leaf(i)$}
 		\State \Return{$1$}
 	\Else
-		\State $end \gets find\_close(enclose(i))$ \Comment{Last one in unmatched in the subtree}
-		\State \Return{$rank_)(end) - rank_)(i)$}
+		\State \Return{$rank_)(to\_last(i)) - rank_)(i)$}
 	\EndIf
 \EndFunction
 \end{algorithmic}
 
-\subsubsection{Comparison of BP and DFUDS}
+\subsubsection{Lowest Common Ancestor}
 
-\todo{comparison}
+The operation LCA works similarly as in BP, however it needs to be shown that it works.
+Let's assume that neither $i_1$ nor $i_2$ is ancestor of the other one; the $min(i_1, i_2)$ the answer.
+We further assume that $i_1 < i_2$ and that the lowest common ancestor is $j = lca(i_1, i_2)$.
+The vertex $j$ is left from both $i_1, i_2$ because it is assigned lower pre-order number than any of its descendants.
+We again (as in section \ref{ss:enclose2}) call $p_1 < p_2$ the distinct children of $j$ which contain $i_1$ and $i_2$.
+
+We look at excess values of children of $j$.
+Each child and its subtree forms a sequence of matching parenthesis with the exception of the last one, which is a closing parenthesis.
+From this follows that $rmqi(i, to\_last(i)) = to\_last(i)$.
+
+We look into the properties of $rmqi(i_1, i_2 - 1)$.
+Every child, whose ending parenthesis is contained in the range sets a new minimum.
+The subtree of $p_2$ could cause a problem, that it would contain the position of the minimum.
+It cannot be the last parenthesis of $p_2$, because we end the interval just before it.
+It also will not be any other parenthesis $p \ge p_2$ because $excess(p) \ge excess(to_last(p_2)) + 1 = excess(to\_last(child\_prev(p_2)))$.
+In case of equality, the $rmqi$ returns the left-most occurrence of the minimum.
+
+The $rmqi(i_1, i_2 - 1)$ returns position of the last parenthesis of the previous sibling of $p_2$ and therefore $p_2 = rmqi(i_1, i_2 - 1) + 1$.
+The result is then $lca(i_1, i_2) = j = parent(p_2)$.
+
+\begin{algorithmic}
+\Function{lca}{$i_1, i_2$}
+	\If{$is\_ancestor(i_1, i_2)$}
+		\State \Return{$i_1$}
+	\ElsIf{$is\_ancestor(i_2, i_1)$}
+		\State \Return{$i_2$}
+	\Else
+		\State $p_2 \gets rmqi(i_1, i_2 - 1) + 1$
+		\State \Return{$parent(p_2)$}
+	\EndIf
+\EndFunction
+\end{algorithmic}
+
+\bigskip
+
+Various indices were proposed to extend the set of supported operations beyond what we have shown.
+\todo{Refs: Ultra-succinct representation of ordered trees}
+\begin{itemize}
+	\item index support for $depth$, which makes possible to query $distance$ between vertices;
+	\item index support for $level\_ancestor$;
+	\item index support for querying leaves in a subtree.
+	This again uses local properties of detecting leaves.
+	We would be looking for the second of two consecutive closing parentheses $)\underline{)}$.
+	Note that in case when the tree root is a leaf, this does not work, however this special case is easy to handle.
+\end{itemize}
+
+\subsection{Comparison of BP and LOUDS}
+
+BP is the easiest way to encode a tree in an array of $2n$ bits.
+Its main advantage is the simplicity and once natural support of $depth$ queries, for which it pays by hard $child\_rank$, $child\_select$ and $degree$ operations.
+
+DFUDS is the opposite of BP: it is less intuitive, it supports all the basic navigation queries, however it lacks an easy support for $depth$ queries.
+
+It turns out that $lca$ is supported by both representations in a very similar way, which can be surprising.
+There are indices which add support for the operations which are native for the other structure, however they tend to be rather theoretically interesting than useful in practice. \todo{ref}
+
+It is not possible to say that one is better than the other one; it always depends on their usage.
+For example, if we restrict degrees of the vertices to be constant, BP representation is suddenly a very good choice.
+Similarly, the restriction of height of the tree causes DFUDS to overcome the lack of native $depth$ operation by a brute force implementation.
 
 \section{FF}
 
-One way how to deal with the limitations of the previous 
+All the previous data structures were based on operations rank and select, which do not take into account the structure of data which we are representing.
+The operations match and enclose work only on proximity of the current vertex.
+
+The first truly powerful operation was $lca$ -- it allows to ask queries which are not restricted to a neighborhood of any vertex.
+This was achieved by using a range minimum query; it was also the only place where it proved to be useful.
+What if we generalized rmq and replaced our old set of operations thereby?
+We did not show the algorithms for $level\_ancestor$ in BP and DFUDS for a reasons: they were too complicated, whereas here in the Fully Functional data structure, it is going to be one of the easiest operations.
+
+\todo{intro}
+
+\subsection{New Operations}
+
+We follow on \ref{ss:rmq-def} and define operations on the array $G$.
+\begin{itemize}
+	\listpart{Linear search operations:}
+	\item $fwd\_search(G, i, d) = \min_{j > i} \{j : G[j] - G[i - 1] = d\}$ returns the first position such that the difference of values in $G$ is $d$;
+	\item $bwd\_search(G, i, d) = \max_{j > i} \{j : G[i] - G[j - 1] = d\}$ works the same way as $fwd\_search$ but searches in direction towards the beginning of the array.
+	
+	\listpart{We extend and generalize the range queries:}
+	\item $rmq(G, i, j) = \min_{i \le k \le j} G[k]$ -- returns the value of the minimum in the given range;
+	\item $RMQ(G, i, j) = \max_{i \le k \le j} G[k]$ -- returns the value of the maximum in the given range;
+
+	\item $rmq\_size(G, i, j) = | \{ i \le k \le j : G[k] = rmq(G, i, j) \} | $ -- returns how many times the minimum occurred in the given range;
+	\item $rmq\_rank(G, i, j, k)$ -- returns how many minima there is in the given range p to position $k$.
+	This can be directly implemented as:
+\begin{algorithmic}
+	\Function{rmq\_rank}{$G, i, j, k$}
+		\If{$rmq(G, i, j) \ne rmq(G, i, k)$}
+			\State \Return{$0$}
+		\Else
+			\State \Return{$rmq\_size(G, i, k)$}
+		\EndIf
+	\EndFunction
+\end{algorithmic}
+	\item $rmq\_select(G, i, j, n) = \min_{k \ge i} rmq\_rank(G, i, j, k) = n$ -- returns position of $n$-th minimum in range $i, j$;
+	\item $RMQ\_size, RMQ\_rank, RMQ\_select$ are defined similarly.
+	
+	\listpart{We also define two more arrays in addition to $E$:}
+	\item $E[i] = \sum_{k=0}^i \pi(S[i])$ -- array of excesses;
+	\item $O[i] = \sum_{k=0}^i \phi(S[i])$ -- array of numbers of ones;
+	\item $Z[i] = \sum_{k=0}^i \psi(S[i])$ -- array of numbers of zeros.
+\end{itemize}
+
+We show how it is possible to realize all operations which we used as primitives in the previous succinct data structures only by searches and range queries on calculated arrays.
+We immediately get a data structure for BP and DFUDS representations which supports all queries which were supported before.
+Later we show that even more operations which were impossible or required complicated indices are now feasible.
+
+Ranking and selecting:
+\begin{align*}
+	rank_1(i) &= O[i] \\
+	select_1(i) &= fwd\_search(O, 0, i) \\
+	rank_0(i) &= Z[i] \\
+	select_0(i) &= fwd\_search(Z, 0, i)
+\end{align*}
+
+Operations on sequences of matching parentheses:
+\begin{align*}
+	find\_close(i) &= fwd\_search(E, i, 0) \\
+	find\_open(i) &= bwd\_search(E, i, 0) \\
+	enclose(i) &= bwd\_search(E, i, 2) \\
+	enclose(i_1, i_2)&\ \textrm{stays the same} \\
+	rmqi(G, i, j) &= rmq\_select(G, i, j, 1) \\
+	RMQi(G, i, j) &= RMQ\_select(G, i, j, 1)
+\end{align*}
+
+\todo{$inspect(G, i)$}
+
+\subsection{The Data Structure}
+
+The bit string $S$ is first split into blocks, which are roughly of polylogarithmic size.
+Each block is then split into small blocks of size $\frac{\log n}{2}$.
+Queries withing a small block are processed by look-up tables.
+If the query spans multiple small blocks withing a single block, the queries are handled by min-max trees.
+The queries spanning multiple blocks are answered by a macro structure.
+
+\subsubsection{Small Blocks}
+
+The lowest level of small blocks of size $b = \frac{\log n}{2}$ is the easiest.
+The small blocks are small enough to by used as indices of precomputed look-up tables, which answer all queries in constant time.
+We require the following look-up tables:
+\begin{itemize}
+	\item For given position $i$ and value $d$, returns the first next and previous position $p$ where the difference is $d$.
+	\item For given range $i, j$ returns the local value $v$ of minimum and maximum.
+	\item For given range $i, j$ returns the number $n$ of occurrences of minima and maxima.
+	\item For given range $i, j$ and $n$, return the position $p$ of $n$-th minimum and maximum in the small block.
+\end{itemize}
+The values of $i, j, n$ are in range $[0, b - 1]$; the values $d, v$ are in range $[-b, b]$; the value of $p$ is in range $[0, b - 1]$ plus one special value indicating that such position does not exist in the small block.
+Together we have 8 precomputed tables; each of them requires $O(\sqrt{n} \log n \log \log^3 n)$ bits of memory.
+
+The tables are used to answer all range operations whenever $i$ and $j$ are in the same small block.
+In case of searches, they also determine that the answer lay outside of the block.
+
+\subsubsection{Min-Max Tree}
+
+Each block contains $k^c$ small blocks for $k = \frac{\log n}{\log \log n}$ and an arbitrary constant $c \le 1$.
+The $l$-th block covers an interval spanning from position $(l-1) b k^c$ to $l b k^c - 1$.
+To simplify the description we isolate the block by shifting the offsets so that it covers the range $[0, b k^c - 1]$.
+We also assume that the values in the array $G$ are in range $[-b k^c, b k^c]$; the global values can be computed simply by adding the value $G[(l-1) b k^c - 1]$.
+This does not have any impact on correctness of the operations on the block level.
+
+We build a perfect $k$-ary tree on top of the sequence of small blocks; we call it a \emph{min-max tree}.
+The tree has a constant height equal to $c$.
+Its leaves represent the information from small blocks provided by look-up tables; the inner nodes aggregate information from their children.
+We store the following values in each node spanning the range $i, j$:
+\begin{itemize}
+	\item $e = G[j]$ -- the value of $G$ at the end of the range;
+	\item $m = rmq(G, i, j), ms = rmq\_size(G, i, j)$ -- the value of minimum and how many times it occurred;
+	\item $M = RMQ(G, i, j), Ms = RMQ\_size(G, i, j)$ -- the value of maximum and how many times it occurred.
+\end{itemize}
+
+The aggregation in inner node is obvious: last value for $e$; minimum for $m$, maximum for $M$; sum for $ms$ and $Ms$.
+All values within a node require only $O(\log b)$ bits each.
+
+We number the nodes of the tree in a heap-like fashion and store their values in arrays $e[\cdot], m[\cdot], ms[\cdot], M[\cdot], Ms[\cdot]$.
+Note that all children of a node are stored together in consecutive $O(k \log \log n) = O(\log n) = c' b$ bits of memory, for a constant $c'$.
+There are $\frac{k^c}{k-1} = O(k^{c-1})$ nodes, each of them requires $O(\log b)$ bits.
+The density of the tree built on top of the block is $\frac{O(k^c \log b)}{k^c b} = O(\frac{\log b}{b}) = o(1)$.
+
+\bigskip
+
+We show how we support the operations on block level using traversal of the min-max tree and possibly a delegation to small blocks.
+By $b(i)$ we denote the index of the small block which contains $i$.
+To simplify the notation we assume that the node numbers of leaves are the same as indices of the small blocks with which they are associated.
+
+\begin{lemma}
+	The result of search operations starting at $i$ and looking for a difference $d$ (which does not have a result in the small block $h$ containing $i$) lays in the first small block $j$ such that $m[j] \le v = G[i] + d \le M[j]$.
+	We say that the value $v$ is covered by the extremes (minimum and maximum).
+	
+	No small block in subtree of a node of the min-max tree whose extremes do not cover the value $v$ contains the answer.
+\end{lemma}
+\begin{proof}
+	The function $g$ which is used for calculating the array $G$ requires that $| G[k] - G[k-1] | \le 1$, which is the property introduced in \ref{ss:rmq-def}.
+	From that follows that each small block contains all values between the minimum and maximum in the array $G$.
+	The first small block which satisfies the condition on the extremes contains the desired value $v$.
+	
+	Moreover, if $v < \textrm{minimum of the rest of the block } b(i)$, then it is sufficient to find the first small block $j$ such that $m[j] \ge v$ because $M[j] \ge m[j-1]$.
+	Similar statement holds for $v$ greater than the maximum.
+	
+	A leaf is associated with a small block and so its extremes are the same as of the small block.
+	By contradiction, if a small block in a subtree contained the answer, the extremes of the leaf would cover $v$.
+	An internal node aggregates the minimum and maximum of its subtree and so if its child contained the answer, the aggregation would assure that the extremes of the node cover $v$.
+\end{proof}
+
+\paragraph{Search Operations}
+
+When we process the search operations, we first check the containing small block for an answer.
+If the answer is present there, we return the position and end.
+
+Otherwise, we compute the desired value $v$ and traverse the tree up until we find the answer or until we reach the root.
+If we get to root, we signal that this block does not contain the answer by returning a special value.
+When we are in node $a$, we check the extremes of its siblings in the direction in which we are searching.
+This check can be performed in time $c'$ using precomputed look-up tables as all siblings are stored in consecutive $c' b$ bits.
+
+When we find such sibling, we move to it and start descending to the first child whose extremes cover the value $v$.
+Finding such child again requires time $c'$ and another set of precomputed tables.
+Once we descend into a leaf $j$, we compute the value $d' = v - e[j - 1]$ which we are going to look for in the associated small block using a look-up table. 
+As the height of the tree is $c$, the whole operation takes at most $O(2 c c') = O(1)$ steps.
+
+By an asterisk we denote a repeated application of look-up table on a list of consecutive nodes in the tree.
+
+\begin{algorithmic}
+\Function{fwd\_search}{$G, i, d$}
+	\State $p \gets table_1[S_{b(i)}, i \% b, d]$ \Comment{Position of $d$ in the small block $b(i)$}
+	\If{$p \ne -1$}
+		\State \Return{$p + b(i) b$}
+	\Else
+		\State $v \gets G[i] + d$
+		\State $n \gets b(i)$ \Comment{The current node, initialized to be a leaf}
+		\While{$(j \gets table_2^*[right\_siblings(n), v]) = -1$} \Comment{Sibling covering $v$}
+			\State $n \gets parent(n)$
+			\If{$is\_root(n)$}
+				\State \Return{$-1$}
+			\EndIf
+		\EndWhile
+		\While{$\boolnot is\_leaf(j)$}
+			\State{$j \gets table_2^*[children(j), v]$} \Comment{The first child covering $v$}
+		\EndWhile
+		\State $d' \gets v - e[j - 1]$
+		\State \Return{$b(j) b + table_3[S_{b(j)}, d']$} \Comment{The first occurrence of $d'$}
+	\EndIf
+\EndFunction
+\end{algorithmic}
+
+\paragraph{Range Operations}
+
+The range operations works similarly, they traverse the tree up gathering information on the way and then descend down in case of range select operations.
+If the query is fully contained within a small block, we get the answer from a lookup table and end.
+
+First we find the lowest common ancestor $a$ of the leaves $u = b(i)$ and $v = b(j)$.
+We keep two lists of partial answers, one for each branch starting at $u$ and $v$.
+
+We first ask the small blocks for their answers and remember them in their respective lists.
+In a loop until $u$ becomes $a$ we get the answers from the right siblings of $u$ and the left siblings of $v$, we remember them in the lists and move to their parents.
+In the last iteration the left siblings and right siblings overlap; therefore we store the answers in only one of the lists.
+Note that each list contains at most $c c'$ values as the table look-ups aggregate the answers.
+
+We combine the lists into a single list and find the answer to the queries in it.
+For $rmq$ we return the minimum of the list.
+For $rmq\_size$ we sum $ms$ for those nodes whose minimum is equal to $rmq$.
+In case of $rmq\_select$ we find the first node in the list such that the prefix sum of $ms$ is greater or equal to $n$.
+We descend in such node to a child whose left siblings including itself sum up to $n$, and repeat until we get to a leaf.
+Once we are in a leaf, we use a look-up table to solve the select there.
+
+By the same argument as in search operations, the running time is $O(2 c c') = O(1)$.
+
+\begin{algorithmic}
+\Function{rmq\_list}{$G, i, j$} \Comment{$b(i) \ne b(j)$}
+	\State $left \gets []; right \gets []$ \Comment{Initialization of the empty lists}
+	\State $left.append(table_1[S_{b(i)}, i \% b])$
+	\State $right.prepend(table_2[S_{b(j)}, j \% b])$
+	\State $a \gets lca(u, v)$
+	\While{$parent(u) \ne a$} \Comment{$u, v$ in different subtrees}
+		\State $left.append(rmq\_info(G, u, "right"))$
+		\State $right.prepend(rmq\_info(G, v, "left"))$
+	\EndWhile
+	\State $left.append(rmq\_info(G, u, v))$
+	\State $left.append(right)$
+	\State \Return{$left$}
+\EndFunction
+\end{algorithmic}
+
+The function $rmq\_info$ returns list of touples containing: node number, minimum, maximum, number of minima, number of maxima.
+It processes the siblings of given vertex from left to right producing aggregated info per each $\frac{k}{c'}$ processed siblings.
+
+\begin{algorithmic}
+\Function{rmq}{$G, i, j$}
+	\If{$b(i) = b(j)$}
+		\State \Return{$table_1[S_{b(i)}, i \% b, j \% b]$}
+	\Else
+		\State $list \gets rmq\_list(G, i, j)$
+		\State $m \gets \infty$
+		\ForAll{$I \gets list$}
+			\State $m \gets \min(m, I.m)$
+		\EndFor
+		\State \Return{$m$}
+	\EndIf
+\EndFunction
+\end{algorithmic}
+
+\begin{algorithmic}
+\Function{rmq\_size}{$G, i, j$}
+	\If{$b(i) = b(j)$}
+		\State \Return{$table_1[S_{b(i)}, i \% b, j \% b]$}
+	\Else
+		\State $list \gets rmq\_list(G, i, j)$
+		\State $m \gets rmq(G, i, j)$
+		\State $ms \gets 0$
+		\ForAll{$I \gets list$}
+			\If{$I.m = m$}
+				\State $ms \gets ms + I.ms$
+			\EndIf
+		\EndFor
+		\State \Return{$ms$}
+	\EndIf
+\EndFunction
+\end{algorithmic}
+
+\begin{algorithmic}
+\Function{rmq\_select}{$G, i, j, n$}
+	\If{$b(i) = b(j)$}
+		\State \Return{$table_1[S_{b(i)}, i \% b, j \% b, n]$}
+	\Else
+		\State $list \gets rmq\_list(G, i, j)$
+		\State $m \gets rmq(G, i, j)$
+		\State $ms \gets 0$
+		\ForAll{$I \gets list$}
+			\If{$I.m = m$}
+				\State $ms \gets ms + I.ms$
+				\If{$ms \ge n$}
+					\State \Break
+				\EndIf
+			\EndIf
+		\EndFor
+\algstore{rmqselect}
+\end{algorithmic}
+
+Now $I$ contains aggregated information for up to $\frac{k}{c'}$ nodes.
+Using a table look-up we wind the correct node $p$ and also a new $n$ which is applies to the node $p$.
+
+\begin{algorithmic}
+\algrestore{rmqselect}
+		\State $(p, n) \gets table_2[left\_siblings(I.node), ms - n]$
+		\While{$\boolnot is\_leaf(p)$}
+			\State $(p, n) \gets table_2^*[children(p), n]$
+		\EndWhile
+		\State \Return{$table_3[S_{b(p)}, n]$}
+	\EndIf
+\EndFunction
+\end{algorithmic}
+
+There are 8 look-up tables necessary for traversal and processing the tree.
+The tables have an additional (non-mentioned) parameter which restricts the size of the block to be processed.
+\begin{itemize}
+	\item $fwd\_search$ -- looking for the first occurrence of $v$ in block of consecutive nodes
+	$bwd\_search$ requires another table returning the position of the last occurrence $v$.
+	\item $rmq\_info$ -- aggregates info from consecutive nodes; four tables are necessary in total.
+	\item $rmq\_select$ -- looking for $n$-th minimum returning index of the node among its siblings and number of minima in its preceding siblings.
+	$RMQ\_select$ requires a similar table for maxima.
+\end{itemize}
+All of them work on blocks of $b$ bits with $O(1)$ parameters of size $O(\log k^c) = O(\log \log n)$.
+
+\subsubsection{Macro Structure}
+
+If we choose $c \ge 3$, we can use the structure from lemma \ref{lemma:rmq2} to solve $rmq$ and $RMQ$.
+
+\subsection{Extension of BP}
+
+\section{TC}
