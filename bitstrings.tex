@@ -1,4 +1,4 @@
-\chapter{Bit Strings Data Structures}
+\chapter{Bit String Data Structures}\label{c:bit-strings}
 
 In this chapter we present data structures or indices which allow us to represent bit string and support various operation on them.
 We start with the most general case of bit strings which contain any number of zeros and ones which are stored as a plain bit string.
@@ -30,7 +30,7 @@ We define several operations which were not possible in the general case, namely
 	\item \emph{$succ_{\ph}(S, i)$} is successor search similar to the predecessor search; returns position $j: min(j), j \ge i, S[j] = \ph$.
 	$$ succ_{\ph}(S, i) = \textrm{if}\ inspect(S, i) = {\ph}\ \textrm{then}\ i \ \textrm{else}\ select_{\ph}(S, rank_{\ph}(S, i) + 1) $$
 	\item \emph{$prev_{\ph}(S, i)$} returns position of the previous symbol $\ph$.
-	\item \emph{$prev_{\ph}(S, i)$} returns position of the next symbol $\ph$.
+	\item \emph{$next_{\ph}(S, i)$} returns position of the next symbol $\ph$.
 \end{itemize}
 
 Unless it is ambiguous, we omit the first argument specifying the bit string on which the operation is performed.
@@ -184,6 +184,18 @@ Although they are not necessarily succinct, they tend to be smaller in real situ
 
 \subsection{Bounds}
 
+\section{Sparse Bit String}
+
+\todo{sparse}
+
+\begin{lemma}
+	Let $S_0, S_1, \ldots, S_{s-1}$ be a given sequence of $s = O(n)$ bit strings of size $N$ with $S_i$ containing $n_i$ ones, such that $\sum_{i=0}^s n_i = n$.
+	Then this collection of bit strings can be represented using ${Ns \choose n} + o(n) + O(\log \log N)$ bits and the $rank_1(S_i, j)$ and $select_1(S_i, j)$ operations can be supported in constant time.
+\end{lemma}
+\begin{proof}
+	Theorem 6.1 in \todo{ref: Succinct Indexable Dictionaries with Applications to Encoding	k-ary Trees, Prefix Sums and Multisets}.
+\end{proof}
+
 \section{Non-systematic FID}
 	
 Although the data structure which we have just seen is succinct, it contains several arrays whose density is $O(\frac{1}{\log \log N})$, which is still $o(1)$, however it is too close for practical purposes.
@@ -201,6 +213,34 @@ Every attempt to store an object from universe $U$ of size $|U|$ requires in wor
 This leads to wasting a bit per object, which sums up to a lot if we store an array of them.
 However if the object is stored inside a data structure, we can attempt to store some bits directly and let the data structure handle the rest, which call the \emph{spill}.
 
+\section{Searchable Prefix Sum Problem}
+
+\todo{zero-one based}
+
+For a sequence $X$ of $n$ positive integers $x_i$: $\sum_i x_i = N$, a \emph{searchable prefix sum problem} is to support the following two operations:
+\begin{itemize}
+	\item $prefix\_sum(X, i)$ -- returns the sum of all values up to $x_i$: $\sum_{j=0}^i x_i$;
+	\item $prefix\_leq(X, n)$ -- returns the maximum $i$ such that $sum(X, i) \le n$.
+\end{itemize}
+
+\todo{ref Succinct Indexable Dictionaries with Applications to Encoding k-ary Trees, Prefix Sums and Multisets}
+\begin{lemma}\label{l:sps}
+	A searchable prefix sum problem of $n$ positive integers summing to $N$ can be reduced to fully indexed dictionary of $n$ ones in a bit string $S$ of size $N$.
+\end{lemma}
+\begin{proof}
+	The bit string $S$ has ones at positions of the prefix sums: $sum(X, i)$; its size is therefore the sum of all $x_i$, which is $N$.
+	\begin{algorithmic}
+	\Function{sum}{$S, i$}
+		\State \Return{$select_1(S, i)$}
+	\EndFunction
+	\end{algorithmic}
+	
+	\begin{algorithmic}
+	\Function{leq}{$S, n$}
+		\State \Return{$rank_1(S, succ_1(S, i))$}
+	\EndFunction
+	\end{algorithmic}
+\end{proof}
 
 \section{\label{s:op-bp}Operations on Balanced Parentheses}
 
@@ -359,7 +399,7 @@ We first describe all possible functions $g$ on individual bits in set $\{-1, 0,
 	\item $\pi(b) = 2 b - 1$
 	\item inverses ($-\phi(b), -\psi(b), -\pi(b)$) and constant functions mapping each value of $b$ to the same value.
 	We mention them to be clear that there are $3^2$ functions in total.
-	These functions will not useful for us.
+	These functions will not be useful for us.
 \end{itemize}
 
 We define an array $G$ for function $g$ as:
@@ -379,7 +419,7 @@ An alternative definition of the array $G$ for $\pi$, which we call $E$ uses the
 $$ E[i] = \sum_{k=0}^i \pi(S[i]) = rank_1(i) - rank_0(i) = excess(i) $$
 
 Although we defined the array $G$ to be derived strictly by function on individual bits of $S$, we only need that $O(\log n)$ consecutive elements of the array $G$ can be derived from $O(\log n)$ consecutive bits of $S$.
-A function which we could use instead of $excess$ is for example $paren\_depth$ (which we defined for sequences of matching parentheses but we can generalize it).
+A function which we could use instead of $excess$ is for example $paren\_depth$ (which we defined for sequences of matching parentheses but we can generalize it to an arbitrary bit string).
 It differs from $excess$ by one at positions of opening parentheses and it can be expressed then as:
 $$\delta(a, b) = 
 \begin{cases}
@@ -395,7 +435,20 @@ However, we will use the property that $| G[i] - G[i-1] | \le 1$ much later when
 \subsection{A Simple Index}
 
 We show how to build a succinct index supporting range minimum/maximum queries for the array of excesses.
-We only show the case of minimum as the maximum is realized the same way.
+We only show the case of $rmqi$ as $RMQi$ is realized the same way; also $rmq$ and $RMQ$ can be computed by using the definition of $excess$.
+The array $E$ is never stored explicitly.
+
+When describing queries on interval $[i, j]$ being decomposed into blocks, we usually split the query into parts depending on if the blocks are fully contained in the queried range.
+We handle the special case of the whole range being contained within a single block separately.
+We call the three parts, which together form the original range:
+\begin{enumerate}
+	\item \emph{prefix} -- the non-full block containing $i$;
+	\item \emph{suffix} -- the non-full block containing $j$;
+	\item \emph{span} -- the interval of full blocks between $i$ and $j$.
+\end{enumerate}
+A query can have either prefix, suffix or span (or more of them) empty.
+
+\bigskip
 
 \begin{lemma}\label{lemma:rmq1}
 We can solve $rmqi(E, i, j)$ in constant time whenever $j - i + 1 < \frac{\log n}{2}$.
@@ -406,10 +459,10 @@ $$E[i-1] + \sum_{k = 0}^{j-i} \pi(S[i + k])$$
 All the values depend only on the block $S[i, j]$ and value of $E[i-1]$.
 Because the minimum is independent on the absolute value, the dependence on $E[i-1]$ is irrelevant.
 
-By the precondition of the lemma, the block has size at most $\frac{\log n}{2}$, which makes it possible to use it as an index to a look-up table.
-The look-up table is parametrized by the length of the block, which is the value of $j - i + 1$, which is encoded into $O(\log \log n)$ bits.
+By the precondition of the lemma, the block has size at most $\frac{\log N}{2}$, which makes it possible to use it as an index to a look-up table.
+The look-up table is parametrized by the length of the block, which is the value of $j - i + 1$, which is encoded into $O(\log \log N)$ bits.
 The parameter is necessary because of the zero-padding of words in our definition of RAM.
-The table simply returns the position of minimum.
+The table simply returns the position of the minimum.
 \end{proof}
 
 We follow with a lemma which will allow us to construct two level inter-block structure which solves the $rmqi$ on the global scale.
@@ -423,10 +476,10 @@ We distinguish two cases:
 \begin{enumerate}
 	\item $l = 2^k$ is a power of two.
 	We simply use a value from a precomputed table $Tm$ which records the index of the block containing the minimum for each $i$ and $k$.
-	This table requires $O(p \log^2 p)$ bits in total.
+	These tables require $O(p \log^2 p)$ bits in total.
 	\item $l$ is not a power of two.
-	We can cover the query on $l$ blocks by two queries each spanning $2^k$ blocks where $k = \lfloor \log l \rfloor$.
-	The two queries can overlap, which does not cause any problem because we are only looking for a minimum of their answers.
+	We can replace the query on $l$ blocks by two queries each spanning $2^k$ blocks where $k = \lfloor \log l \rfloor$.
+	The two queries overlap, however it does not cause any problem as we are only looking for a minimum of their answers.
 	We gather both candidates and return the one which has a smaller value, while preferring the left one.
 	
 	\begin{algorithmic}
@@ -445,7 +498,7 @@ We distinguish two cases:
 \end{proof}
 
 \todo{distinguish between splitting and covering; elsewhere}
-We start with description of the top level.
+We start with a description of the top level.
 We cover the bit string $S$ by blocks of size $B$; for each block we store position of its minimum in an array $P_1$, which requires $O(\frac{n}{B} \log B)$ bits of memory.
 We build the $rmq$ structure by lemma \ref{lemma:rmq2} on top of this array, which adds another $O(\frac{n}{B} \log^2 \frac{n}{B})$ bits of memory.
 
@@ -457,11 +510,12 @@ In order to keep all densities $o(1)$, we set $B = \log^3 n$.
 
 When we process the query, we first split the interval $[i, j]$ into:
 \begin{enumerate}
-	\item up to one interval of blocks which are fully contained;
-	\item up to two intervals of small blocks each within a single partially contained block.
-	All the small blocks are fully contained in the interval $[i, j]$;
-	\item up to two small blocks which are not fully contained in any small block.
+	\item up to one top level span of blocks.
+	The prefix and suffix are passed to the lower level.
+	\item up to two spans of small blocks, which form parts of the prefix and suffix from the top level;
+	\item up to two small blocks, which are not fully covered by the interval.
 \end{enumerate}
+In case when the range is within a single block / small block, it is handled by the lower level.
 
 We find distinct candidates for minimum in (1) and (2) by querying the $rmq$ structures and in (3) by using a look-up table as described by lemma \ref{lemma:rmq1}.
 Once we gather all candidates, we return the one with the lowest value.
