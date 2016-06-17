@@ -11,7 +11,9 @@ Not only does it support the same queries, but it also represents sparse bit str
 Finally, we assume a sequence of parenthesis which are correctly matched and encoded as bit strings.
 We define several operations which were not possible in the general case, namely match and enclose, for which we also show succinct indices.
 
-\section{Fully Indexed Dictionary}
+\section{Dictionaries}
+
+\todo{Indexed Dictionary}
 
 \todo{fix off by ones}
 \todo{define properly pred, succ, prev, next}
@@ -23,7 +25,9 @@ We define several operations which were not possible in the general case, namely
 	If $i < 0$, it returns $0$; if $i \ge N$, it returns $rank_{\ph}(S, N-1)$.
 	\item \emph{$select_{\ph}(S, n)$} returns position of $n$-th symbol $\ph$ in the bit string $S$.
 	If $n \le 0$, it returns $-1$; if $n > rank_{\ph}(S, N - 1)$, it returns $N$.
-	\listpart{We define four more derived operations, which we use for their convenience.}
+\end{itemize}
+We define four more derived operations, which we use for their convenience.
+\begin{itemize}
 	\item \emph{$pred_{\ph}(S, i)$} defines predecessor search as position $j : max(j), j \le i, S[j] = \ph$.
 	This operations can be implemented using the previous ones:
 	$$ pred_{\ph}(S, i) = select_{\ph}(S, rank_{\ph}(S, i)) $$
@@ -40,6 +44,87 @@ We mention it here because we will show later a non-systematic FID which needs t
 Another option how to support inspect is: $$inspect(i) = rank_1(i) - (rank_1(i-1) \ ||\ 0)$$
 
 Note that not all answers to the queries may exist, which can be expressed by returning a special value.
+
+\subsection{Sparse Bit String}
+
+\todo{sparse}
+
+\begin{lemma}
+	Let $S_0, S_1, \ldots, S_{s-1}$ be a given sequence of $s = O(n)$ bit strings of size $N$ with $S_i$ containing $n_i$ ones, such that $\sum_{i=0}^s n_i = n$.
+	Then this collection of bit strings can be represented using ${Ns \choose n} + o(n) + O(\log \log N)$ bits and the $rank_1(S_i, j)$ and $select_1(S_i, j)$ operations can be supported in constant time.
+\end{lemma}
+\begin{proof}
+	Theorem 6.1 in \todo{ref: Succinct Indexable Dictionaries with Applications to Encoding	k-ary Trees, Prefix Sums and Multisets}.
+\end{proof}
+
+\subsection{Combining Dictionaries}
+
+It remains to show that the bit strings do not require too much information.
+
+\begin{lemma}
+	The function $f(k) = \log {M \choose k}$ is concave, for any positive constant $M$ and $0 \le k \le M$.
+\end{lemma}
+\begin{proof}
+	In case of discrete functions, the condition of convexity can be equally expressed using the previous and next values for $k \in [0, M]$.
+	\begin{align*}
+		f(k) + f(k) &\ge f(k-1) + f(k+1) \\
+		\log {M \choose k}^2 &\ge \log {M \choose k - 1} {M \choose k + 1} \\
+		\left(\frac{M!}{k! (M-k)!}\right)^2 &\ge \frac{M!}{(k - 1)! (M - k + 1)!} \frac{M!}{(k + 1)! (M - k - 1)!} \\
+		1 &\ge \frac{1}{(M-k+1)(k+1)}
+	\end{align*}
+\end{proof}
+
+\begin{lemma}
+	The amount of information contained in the all arrays $p_r$ and $s_r$ combined is $o(N)$ bits.
+\end{lemma}
+\begin{proof}
+	We use Jensen's inequality for the function $f$ with $M = \frac{N}{B}$ applied on the bit strings $p_r$.
+	Without loss of generality, we can assume that there are exactly $\frac{N}{B}$ bit strings; if there are less of them, the rest will be empty.
+	\begin{align*}
+		f(1) = f\left(\frac{\sum_i k_i}{\frac{N}{B}}\right) &\ge \frac{\sum_i \log {\frac{N}{B} \choose k_i}}{\frac{N}{B}} \\
+		o(n) = O\left(\frac{N}{B} \log \frac{N}{B}\right) = \frac{N}{B} f(1) &\ge \sum_i \log {\frac{N}{B} \choose k_i}
+	\end{align*}
+	
+	Similarly we use follow with the bit strings $s_r$; this time $M = N$.
+	\begin{align*}
+		f(1) = f\left(\frac{\sum_i k_i}{\frac{N}{B}}\right) &\ge \frac{\sum_i \log {N \choose k_i}}{\frac{N}{B}} \\
+		o(n) = O\left(\frac{N}{B} \log N\right) = \frac{N}{B} f(1) &\ge \sum_i \log {N \choose k_i}
+	\end{align*}
+\end{proof}
+
+Note that the split into $p_r$ and $s_r$ is necessary.
+If we had only $p_r$ of size $N$ and somehow represented counts instead of occurrence of minimum, the Jensen's inequality would lead to space $N \log N$.
+If we kept only the bit string $s_r$ (and dealt with zeros), the upper bound would be $\left(\frac{N}{B}\right)^2 \log B$.
+
+\subsection{Searchable Prefix Sum Problem}
+
+\todo{zero-one based}
+
+For a sequence $X$ of $n$ positive integers $x_i$: $\sum_i x_i = N$, a \emph{searchable prefix sum problem} is to support the following two operations:
+\begin{itemize}
+	\item $prefix\_sum(X, i)$ -- returns the sum of all values up to $x_i$: $\sum_{j=0}^i x_i$;
+	\item $prefix\_leq(X, n)$ -- returns the maximum $i$ such that $sum(X, i) \le n$.
+	\item $prefix_geq$ -- \todo{geq}
+\end{itemize}
+
+\todo{ref Succinct Indexable Dictionaries with Applications to Encoding k-ary Trees, Prefix Sums and Multisets}
+\begin{lemma}\label{l:sps}
+	A searchable prefix sum problem of $n$ positive integers summing to $N$ can be reduced to fully indexed dictionary of $n$ ones in a bit string $S$ of size $N$.
+\end{lemma}
+\begin{proof}
+	The bit string $S$ has ones at positions of the prefix sums: $sum(X, i)$; its size is therefore the sum of all $x_i$, which is $N$.
+	\begin{algorithmic}
+	\Function{sum}{$S, i$}
+		\State \Return{$select_1(S, i)$}
+	\EndFunction
+	\end{algorithmic}
+	
+	\begin{algorithmic}
+	\Function{leq}{$S, n$}
+		\State \Return{$rank_1(S, succ_1(S, i))$}
+	\EndFunction
+	\end{algorithmic}
+\end{proof}
 
 \section{Traditional FID}
 
@@ -184,18 +269,6 @@ Although they are not necessarily succinct, they tend to be smaller in real situ
 
 \subsection{Bounds}
 
-\section{Sparse Bit String}
-
-\todo{sparse}
-
-\begin{lemma}
-	Let $S_0, S_1, \ldots, S_{s-1}$ be a given sequence of $s = O(n)$ bit strings of size $N$ with $S_i$ containing $n_i$ ones, such that $\sum_{i=0}^s n_i = n$.
-	Then this collection of bit strings can be represented using ${Ns \choose n} + o(n) + O(\log \log N)$ bits and the $rank_1(S_i, j)$ and $select_1(S_i, j)$ operations can be supported in constant time.
-\end{lemma}
-\begin{proof}
-	Theorem 6.1 in \todo{ref: Succinct Indexable Dictionaries with Applications to Encoding	k-ary Trees, Prefix Sums and Multisets}.
-\end{proof}
-
 \section{Non-systematic FID}
 	
 Although the data structure which we have just seen is succinct, it contains several arrays whose density is $O(\frac{1}{\log \log N})$, which is still $o(1)$, however it is too close for practical purposes.
@@ -205,42 +278,11 @@ Here we describe the data structure in greater detail than Pătraşcu did in his
 
 \subsection{Draft}
 
-
-
 \subsection{Spill-Over Representation}
 
 Every attempt to store an object from universe $U$ of size $|U|$ requires in worst case $\lceil \log |U| \rceil$ bits, despite $\log |U|$ being optimal.
 This leads to wasting a bit per object, which sums up to a lot if we store an array of them.
 However if the object is stored inside a data structure, we can attempt to store some bits directly and let the data structure handle the rest, which call the \emph{spill}.
-
-\section{Searchable Prefix Sum Problem}
-
-\todo{zero-one based}
-
-For a sequence $X$ of $n$ positive integers $x_i$: $\sum_i x_i = N$, a \emph{searchable prefix sum problem} is to support the following two operations:
-\begin{itemize}
-	\item $prefix\_sum(X, i)$ -- returns the sum of all values up to $x_i$: $\sum_{j=0}^i x_i$;
-	\item $prefix\_leq(X, n)$ -- returns the maximum $i$ such that $sum(X, i) \le n$.
-\end{itemize}
-
-\todo{ref Succinct Indexable Dictionaries with Applications to Encoding k-ary Trees, Prefix Sums and Multisets}
-\begin{lemma}\label{l:sps}
-	A searchable prefix sum problem of $n$ positive integers summing to $N$ can be reduced to fully indexed dictionary of $n$ ones in a bit string $S$ of size $N$.
-\end{lemma}
-\begin{proof}
-	The bit string $S$ has ones at positions of the prefix sums: $sum(X, i)$; its size is therefore the sum of all $x_i$, which is $N$.
-	\begin{algorithmic}
-	\Function{sum}{$S, i$}
-		\State \Return{$select_1(S, i)$}
-	\EndFunction
-	\end{algorithmic}
-	
-	\begin{algorithmic}
-	\Function{leq}{$S, n$}
-		\State \Return{$rank_1(S, succ_1(S, i))$}
-	\EndFunction
-	\end{algorithmic}
-\end{proof}
 
 \section{\label{s:op-bp}Operations on Balanced Parentheses}
 

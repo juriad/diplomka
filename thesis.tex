@@ -42,7 +42,7 @@
 			    % of contents
 \usepackage{dcolumn}        % improved alignment of table columns
 \usepackage{booktabs}       % improved horizontal lines in tables
-\usepackage{paralist}       % improved enumerate and itemize
+\usepackage[defblank]{paralist}       % improved enumerate and itemize
 \usepackage[usenames]{xcolor}  % typesetting in color
 
 %%% Basic information on the thesis
@@ -106,6 +106,8 @@ Abstract.
 
 % Title page and various mandatory informational pages
 \begin{document}
+\setdefaultenum{(1)}{(a)}{}{}
+
 \include{title}
 
 %%% A page with automatically generated table of contents of the master thesis
