@@ -6,7 +6,7 @@ Here we present data structures, which are fundamentally different in either the
 \begin{enumerate}
 	\item Fully-Functional -- a data structure built on top of a sequence of matching parentheses, however it uses different primitives then rank and select;
 	\item Tree Covering -- recursive decomposition of the tree into smaller trees which are then encoded;
-	\item Unified Approach -- a structure which provides access to both BP and DFUDS representations at the same time.
+	\item Universal Succinct Representation -- a structure which provides access to both BP and DFUDS representations at the same time.
 \end{enumerate}
 
 There are three direction where the development of succinct data structures for trees continued.
@@ -414,6 +414,7 @@ We observe that $lrm$ arrays are alike.
 	Let block $a$ be in two different sequences $lrm(i): lrm(i)[x_i] = a$ and $lrm(j): lrm(j)[x_j] = a$, then all following values in the sequence are the same: $lrm(i)[x_i+k] = lrm(j)[x_j+k] \forall k \ge 0$.
 \end{lemma}
 
+\label{Tlrm}
 We use $lrm$ to construct a tree $T_{lrm}$ which is a trie of reversed $lrm$ sequences with an artificial root with assigned minimum $m[root] = -\infty$.
 The properties of the tree are:
 \begin{enumerate}
@@ -457,7 +458,7 @@ In a ladder we perform a successor search for a value $m[end(l)] - v$ and transl
 \begin{algorithmic}
 \Function{lrm\_search}{$n, v$}
 	\State $n'' \gets ancestor_1[n][rank_1(pred_1(lrm_n, m[n] - v))]$
-	\State $(l, p) \gets ladder[n'']$ \Comment{Returns index of ladder and position within}
+	\State $(l, p) \gets ladder[n'']$ \Comment{The index of the ladder and the position within}
 	\State $n' \gets ancestor_2[l][rank_1(succ_1(ladder_l, m[end[l]] - v))]$
 	\Return{$n'$}
 \EndFunction
@@ -465,17 +466,20 @@ In a ladder we perform a successor search for a value $m[end(l)] - v$ and transl
 
 There are several bit strings and tables:
 \begin{itemize}
-	\item $lrm_n$ -- a collection of $\frac{N}{B}$ bit strings of size $N$ containing $\le \log N$ ones. \todo{structure}
+	\item $lrm_n$ -- a collection of $\frac{N}{B}$ bit strings of size $N$ containing $\le \log N$ ones.
+	They can be represented using an indexed dictionary in space $O(\frac{N}{B}) (\log {N \choose \log N} + o(\log N) + O(\log \log N)) = O(\frac{N}{B} \log^2 N)$, which requires $c \ge 3$.
 	\item $ancestor_1$ -- a collection of $\frac{N}{B}$ tables mapping $i$-th ancestor in $lrm'$ to a node number.
-	Each of $\log N$ elements has size $\log N$; the total space is therefore $\frac{N}{B} \log^2 N = o(N)$ as long as $c \ge 3$.
+	Each of $\log N$ elements has size $\log N$; the total space is therefore $O(\frac{N}{B} \log^2 N) = o(N)$ as long as $c \ge 3$.
 	\item $ladder$ -- a table mapping node number to ladder index and position within.
 	It contains $\frac{N}{B}$ elements of size $\log{N}$.
 	\item $ladder_l$ -- a collection of up to $\frac{N}{B}$ bit strings of size $N$ containing in total $2 \frac{N}{B}$ ones.
+	Using Jensen's inequality, we get an upper bound of $O(\frac{N}{B} \log N)$; the costs of the dictionaries $o(\frac{N}{B}) + O(\frac{N}{B} \log \log N)$ are negligible.
 	\item $end$ -- maps ladder index to a node number of its leaf.
 	It contains $\le \frac{N}{B}$ elements of size $\log{N}$.
 	\item $ancestor_2$ -- a collection of $\le \frac{N}{B}$ tables which for a given ladder index translates the position in the ladder to a node number.
 	It contains $\le \frac{N}{B}$ elements of size $\log{N}$.
 \end{itemize}
+The total space of this structure is $O(\frac{N}{B} \log^2 N)$.
 
 \paragraph{Range Queries}
 
@@ -855,9 +859,22 @@ The composed operations available to this compressed array are:
 	$$ length() = prefix\_sum(A\_prefix, \infty)$$
 \end{itemize}
 
-We use this array in two different settings with $a$ vertices in $r$ runs.
-If $A$ contains all vertices of the tree (or a mini-tree) with at most $O(1)$ runs per name, then the structure $A\_prefix$ is asymptotically smaller than or equal to the array $A\_names$.
-The information in the prefix structure can be stored using $\log {a \choose r} + o(r) + \log \log a$ bits, which for the whole trees gives $O(r \log B)$, while for mini-trees $O(r \log b)$.
+We use this compressed array in two different settings:
+\begin{itemize}
+	\item A single array $A$ containing $a$ elements of size $s$ in $r$ runs.
+	Then the size of $A\_names$ is $r s$ bits.
+	The prefix structure can be stored using $\log {a \choose r} + o(r) + O(\log \log a) = O(r \log a)$ bits.
+	
+	Specifically, if we store $\tau_1$ names of all vertices of the tree requiring $O(1)$ runs per name, then the space is $O(\frac{n}{B} \log n) = o(n)$ bits.
+	Equivalently for $\tau_2$ names of vertices of a given mini-tree it is $O(\frac{B}{b} \log b) = o(B)$ bits.
+	\item A collection of $r$ arrays $A_i$, each containing up to $a$ elements of size $s$, with $r$ runs in total in all arrays of the collection.
+	Then the arrays $A\_names$ require space $r s$ bits.
+	The size of the $A\_prefix$ structures can be bounded using Jensen's inequality to $O(r \log a)$ bits.
+	
+	If each $\tau_1$ name occurs in at most one array in a single run, then partitioning all vertices of the tree requires $O(\frac{n}{B} \log n) = o(n)$ bits.
+	Storing $\tau_2$ names of vertices in a given mini-tree under the same conditions gives the space $O(\frac{B}{b} \log B) = o(B)$ bits.
+\end{itemize}
+If $A$ contains all vertices of the tree (or a mini-tree) with at most $O(1)$ runs per name, 
 
 The other use concerns multiple compressed arrays, with each vertex being present in $O(1)$ of them (it can even not appear at all), however every run of a name occurs at most once per compressed array.
 For the whole tree with a compressed array per mini-tree, the arrays $A\_name$ add up to $O(\frac{n}{B})$ elements.
@@ -967,11 +984,11 @@ The array of offsets has size of $O(\frac{n}{B} \log (n + o(n))) = o(n)$ bits.
 \subsection{Basic Navigation}
 
 With the structure we have described, the basic navigation can already be supported.
-We assume that when the operation starts, the current location is already in the $(\tau_1, \tau_2)$ micro-tree structure, to where it got using the offset arrays $mini\_trees$ and $micro\_trees$.
-In the algorithms we identify the structures with their names assuming that we can navigate to it.
+In the algorithms we identify the structures with their names provided that we can navigate to them.
+We can navigate to a mini-tree structure $\tau_1$ name using the array $mini\_trees$ and to a micro-tree structure $(\tau_1, \tau_2)$ using the array $micro\_trees$.
 We also assume that the global fields and the fields of the mini-tree and immediately accessible from a micro-tree.
 
-We define two helper functions which traverse the edge of type (3).
+We define three helper functions which traverse the edge of type (3) and canonize the name of a vertex.
 As they are not part of the interface, the $i$ can be a non-canonical name.
 
 \begin{algorithmic}
@@ -999,6 +1016,47 @@ As they are not part of the interface, the $i$ can be a non-canonical name.
 	\Else
 		\State \Return{$i$}
 	\EndIf
+\EndFunction
+\end{algorithmic}
+
+\begin{algorithmic}
+\Function{canonize}{$i$}
+	\If{$i.\tau_3 \ne 0$}
+		\State \Return{$dummy\_down(i)$}
+	\Else
+		\State $j \gets (i.\tau_1, i.primary_2, 0)$
+		\If{$j.\tau_2 \ne 0$}
+			\State \Return{$j$}
+		\Else
+			\State \Return{$(j.primary_1, 0, 0)$}
+		\EndIf
+	\EndIf
+\EndFunction
+\end{algorithmic}
+
+We add four more functions which navigate to special vertices in a micro-tree or a mini-tree.
+
+\begin{algorithmic}
+\Function{root\_1}{$i$}
+	\State \Return{$canonize(i.\tau_1, 0, 0)$}
+\EndFunction
+\end{algorithmic}
+
+\begin{algorithmic}
+\Function{root\_2}{$i$}
+	\State \Return{$canonize(i.\tau_1, i.\tau_2, 0)$}
+\EndFunction
+\end{algorithmic}
+
+\begin{algorithmic}
+\Function{dummy\_1}{$i$} \Comment{Assuming that a mini-tree dummy vertex exists}
+	\State \Return{$(i.\tau_1, i.dummy_1, i.dummy_1.dummy_2)$}
+\EndFunction
+\end{algorithmic}
+
+\begin{algorithmic}
+\Function{dummy\_2}{$i$} \Comment{Assuming that a micro-tree dummy vertex exists}
+	\State \Return{$(i.\tau_1, i.\tau_2, i.dummy_2)$}
 \EndFunction
 \end{algorithmic}
 
@@ -1308,10 +1366,20 @@ We use a look-up table in the micro-tree with correction for the non-root first 
 \EndFunction
 \end{algorithmic}
 
+\paragraph{Ancestor Checking}
+
+We can use pre-order rank to check whether a vertex is an ancestor of another vertex.
+
+\begin{algorithmic}
+\Function{is\_ancestor}{$i, j$}
+	\State \Return{$pre\_rank(i) \le pre\_rank(j) \le pre\_rank(i) + subtree\_size(i) - 1$}
+\EndFunction
+\end{algorithmic}
+
 \subsubsection{Post-Order Numbering}
 
 The post-order rank and select work in a very similar way as their pre-order variants.
-The differences are several differences which make it more complicated.
+There are several differences which make it more complicated.
 We redefine what belonging means -- a vertex belongs to the mini-tree and micro-tree with the biggest name instead of the smallest one.
 We introduce an analogy to primary fields called $terminary_1$ and $terminary_2$.
 The correction because of the ``first'' vertex is not necessary as the root is assigned the rank as the last vertex of the micro-tree.
@@ -1323,20 +1391,19 @@ We omit the algorithm here because it is only adds an indirection by jumps to te
 The DFUDS-order number of a vertex can be determined recursively:
 \todo{move to definition of ranks, make it a lemma}
 
-$$
-DFUDS\_rank(i) =
+\begin{align*}
+DFUDS\_rank(i) &=
 \begin{cases}
-1 & is\_root(i) \\
-\begin{aligned}
-& pre\_rank(i) \\
-&\ + \sum_{a \in anc(i) \setminus \{i\}} |right\_siblings(a)|
-\end{aligned} & child\_rank(i) = 1 \\
-\begin{aligned}
-& DFUDS\_rank(child\_first(parent(i))) \\
-&\  + child\_rank(i) - 1
-\end{aligned} & \textrm{otherwise} \\
-\end{cases}
-$$
+	1 & is\_root(i) \\
+	pre\_rank(i) + DFUDS\_anc(i)  & child\_rank(i) = 1 \\
+	\begin{aligned}
+		&DFUDS\_rank(child\_first(parent(i))) \\
+		&\ + child\_rank(i) - 1
+	\end{aligned} & \textrm{otherwise} \\
+\end{cases} \\
+DFUDS\_anc(i) &= \sum_{a \in anc(i) \setminus \{i\}} |right\_siblings(a)|
+\end{align*}
+
 
 Finding the DFUDS-order number of a non-first child is easy and does not require any special consideration.
 In case of the first child, we already know its pre-order number and it leaves to precompute the sum of right siblings of all ancestors.
@@ -1465,6 +1532,7 @@ The only a few cases when a vertex $v$ has a different $\tau_1$ name than its im
 	This way the sequence of names just before returning to $v$ from $t$ and just after diving back to the $t$ is uninterrupted.
 	This case does not add any runs because once we switch $v$ to $t$, $v.\tau_1$ is never used any more.
 \end{itemize}
+As the number of runs is bounded by $O(\frac{n}{B})$, the size required to store such array is $o(n)$ bits.
 
 Using the compressed array $in_1$ we can get to the mini-tree which contains the vertex with the in-order number $n$, however the vertex might not belong to the mini-tree.
 It can happen that $\tau_1$ was used in $in_1$ in one of the following corner cases, which are not handled by the array $in_2$ but can be answered directly.
@@ -1478,17 +1546,781 @@ It can happen that $\tau_1$ was used in $in_1$ in one of the following corner ca
 	then the last $r$ occurrences are due to them.
 \end{itemize}
 
+The array $in_2$ contains only instances of in-order numbers which were assigned as a result of returning from and diving into vertices in the mini-tree.
+The length of $in_2$ array is bounded by number of vertices in the mini-tree because a return from a vertex to its parent can cause its parent being assigned an in-order number.
+By the same reasoning as $in_1$, the array $in_2$ contains only $O(\frac{B}{b})$ runs and requires $o(B)$ bits of space.
+The same corner cases can happen on mini-tree level and they can be solved using a precomputed value $ltype2_2$ and $in\_size$.
+
+Using the $in_1$ and $in_2$ compressed arrays, we can navigate to the correct micro-tree.
+The $n''$ then denotes in-order number of a vertex in the micro-tree, which can be easily found using a look-up table.
+No correction for the root nor dummy vertex is necessary.
+
 \begin{algorithmic}
-\If{$n' \le ltype2_1$}
-	\State \Return{$v$}
-\Else
-	\State $n' \gets n' - l$
-\EndIf
-\If{$n' > length(in_2)$}
-	\State \Return{$v$}
-\Else
-	\State Continue with extracting the micro-root and $n''$ from $in_2$.
-\EndIf
+\Function{in\_select}{$n$}
+	\State $d_1 \gets in_1[n - 1]$
+	\State $n' \gets below(in_1, n - 1) + 1$
+	\If{$d_1[0].size = 1$} \Comment{A single vertex mini-tree}
+		\State \Return{$(d_1, 0, 0)$}
+	\ElsIf{$n' \le d_1.ltype2_1$} \Comment{Left type (2) connections}
+		\State \Return{$(d_1, 0, 0)$}
+	\Else
+		\State $n' \gets n' - d_1.ltype2_1$
+		\If{$n' > length(d_1.in_2)$} \Comment{Right type (2) or right type (1) connection}
+			\State \Return{$(d_1, 0, 0)$}
+		\Else \Comment{The same for mini-tree level}
+			\State $d_2 \gets d_1.in_2[n' - 1]$
+			\State $n'' \gets below(d_1.in_2, n' - 1) + 1$
+			\If{$d_2.size = 1$} \Comment{A single vertex mini-tree}
+				\State \Return{$(d_1, d_2, 0)$}
+			\ElsIf{$n'' \le d_2.ltype2_2$} \Comment{Left type (2) connections}
+				\State \Return{$canonize(d_1, d_2, 0)$}
+			\Else
+				\State $n'' \gets n'' - d_2.ltype2_2$
+				\If{$n'' > in\_size[d_2.size, d_2.rep, 0]$} \Comment{Right (2) or right (1)}
+					\State \Return{$canonize(d_1, d_2, 0)$}
+				\Else
+					\State \Return{$canonize(d_1, d_2, in\_select[d_2.size, d_2.rep, n''])$}
+				\EndIf
+			\EndIf
+		\EndIf
+	\EndIf
+\EndFunction
 \end{algorithmic}
 
-The array $in_2$ contains only instances of in-order numbers which were assigned as a result of returning from and diving into vertices in the mini-tree.
+Note that in the condition at ``Right (2) or right (1)'' the look-up table $in\_size$ comes from the implementation of the $in\_size$ operation and in this case it returns the number of in-order names assigned to all vertices of the micro-tree when it is considered independently.
+In order to check the bounds of $in\_select$ before it is processed, we store a global field $in\_size\_0$ which contains the number of in-order names used in total.
+
+\subsubsection{Leaf Operations}
+
+We support the $leaf\_size(i)$ operation the same way we did support $subtree\_size$.
+We support the operation $leaf\_first(i)$ which returns the first leaf in a subtree the same way we did with $deepest\_vertex$.
+We than support $leaf\_rank(i)$ and $leaf\_select(n)$ the same way we did with $pre\_rank(i)$ and $pre\_select(n)$.
+
+We can then restrict the leaf operations to a subtree:
+\begin{algorithmic}
+\Function{leaf\_rank}{$i, j$}
+	\State \Return{$leaf\_rank(j) - leaf\_rank(leaf\_first(i)) + 1$}
+\EndFunction
+\end{algorithmic}
+
+\begin{algorithmic}
+\Function{leaf\_select}{$i, n$}
+	\State \Return{$leaf\_select(n + leaf\_rank(leaf\_first(i)) - 1)$}
+\EndFunction
+\end{algorithmic}
+
+\subsection{Ancestral Operations}
+
+Let's assume a tree $T_1$ whose nodes are mini-tree roots.
+A node $u$ is a parent of node $v$ if $v.parent_1 = u$.
+This tree has at most $\frac{n}{B}$ nodes.
+Similarly a $T_2$ tree for a mini-tree consists of nodes corresponding to micro-trees which are connected if $v.parent_2 = u$.
+
+\subsubsection{LCA}
+
+The operation $lca(i_1, i_2)$ is going to be solved on three levels: micro-tree, mini-tree and whole tree.
+If $i_1$ and $j_2$ are within the same micro-tree we use a look-up table.
+Otherwise we use a global or a mini-tree LCA structure which uses the technique from \ref{lemma:rmq2}.
+
+\begin{lemma}
+	We can solve the LCA operation on $T_1$ and $T_2$ using an index of additional $o(n)$ and $o(B)$ bits.
+\end{lemma}
+\begin{proof}
+	Let's first assume a general tree $T$ with $n$ nodes.
+	Assume that we have an array $E$ of nodes of the tree as we visit them during an Eulerian tour starting at the root.
+	Then $LCA(u, v)$ is the shallowest node between the first occurrence of $u$ and the first occurrence of $v$ in the array $E$.
+	We can therefore find the LCA using a $rmq$ query on an array $D[i] = depth(E[i])$, which we solve by precomputing a table of $\log n$ levels.
+	This table requires $n \log^2 n$
+	
+	In each node of the tree, we store its depth and the index of its the first occurrence in the array $E$, which we do not store anywhere.
+	The precomputed table contains directly names of the nodes and in the case of two overlapping intervals we compare the depths of the candidates.
+	
+	In case of $T_1$ and $T_2$, we use $depth_1$ and $depth_2$ as the relation of one node being ancestor of the other is preserved.
+	The name of the node is its primary $\tau_1$ or $\tau_2$ name.
+	The tree $T_1$ has $\frac{n}{B}$ nodes, so the space required is $O(\frac{n}{B} \log^2 n) = O(n \log^{2 - c})$, which forces the constant $c$ in definition of size $B$ to be $c \ge 3$ in order to keep the space $o(n)$.
+	The tree $T_2$ has $\frac{B}{b}$ nodes, which results in space $O(\frac{B}{b} \log^2 B) = o(B)$.
+\end{proof}
+
+There are two interesting cases which need to be addressed in the algorithm.
+If the vertices $i_1$ and $i_2$ are in a mini-tree or a micro-tree which share their root, the answer is the root.
+If the vertices are in unaffiliated mini-trees or micro-trees, the reduction to LCA of their roots might not be correct if the answer was either of the roots.
+We need to check if the path between them uses type (3) connection in a subtree of either of them, which we can do by another LCA query on the root of the type (3) connected mini-tree or micro-tree.
+Note that in case of micro-trees, we are only interested in type (3) connection to a micro-tree within the same mini-tree.
+
+\begin{algorithmic}
+\Function{LCA}{$i_1, i_2$}
+	\If{$i_1.\tau_1 = i_2.\tau_1$} \Comment{The same mini-tree}
+		\If{$i_1.\tau_2 = i_2.\tau_2$} \Comment{The same micro-tree}
+			\State \Return{$canonize(i_1.\tau_1, i_1.\tau_2, LCA[i_1.size, i_1.rep, i_1.\tau_3, i_2.\tau_3])$}
+		\ElsIf{$i_1.primary_2 = i_2.primary_2$} \Comment{Type (1) connected micro-trees}
+			\State \Return{$canonize(i_1.\tau_1, i_1.primary_2, 0)$}
+		\Else \Comment{Unaffiliated micro-trees}
+			\State $k \gets LCA_2(i_1.\tau_1, i_1.primary_2, i_2.primary_2)$
+			\If{$k = i_1.primary_2 \booland i_1.dummy_2 \ne null \booland i_1.\tau_2 \ne i_1.dummy_1$}
+				\State $k' \gets LCA_2(i_1.\tau_1, i_1.bottom_2, i_2.primary_2)$
+				\If{$k \ne k'$} \Comment{Replace $i_2$ by the dummy vertex}
+					\State \Return{$LCA(i_1, (i_1.\tau_1, i_1.\tau_2, i_1.dummy_2))$}
+				\Else
+					\State \Return{$canonize(i_1.\tau_1, k, 0)$}
+				\EndIf
+			\ElsIf{$k = i_2.primary_2 \booland i_2.dummy_2 \ne null \booland i_2.\tau_2 \ne i_2.dummy_1$}
+				\State $k' \gets LCA_2(i_1.\tau_1, i_1.primary_2, i_2.bottom_2)$
+				\If{$k \ne k'$} \Comment{Replace $i$ by the dummy vertex}
+					\State \Return{$LCA(i_2, (i_2.\tau_1, i_2.\tau_2, i_2.dummy_2))$}
+				\Else
+					\State \Return{$canonize(i_1.\tau_1, k, 0)$}
+				\EndIf
+			\Else \Comment{The root must be the answer}
+				\State \Return{$canonize(i_1.\tau_1, k, 0)$}
+			\EndIf
+		\EndIf
+	\ElsIf{$i_1.primary_1 = i_2.primary_1$} \Comment{Type (1) connected micro-trees}
+		\State \Return{$i_1.primary_1, 0, 0$}
+	\Else \Comment{Unaffiliated mini-trees}
+		\State $k \gets LCA_1(i_1.primary_1, i_2.primary_1)$
+		\If{$k = i_1.primary_1 \booland i_1.dummy_1 \ne null$} \Comment{Test Connection type (3)}
+			\State $k' \gets LCA_1(i_1.bottom_1, i_2.primary_1)$
+			\If{$k \ne k'$} \Comment{Replace $i_2$ by the dummy vertex}
+				\State \Return{$LCA(i_1, (i_1.\tau_1, i_1.dummy_1, i_1.dummy_1.dummy_2))$}
+			\Else
+				\State \Return{$(k, 0, 0)$}
+			\EndIf
+		\ElsIf{$k = i_2.primary_1 \booland i_2.dummy_1 \ne null$} \Comment{Symmetric}
+			\State $k' \gets LCA_1(i_1.primary_1, i_2.bottom_1)$
+			\If{$k \ne k'$} \Comment{Replace $i$ by the dummy vertex}
+				\State \Return{$LCA(i_2, (i_2.\tau_1, i_2.dummy_1, i_2.dummy_1.dummy_2))$}
+			\Else
+				\State \Return{$(k, 0, 0)$}
+			\EndIf
+		\Else \Comment{The root must be the answer}
+			\State \Return{$(k, 0, 0)$}
+		\EndIf
+	\EndIf
+\EndFunction
+\end{algorithmic}
+
+\subsubsection{Level Ancestor}
+
+We again use the trees $T_1$ and $T_2$, and solve the $level\_ancestor(i, d)$ operation for it.
+We in fact need a more general operation \emph{weighted level ancestor}, which works on a graph with edges having assigned weight, which is a natural number.
+We are looking for the first node $j$ such that the sum of weights on the path from $i$ to $j$ is maximum possible but less than $d$.
+There is a structure $T\_{lrm}$ which can be used to solve this problem, and which we have used before to implement $fwd_search$ in FF structure \ref{Tlrm},
+
+The nodes are assigned depths -- in case of $T_1$ it will be absolute depths $depth_1$, in case of $T_2$ it will be relative depths inside the mini-tree $depth_2$.
+There will not be any artificial root, as $T_1$ and $T_2$ are trees with an existing root.
+The root is assigned the depth equal to $0$.
+We can use the algorithm $lrm\_search(n, v)$ with a minor modifications: we are looking for a node which is in the maximum depth less than $v$ instead of at least $v$.
+This is necessary because we want to get to the root of a tree which is just below the correct tree; then we use parent function to get to the deepest ancestor in the correct tree.
+This difference be addressed by changing the function $succ_1$ into $prev_1$.
+We also add an identifier to distinguish which tree we are searching through.
+
+We first identify the correct mini-tree by using $anc\_search$ on $T_1$, then we identify the correct micro-tree by using $anc\_search$ on $T_2$, and finish the operation with a look-up table in a micro-tree.
+
+\begin{algorithmic}
+\Function{level\_ancestor}{$i, d$}
+	\State $v \gets depth(i) - d$
+	\If{$v < 0$}
+		\State \Return{$-1$}
+	\EndIf
+	\If{$v < depth(root_1(i))$} \Comment{Wrong mini-tree}
+		\State $i \gets parent(anc\_search_1(root_1(i), v))$
+	\EndIf
+	\If{$v < depth(root_2(i))$} \Comment{Wrong micro-tree}
+		\State $i \gets parent(anc\_search_2(i.\tau_1, root_2(i), v))$
+	\EndIf
+	\State \Return{$canonize(i.\tau_1, i.\tau_2, level\_ancestor[i.size, i.rep, i.\tau_3, depth(i) - v])$}
+\EndFunction
+\end{algorithmic}
+
+\subsection{Level Operations}
+
+\subsubsection{Level First and Level Last}
+
+We first show how to support the operation $level\_first(i, d)$ restricted to a subtree of a vertex $i$.
+The operation $leve\_last$ is analogous and we address the differences at the end.
+
+The operation $level\_first$ is closely related to other select operations which we have already shown.
+For each mini-tree root $i$ we have an array $lfirst_1$:
+$$ i.lfirst_1[j] = \argmin_{\substack{pre\_rank(v) \ge pre\_rank(i) \\ depth(v) = depth(i) + j}} pre\_rank(v) $$
+This array contains level-first descendants of $i$ for $j \le height(i)$ as it has the correct depth and it is the first one such.
+
+We cannot afford to store the arrays $lfirst_1$, however we observe the following fact:
+If for two mini-tree roots $i$, $j$ and level $d$, $i.lfirst_1[d - depth(i)] = j.lfirst_1[d - depth(j)]$, then $i.lfirst_1[d - depth(i) + k] = j.lfirst_1[d - depth(j) + k]$ for $k \ge 0$.
+
+\begin{lemma}\label{l:level-first-3}
+	There are at most three runs of a $\tau_1$ name in the array $lfirst_1$.
+\end{lemma}
+\begin{proof}
+	Let's assume that a root $v$ of a mini-tree $t$ is a level-first descendant of $i$, then $v.\tau_1$ is in the array.
+	There are two possibilities how a run of level-first descendants can be interrupted:
+	\begin{enumerate}
+		\item We look at the first child of $v$: if it is not in the same mini-tree, then $v$ must have some type (2) connections to the left $L$.
+		If $h = \max_{l \in L} height(l)$ is greater than the height of $t$ (restricted to $t$), then $v.\tau_1$ will never occur in the array again.
+		Otherwise, the level-first descendants of $v$ will occur starting with $d = depth(v) + h + 1$.
+		\item If a level-first descendant of $v$ is a dummy vertex, then level-first descendants of its mini-tree will be in the array.
+		If the height of the type (3) connected mini-tree is less than the height of the mini-tree $t$ (restricted to $t$), then level-first descendants of $v$ will again be in the array.
+	\end{enumerate}
+	These two causes of interruption can overlap, however they can cause at most three runs of $v.\tau_1$.
+	
+	If the root was not the level-first descendant, however another vertex of the mini-tree $t$ occurs in the array, we can apply the same reasoning about the second type of interruption.
+	That proves that such $\tau_1$ can appear in at most two runs.
+\end{proof}
+
+We build a tree $T_1$ as a trie from the reversed arrays $lfirst_1$ with an additional artificial root.
+We compress the tree by contracting paths between nodes which are either:
+\begin{enumerate}
+	\item the artificial root node;
+	\item nodes corresponding to mini-tree roots.
+	All leaves of $T_1$ are mini-tree roots, however not all mini-tree roots are leaves in $T_1$.
+	\item branching nodes in the tree $T_1$.
+	Their number is bounded by number of leaves of $T_1$.
+	\item nodes corresponding to vertices in arrays $lfirst_1$ such that their predecessor has a different $\tau_1$ name.
+\end{enumerate}
+Not counting branching nodes, there are at most three vertices from each mini-tree which follows from the previous lemma.
+The result is that the compressed tree contains $O(\frac{n}{B})$ nodes.
+
+Let $h$ be the height of the original tree $h = height(0, 0, 0)$, then we associate each node $n$ with number $m = h - depth(n)$ where the depth in measured the original tree; the root is assigned $-\infty$.
+We store the information about the nodes in an array; each node knows its $\tau_1$ name, its number $m$ and its pre-order number $k$ in $T_1$.
+As the tree $T_1$ contains $O(\frac{n}{B})$ nodes, the structure requires $O(\frac{n}{B} \log^2 n)$ bits.
+We also store the number $k$ corresponding to the mini-tree root as $lfirst\_k_1$ in the mini-tree structure.
+
+We use the algorithm $lcm\_search$ which returns the first ancestor which has a greater or equal value than the one which we are searching for.
+In our case, the function returns a $\tau_1$ name.
+Note that in a general case, we should check whether the node which we found is a descendant of the queried node, which can be done by $is\_ancestor$.
+However, in the algorithm as we formulate it, it is not necessary.
+
+We can now reduce finding the correct mini-tree containing the level-first descendant to querying weighted ancestor in the tree $T_1$.
+
+We build a similar structure for querying weighted level ancestor for each mini-tree, restricted to its vertices.
+For that we also need to store $height_1$ of the mini-tree root, and we do the same for micro-tree roots.
+We use it to find the correct micro-tree containing the level-first descendant.
+Finally, we use a look-up table to find the answer within the correct micro-tree.
+
+\begin{algorithmic}
+\Function{level\_first}{$i, d$}
+	\If{$d < depth(i) \booland d > depth(i) + height(i)$}
+		\State \Return{$-1$} \Comment{Answer does not exist}
+	\EndIf
+	
+	\State $C = \O$ \Comment{Set of candidates}
+	\If{$i.\tau_2 = 0 \booland i.\tau_3 = 0$} \Comment{Find correct mini-tree}
+		\State $h_1 \gets height(0, 0, 0)$
+		\State $i \gets lcm\_search_1(i.lfirst\_k_1, h_1 - d)$
+		\State $correct_1 \gets 1$ \Comment{We are sure about the mini-tree}
+	\Else
+		\State $correct_1 \gets 0$ 
+	\EndIf
+	
+	\If{$i.\tau_3 = 0$} \Comment{Find correct micro-tree}
+		\If{$i.dummy\_ancestor \booland correct_1 = 0$}
+			\State $c \gets level\_first(dummy\_down(dummy_1(i)), d)$
+			\If{$c \ne -1$} \Comment{Level-first in type (3) connected mini-tree}
+				\State $C = C \cup \{c\}$
+			\EndIf
+		\EndIf
+		\If{$d \le depth(root_1(i)) + height_1$}
+			\State $i \gets lcm\_search_2(i.\tau_1, i.lfirst\_k_2, height_1 - (d - depth(root_1(i))))$
+			\State $correct_2 \gets 1$ \Comment{We are sure about the micro-tree}
+		\Else
+			\State $correct_2 \gets 2$ \Comment{The solution is not in this mini-tree}
+		\EndIf
+	\Else
+		\State $correct_2 \gets 0$
+	\EndIf
+
+	\If{$is\_ancestor[i.size, i.rep, i.\tau_3, i.dummy_2] \booland correct_1 = 0 \booland correct_2 = 0$}
+		\State $c \gets level\_first(dummy\_down(dummy_2(i)), d)$
+		\If{$c \ne -1$} \Comment{Level-first in type (3) connected mini-tree or micro-tree}
+			\State $C = C \cup \{c\}$
+		\EndIf
+	\EndIf
+	
+	\If{$correct_2 \ne 2 \booland d \le depth(root_2(i)) + height_2$}
+		\State $c \gets level\_first[i.size, i.rep, i.\tau_3, d - depth(i)]$
+		\If{$c \ne -1 \booland c \ne i.dummy_2$} \Comment{Level-first in the micro-tree}
+			\State $C = C \cup \{c\}$
+		\EndIf
+	\EndIf
+	
+	\State $first \gets -1$
+	\ForAll{$c \gets C$} \Comment{Selecting the left-most candidate}
+		\If{$first = -1 \boolor pre\_rank(c) < pre\_rank(first)$}
+			\State $first \gets c$
+		\EndIf
+	\EndFor
+	\Return{$first$}
+\EndFunction
+\end{algorithmic}
+
+\paragraph{Level Last}
+
+In case of level-last descendant operation, we define the arrays $llast_1$ as:
+$$ i.llast_1[j] = \argmax_{\substack{pre\_rank(v) \le pre\_rank(i) + subtree\_size(i) - 1  \\ depth(v) = depth(i) + j}} pre\_rank(v) $$
+
+The only change necessary in the algorithm is selecting the right-most candidate, which is the one with highest pre-order rank.
+
+\subsubsection{Level Next and Level Previous}
+
+We focus on $level\_next(i, j)$; the operation $level\_prev(i, j)$ is symmetrical.
+
+We distinguish four cases:
+\begin{itemize}
+	\item the vertex $j$ is the level-last vertex in the subtree of $i$.
+	Then there is no next vertex on the level.
+	\item the vertex $j$ is not the level-last vertex in its micro-tree.
+	We use a look-up table to handle this case.
+	We also need to check for type (3) connected subtree which could contain the answer.
+	This check can be easily done by comparing pre-order rank of $j$ and $j.dummy_2$.
+	\item the vertex $j$ is the level-last vertex in its micro-tree, then we search the micro-tree $t_2$ which is ``to the right'' from $j$.
+	We find its $\tau_2$ name using a structure which we show later.
+	We distinguish two cases:
+	\begin{itemize}
+		\item $t_2$ contains a dummy vertex and $j$ is in its subtree, then we solve the search in $t_2$ using a look-up table searching for the first vertex $v$ on the desired level with $pre\_rank(v) > pre\_rank(dummy_2)$.
+		\item otherwise, it is the level-first vertex in the micro-tree.
+	\end{itemize}
+	\item the vertex $j$ is the level-last vertex in its mini-tree.
+	We need to find vertex in the mini-tree $t_1$ which is ``to the right'' from the current one.
+	As before, we distinguish two cases:
+	\begin{itemize}
+		\item $j$ is a descendant of the dummy vertex in $t_1$, then we need to find the micro-tree which contains the vertex $v$ such that:
+		$$ v = \argmin_{\substack{depth(k) = depth(j) \\ pre\_rank(root_1(t))> pre\_rank(k) \\ pre\_rank(k) > pre\_rank(dummy_1(t)) + subtree\_size(dummy_1(t))}} pre\_rank(k)$$
+		As there is at most one dummy vertex in a mini-tree, we store a compressed array $dummy\_next$ which contains $\tau_2$ names of micro-trees which contain the answer for all admissible levels.
+		This compressed array contains at most $B$ elements in $3b$ runs (which follows from lemma \ref{l:level-first-3}) and therefore used $O(b \log B) = o(B)$ bits of space.
+		Let $t_2$ be the micro-tree from the array $dummy\_next$, then we finish the query as in the previous case.
+		\item otherwise, the answer is the level-first vertex of the mini-tree $t_1$.
+	\end{itemize}
+\end{itemize}
+
+We design a structure which we use to solve the second and the third case.
+Let's assume a graph $G$ whose nodes are mini-trees and each two nodes $x, y$ are connected whenever there is a vertex $u$ in $x$ and a vertex $v$ in $y$ such that $level\_next(i, u) = v$.
+
+\begin{lemma}\label{l:level-graph}
+	The graph $G$ has $O(\frac{n}{B})$ edges.
+\end{lemma}
+\begin{proof}
+	The graph is planar, therefore there is a linear bound on number of edges.
+\end{proof}
+
+For each mini-tree $i$ we create a compressed array $lnext_1$:
+$$i.lnext_1[j] = level\_next((0, 0, 0), level\_last(i, depth(i) + j))$$
+If there is no next vertex, than we use the name $-1$.
+
+These compressed arrays contain at most $n$ elements in total, and according to the previous lemma, there are only $O(\frac{n}{B})$ runs in all compressed arrays.
+The bound on number of runs follows from lemmas \ref{l:level-first-3} and \ref{l:level-graph}
+The extra ``no next vertex'' names do not matter as we could have equivalently defined that $level\_next((0, 0, 0), level\_last((0, 0, 0), d)) = level\_first((0, 0, 0), d)$.
+The collection of compressed arrays requires $O(\frac{n}{B} \log n) = o(n)$ bits of space.
+
+We construct a similar structure $lnext_2$ for all micro-trees, storing the $\tau_2$ name of the right micro-trees.
+This requires $O(\frac{B}{b} \log B) = o(B)$ bits of memory.
+
+\begin{algorithmic}
+\Function{level\_next}{$i, j$}
+	\If{$j = level\_last(i, depth(j))$}
+		\State \Return{$-1$}
+	\EndIf
+	
+	\State $k \gets level\_next[j.size, j.rep, j.\tau_3]$ \Comment{Search in micro-tree}
+	\If{$k = -1 \boolor j.dummy_2 \ne null \booland j.dummy_2 < k$} \Comment{Check dummy vertex}
+		\State $f \gets level\_first(dummy\_down(dummy_2(j)), depth(j))$
+		\If{$f \ne -1$}
+			\State \Return{$f$}
+		\EndIf
+	\ElsIf{$k \ne -1$}
+		\State \Return{$j.\tau_1, j.\tau_2, k$} \Comment{Answer in micro-tree}
+	\EndIf
+	
+	\State $t_2 \gets j.lnext_2[depth(j) - depth(root_2(j))]$ \Comment{Search for micro-tree}
+	\If{$t_2 \ne -1 \booland t_2.dummy_2 \ne null \booland is\_ancestor(dummy\_down(dummy_2(t_2)), j)$}
+		\State \Return {$level\_next'[t_2.size, t_2.rep, depth(j) - depth(root_2(t_2))]$}
+	\ElsIf{$t_2 \ne -1$}
+		\State \Return{$level\_first(t_2, depth(j))$}
+	\EndIf
+	
+	\State $t_1 \gets j.lnext_1[depth(j) - depth(root_2(j))]$ \Comment{Search for mini-tree}
+	\If{$t_1 \ne -1 \booland t_1.dummy_1 \ne null \booland is\_ancestor(dummy\_down(dummy_1(t_1)), j)$}
+		\State $t_2 \gets t_1.dummy\_next[depth(j) - depth(dummy_1(t_1))]$
+		\If{$t_2.dummy_2 \ne null \booland is\_ancestor(dummy\_down(dummy_2(t_2)), j)$}
+			\State \Return {$level\_next'[t_2.size, t_2.rep, depth(j) - depth(root_2(t_2))]$}
+		\Else
+			\State \Return{$level\_first(t_2, depth(j))$}
+		\EndIf
+	\ElsIf{$t_1 \ne -1$}
+		\State \Return{$level\_first(t_1, depth(j))$}
+	\Else
+		\State \Return{$-1$}
+	\EndIf
+\EndFunction
+\end{algorithmic}
+
+\subsection{Final Thoughts}
+
+In the beginning we defined a constant $c \ge 2$ which can be set to $2$ as long as we do not require the ancestral and level operations in the form we have shown (they require $c \ge 3$).
+However, it is not true $c >2$ is required as \todo{ref} shown the same structure with slightly more complicated operations for which $c = 2$ is sufficient.
+We chose the simpler options as they use the same structures which we used in other parts of this work.
+
+The structure supports a very similar spectrum of operations as FF while being easier to extend as it is often sufficient to implement the operation on mini-tree and micro-tree scales using techniques inspired by traditional solutions, and adding a look-up table for queries contained within micro-trees.
+
+\section{Universal Succinct Representation}
+
+All the previous structures can be split into two parts (recalling the definition of systematic data structures):
+\begin{enumerate}
+	\item data -- in case of BP (and FF -- it shares the data part of the representation) and DFUDS it is clearly the bit string $S$ of size $2n$ bits.
+	In case of TC it could be the structure stripped off all fields which are not necessary for reconstruction of the original tree.
+	We can go even further and split the data into the sequence of pairs $(size, rep)$ for each micro-tree and a simple structure which maintains their relationships (number of mini-trees in the tree, number of micro-trees in a mini-tree, parents, primaries).
+	From now on we will treat the simple structure as an index.
+	\item index -- any structure or structures of size $o(n)$ bits which speeds up the queries; for BP and DFUDS they were rank, select, match, rmq indices.
+	In case of TC we incorporated the index alongside the micro-tree $rep$s, however as the structure takes only $o(n)$ bits (the tables of offsets of mini-trees, and micro-trees), we can extract it and keep it in a parallel structure.
+\end{enumerate}
+
+Any algorithm for word-RAM can access only $w = \O(\log n)$ consecutive bits of memory in each step.
+As all the operations which we have shown were formulated for word-RAM, we can replace the data bit-string itself with a structure which answers queries on $w$ consecutive bits in time $O(1)$.
+As long as the structure uses only $2n + o(n)$ bits, the resulting data structure is still succinct.
+
+We define a structure for a universal succinct representation which provides three operations running in time $O(1)$:
+\begin{itemize}
+	\item $BP\_substring(i, b)$ -- returns $b$ bits of BP representation staring at position $i$.
+	\item $DFUDS\_substring(i, b)$ -- returns $b$ bits of DFUDS representation staring at position $i$;
+	\item $TC\_microtree(\tau_1, \tau_2)$ -- returns the micro tree ($\tau_1, \tau_2$).
+	We assume that the decomposition and the naming schema which we described in the section \todo{ref TC} is used.
+\end{itemize}
+
+The parameter $b$ can be in range $[1, w]$.
+However, from now on we fix it to $b = \frac{\log n}{16}$ and call it a block size.
+The answer to any other value of the parameter can be obtained by $O(1)$ queries with the fixed $b$ with an optional trim of unwanted bits.
+
+Assuming that a structure with such properties exist, we can immediately build a succinct structure which supports the union of all operation described in sections BP, DFUDS, FF and TC by adding the right indices of size $o(n)$.
+The advantage is also that any progress in any of the mentioned structures becomes immediately available in this structure by simply adding the necessary index.
+
+\subsection{Restriction to Mini-Trees}
+
+We start with the same two-level decomposition as in the Tree Covering representation.
+First, we focus on supporting BP and DFUDS operations, which we do on a mini-tree level.
+
+We define two compressed arrays $BP$ and $DFUDS$: for each bit (except for the first one in case of $DFUDS$) we store $\tau_1$ name of the mini-tree to which the vertex whose bit it is belongs.
+Contrary to \todo{ref article} we associate the bits in unary degree sequence of vertex $v$ with the vertex $v$ and not his individual children.
+This simplifies the data structure.
+
+\begin{lemma}\label{l:usr-runs}
+	Every $\tau_1$ name occurs in at most 4 runs in the compressed array $BP$ and 3 runs in $DFUDS$.
+\end{lemma}
+\begin{proof}
+	Because the definitions of the BP and DFUDS representations are based on pre-order traversal of the tree, and they are recursive, we know all vertices between the first and last mentions of $\tau_1$ are in the subtree of the mini-tree root $v$.
+	
+	We can assume that the root $v$ of a mini-tree $t$ belong to $t$, otherwise the BP representation lacks the first and last mention of $t.\tau_1$, which can only decrease the number of runs.
+	In case of DFUDS, the root representation is continuous leading to omission of $degree(root_1(t))$ first occurrences of $t.\tau_1$.
+	
+	We also assume that the mini-tree $t$ contains at least two vertices, otherwise it is trivial.
+	We call the own the children of $v$ which belong to the mini-tree $v$.
+	
+	There are three types of connections which connect other mini-trees to $t$.
+	All type (1) and type (2) connections involve $v$ -- some subtrees rooted in children of $v$ can belong to other mini-trees.
+	The own children of $v$ form an interval which is not interrupted by any type (1) nor type (2) connections.
+	In BP representation the type (1) and type (2) connected mini-trees are either just after the opening parenthesis of $v$ or just before the closing parenthesis of $v$.
+	They can separate the opening and closing parentheses from the consecutive block of children in $t$.
+	In case of the DFUDS representation, the type (1) and type (2) connections can split the representation of $v$ from its children in $t$.
+	However, in comparison to BP, the last occurrence of $t.\tau_1$ is in the subtree of the last own child of $v$, which precedes representation of any connections to the right from children in $t$.
+	
+	Each mini-tree can have up to one type (3) connection which can break the run of own children of $v$ in two.
+\end{proof}
+
+By the lemma, there are at most $O(1)$ runs, therefore the size of $BP$ and $DFUDS$ is $o(n)$.
+
+We also immediately solve all queries which are not fully contained within a single mini-tree and all queries which involve any bit of root's representation.
+For each run, we store the position where it starts and where it ends together with the preceding, first, last and following $w$ bits of the BP and DFUDS representations.
+In case of DFUDS we replace the first $w$ bits of the first run (where the root start) by $w$ bits starting at the position of root's closing parenthesis.
+This requires $O(\log n) + w = o(B)$ bits per mini-tree.
+
+The queries of this type can be detected by $O(1)$ tests.
+The only case which is more complicated is query on bits from DFUDS representation of the mini-tree root $v$.
+There we need to generate the right number of opening parentheses which are part of the degree sequence of $v$.
+All this can be implemented using arithmetic and bitwise operations on word-RAM.
+
+From now on, we can assume that all queries can be reduced to only a single mini-tree.
+We also don't have to handle specially the case of existence mini-tree dummy vertex, because any query in which it could be involved is not contained in the mini-tree and therefore it was already solved.
+It is still necessary to keep it in order to calculate the degree of its parent correctly for DFUDS representation.
+The position $i$ gets transformed so that it is a position inside the mini-tree including the mini-tree root; we do this by the function $before$ applied to $BP$ or $DFUDS$ compressed arrays and corrections due non-own children of potentially shared mini-tree root.
+
+$$
+i' = \begin{cases}
+	before(BP, i) & \textrm{if BP and}\ BP[i].\tau_1 = BP[i].primary_1 \\
+	before(BP, i) + 1 & \textrm{if BP, otherwise} \\
+	before(DFUDS, i) - DFUDS[i].degree + DFUDS[i].degree\_own & \textrm{if DFUDS and}\ DFUDS[i].\tau_1 = DFUDS[i].primary_1 \\
+	before(DFUDS, i) + DFUDS[i].degree\_own + 1 & \textrm{if DFUDS, otherwise}
+\end{cases}
+$$
+
+\bigskip
+
+We call a vertex \emph{significant} if its subtree size is larger than $\frac{\log n}{16}$.
+A \emph{skeleton} of a mini-tree is the subtree induced by significant vertices, which by is connected as each ancestor is also significant.
+
+There are at most $O(\frac{B}{\log n})$ leaves in the skeleton as the subtree of each of them contains at least $\frac{\log n}{16}$ vertices.
+We can assume that there is also at least one significant vertex as otherwise the size of a mini-tree is less than $w$, and so every query is already has already been solved.
+
+\subsection{Skinny Mini-Trees}
+
+We call a mini-tree \emph{skinny} if its skeleton is a path.
+We solve this special case first, and then generalize it to all skeletons.
+
+We use the same notation as \todo{ref article}:
+Let $P$ by the skeleton, which is a path, $u$ its leaf and $v$ the last child of $u$.
+\begin{align*}
+	S &= \{ s : parent(s) \in P \booland s \notin P \} \\
+	S_D &= \{ s \in S : pre\_rank(s) \le pre\_rank(v) \} \\
+	S_U &= \{ s \in S : pre\_rank(s) > pre\_rank(v) \}
+\end{align*}
+
+We represent a skinny mini-tree using four bit strings:
+\begin{itemize}
+	\item Path down, $P_D$ -- the concatenation of the unary degree sequences of vertices in the skeleton, assuming only their children in $S_D$.
+	They are stored in the order from the root to $u$.
+	\item Path up, $P_U$ -- the same for children in $S_U$ and direction from $u$ to the root.
+	\item Trees on path down, $T_D$ -- subtrees of $S_D$ stored consecutively according to their pre-order numbers.
+	We call the trees \emph{left dangling trees}.
+	The trees can be stored in any self-delimiting representation which requires at most $2k - 1$ bits for a tree with $k$ vertices.
+	We can either use BP without the first parenthesis, which is an opening one, or DFUDS without the artificially prepended opening parenthesis.
+	\item Trees on path up, $T_U$ -- the same for subtrees of vertices $S_U$ ordered by their pre-order numbers.
+	We call them \emph{right dangling trees}.
+\end{itemize}
+
+These four bit strings together use exactly $2$ bits per every vertex of the mini-tree.
+Each opening parenthesis in $P_D$ and $P_U$ can be paired with the one missing in representations of the dangling trees in $T_D$ and $T_U$.
+Vertices belonging to the path are represented by closing parentheses in $P_D$ and $P_U$, one in each.
+
+We can restore the original mini-tree from this representation:
+\begin{algorithmic}
+\Function{restore}{}
+	\State $v \gets null$
+	\While{$P_D$ has more symbols}
+		\State $v \gets$ new child of $v$
+		\While{The symbol in $P_D$ is an opening parenthesis}
+			\State Read a tree from $T_D$, decode it and add it as a child to $v$
+		\EndWhile
+	\EndWhile
+	\While{$P_U$ has more symbols}
+		\While{The symbol in $P_U$ is an opening parenthesis}
+			\State Read a tree from $T_U$, decode it and add it as a child to $v$
+		\EndWhile
+		\State $v \gets parent(v)$
+	\EndWhile
+\EndFunction
+\end{algorithmic}
+
+\subsubsection{Generation of BP and DFUDS Representations}
+
+\begin{lemma}
+	Using an index of size $o(B)$, we can query $BP\_substring(j b, b)$ of any aligned block in constant time.
+\end{lemma}
+\begin{proof}
+	We first formulate an algorithm which outputs the BP representation of the whole mini-tree.
+	The algorithm is based on $restore$:
+	
+	\begin{algorithmic}
+	\Function{BP\_rep\_skinny}{}
+		\State $p_D \gets 0; p_U \gets 0; t_D \gets 0; t_U \gets 0$
+		\While{$p_D < |P_D|$}
+			\State $write("(")$
+			\While{$P_D[p_D] = "("$}
+				\State $t \gets read\_tree(t_D); t_D \gets t_D + |t|$
+				\State $write(BP\_rep[t])$
+				\State $p_D \gets p_D + 1$
+			\EndWhile
+			\State $p_D \gets p_D + 1$ \Comment{Consume the closing parenthesis}
+		\EndWhile
+		\While{$p_U < |P_U|$}
+			\While{$P_U[p_U] = "("$}
+				\State $t \gets read\_tree(t_U); t_U \gets t_U + |t|$
+				\State $write(BP\_rep[t])$
+				\State $p_U \gets p_U + 1$
+			\EndWhile
+			\State $p_U \gets p_U + 1$ \Comment{Consume the closing parenthesis}
+			\State $write(")")$
+		\EndWhile
+	\EndFunction
+	\end{algorithmic}
+	
+	For each $j$ we store the state of the algorithm: the instruction pointer and value of all local variables, which is $O(\log \log n)$ bits.
+	Using this index we can restart the course of the algorithm from any position which related to the output is either a parenthesis of a vertex in $P$ or beginning of a dangling tree.
+	In order to support any position of the output, we add to the index an offset $o$ which allows us to skip the first $o$ bits of a BP representation of a dangling tree.
+	
+	In order to generate any $b$ bits of BP representation, at most $b$ bits are read from $P_D$ or $P_U$ as well as up to $b + 2 \frac{\log n}{8}$ bits from $T_D$ or $T_U$.
+	We can therefore implement the algorithm solely as a look-up table which is provided with all the bits which it may use; that is $4b + 4 \frac{\log n}{8} + 7 \log \log n + c < \log n$: the $\log \log n$ is for the offset $o$, values of $p_D, p_U, t_D, t_U$ and $|P_D|, |P_U|$, and $c$ is a constant for the instruction pointer.
+	The size of the look-up table is $o(n)$ bits.
+\end{proof}
+
+\begin{lemma}
+	Using an index of size $o(B)$, we can query $DFUDS\_substring(j b, b)$ of any aligned block in constant time.
+\end{lemma}
+\begin{proof}
+	We use the same technique as in the previous lemma.
+	The algorithm is a little more complicated.
+	We need to to go through $P_D$ twice: the first time to report the degree, and the second time when we output the left dangling trees.
+	We also go through $P_U$ twice: the first time from the end to the beginning treating closing parentheses as delimiters, and the second time to output the right dangling trees.
+	
+	There are two more local variable $p'_D$ and $p'_U$ for which we also need to provide $b$ bits of $P_D$ and $P_U$.
+	In case of $p'_U$ we provide $b$ bits before the offset as the algorithm only decrements it.
+	The key key of the look-up table has size $6b + 4 \frac{\log n}{8} + 9 \log \log n + c < \log n$.
+	
+	\begin{algorithmic}
+	\Function{DFUDS\_rep\_skinny}{}
+		\State $p_D \gets 0; p_U \gets 0; p'_U \gets |P_U| - 2; t_D \gets 0; t_U \gets 0$
+		\State $write("(")$ \Comment{The artificial first parenthesis}
+		\While{$p_D < |P_D|$}
+			\State $p'_D \gets p_D$ \Comment{First we output the degree sequence}
+			\While{$P_D[p'_D] = "("$} \Comment{Left dangling children}
+				\State $write("(")$
+				\State $p'_D \gets p'_D + 1$
+			\EndWhile
+			\State $p'_D \gets p'_D + 1$ \Comment{Consume the closing parenthesis}
+			\If{$p'_D < |P_D|$} \Comment{Child in the path}
+				\State $write("(")$
+			\EndIf
+			\While{$P_U[p'_U] = "(" \booland p'_U \ge 0$} \Comment{Right dangling children}
+				\State $write("(")$
+				\State $p'_U \gets p'_U - 1$
+			\EndWhile
+			\State $p'_U \gets p'_U - 1$ \Comment{Consume the closing parenthesis}
+			\State $write(")")$ \Comment{End of unary degree sequence}
+			\While{$P_D[p_D] = "("$} \Comment{Then we output the left dangling children}
+				\State $t \gets read\_tree(t_D); t_D \gets t_D + |t|$
+				\State $write(DFUDS\_rep[t])$
+				\State $p_D \gets p_D + 1$
+			\EndWhile
+			\State $p_D \gets p_D + 1$ \Comment{Consume the closing parenthesis}
+		\EndWhile
+		\While{$p_U < |P_U|$} \Comment{Output the right dangling trees}
+			\If{$P_U[p_U] = "("$}
+				\State $t \gets read\_tree(t_U); t_U \gets t_U + |t|$
+				\State $write(DFUDS\_rep[t])$
+			\EndIf
+			\State $p_U \gets p_U + 1$ \Comment{Consume the closing parenthesis}
+		\EndWhile
+	\EndFunction
+	\end{algorithmic}
+\end{proof}
+
+It is possible to split the algorithms into several parts which touch only some bit strings, not all 4 of them at 6 different places.
+This change would allow to generate blocks of a double size.
+
+\subsection{General Mini-Trees}
+
+If the skeleton is a general tree, we decompose it iteratively into paths.
+We first remove the left-most path connecting the root with the first skeleton leaf; we call it left-leaning path.
+For each tree in the rest of the skeleton, we remove its right-most path connecting the root with the last skeleton leaf; we call this path right-leaning.
+We repeat this until every vertex of the skeleton is in a left-leaning or right-leaning path.
+
+All subtrees which do not contain any significant vertex are connected to a significant vertex; they are again called left or right dangling trees.
+The paths together with dangling trees form skinny mini-trees.
+There are $O(\frac{B}{\log n})$ of them as the subtree size of each skeleton leaf is at least $\frac{\log n}{16}$.
+We assign each path a number starting with $0$.
+
+The paths are connected with each other:
+\begin{itemize}
+	\item left-leaning path can have some left-leaning and righ-leaning paths connected to the right.
+	If there are more connections to one vertex, we store only the left-most connection.
+	\item right-leaning path can have some left-leaning paths connected to the left.
+	Again, if there are more of them connected to the same vertex, we store only the left-most one.
+	\item all paths except for one have a next path.
+	The next path is either the path containing the right sibling of its root if it exists, or the path containing the parent of its root.
+	The only path which does not have next path is the path containing the mini-tree root.
+\end{itemize}
+
+In the skinny mini-trees we could uniquely reference any bit of the representation by the state $s$ of the algorithm and the offset $o$.
+In case of general mini-trees, we add the number of the path.
+The size of the triplet is $O(\log \log n)$ and we call it a \emph{reference}.
+The index for all $j = i \% b$ is a reference.
+
+\subsubsection{Path Structures}
+
+We first add opening parentheses to the bit strings $P_D$ and $P_U$ for all connected paths.
+This change adds $O(\frac{B}{\log n})$ bits because the each root of a path (except for the path containing the mini-root root) is represented by $3$ bits in total.
+
+The structure for a path contains the following fields:
+\begin{itemize}
+	\item $P_D, P_U, T_D, T_U$ -- as before;
+	\item $C_D, C_U$ -- compressed arrays of references to the nearest connection.
+	We derive $C_D$ incrementally from $P_D$ and connections to other paths; similar derivation is used for $C_U$.
+	\begin{align*}
+		C'_D[i] &= 1 \iff P_D[i] = "(" \booland P_D[i]\ \textrm{is a root of a different path} \\
+		C''_D[i] &= \textrm{reference to the root of the path at}\ succ(C'_D, i) \\
+		C_D &= compressed\_array(C''_D)
+	\end{align*}
+	The compressed arrays $C_D$ and $C_U$ are stored in two version: for BP and DFUDS representations; the structures can be partly shared as only the $names$ arrays differ.
+	Note that only one of $C_D$, $C_U$ need to be stored depending on whether the path is left-leaning or right-leaning.
+	\item $next\_BP$, $next\_DFUDS$ -- references to the next path for both BP and DFUDS representations.
+\end{itemize}
+
+Each compressed array contains each run only once.
+All references in the compressed arrays point to path roots, and every path root is referenced from only once.
+Therefore, there are $O(\frac{B}{\log n})$ runs in total, and the space of all arrays together is $o(B)$ bits.
+
+While the algorithms generate the BP or DFUDS representations, it can happen that they need to switch to a different path.
+We extend the algorithms (look-up tables in fact) $BP\_rep\_skinny$ and $DFUDS\_rep\_skinny$ to support the connections and control the number of generated bits.
+We provide them with two extra arguments, which are offsets:
+\begin{itemize}
+	\item $c_D = upper(C_D, p_D)$ -- the nearest connection on the way down;
+	\item $c_U = upper(C_U, p_U)$ -- the nearest connection on the way up.
+\end{itemize}
+The algorithm returns as soon as it is about to output the dangling trees for $p_d = c_d$ or $p_u = c_u$, as they represent connections to different paths.
+
+The algorithms also return more information:
+\begin{itemize}
+	\item the number of bits they generated;
+	\item the generated bits;
+	\item the situation which lead to the end:
+	\begin{enumerate}
+		\item sufficient number of bits was generated;
+		\item a switch is necessary to at offset $c_d$;
+		\item a switch is necessary to at offset $c_u$;
+		\item a switch is necessary to $next$.
+	\end{enumerate}
+\end{itemize}
+
+The algorithms returning a block $j$ of a BP and DFUDS representation of a mini-tree are the same:
+
+\begin{algorithmic}
+\Function{substring}{j, rep}
+	\State $(path, state=(p_d, p_u, \ldots), offset) \gets index_{rep}[j]$
+	\State $block \gets ""; bits \gets 0$
+	\While{$bits < b$}
+		\State $c_D \gets upper(paths[path].C_{D, rep}, p_D); c_U \gets upper(paths[path].C_{U, rep}, p_U)$
+		\State $(bl, bi, end) \gets skinny_{rep}[\textrm{parts of bit strings}, state, c_D, c_U]$
+		\State $block = concat(block, bl[offset, bi]); bits \gets bits + bi$
+		\If{$end = 1$}
+			\State $(path, state=(p_d, p_u, \ldots), offset) \gets paths[path].C_{D, rep}[p_D]$
+		\ElsIf{$end = 2$}
+			\State $(path, state=(p_d, p_u, \ldots), offset) \gets paths[path].C_{U, rep}[p_U]$
+		\ElsIf{$end = 3$}
+			\If{$paths[path].next_{rep} = null$}
+				\State \Break
+			\Else
+				\State $(path, state=(p_d, p_u, \ldots), offset) \gets paths[path].next_{rep}$
+			\EndIf
+		\EndIf
+	\EndWhile
+	\State \Return{$block, bits$}
+\EndFunction
+\end{algorithmic}
+
+It only remains to show that the number of iterations of the while loop is constant.
+We inspect the graph of transitions between paths.
+
+\todo{image}
+
+First we observe that the subtree size of the skeleton leaf is at least $\frac{\log n}{16}$, and so the encoding of skeleton leaf produces at least $b$ bits.
+No matter on which type of path and the direction, we always process a skeleton leaf after at most $5$ iterations of the while loop.
+
+\subsection{Micro-Tree Representation}
+
+We decompose the mini-tree $M$ to micro-trees as it is usual for Tree Covering representation.
+We reuse lemma \ref{l:usr-runs} which in this case claims that a BP representation of a micro-tree forms at most four runs in the BP representation of a mini-tree.
+We prefer the BP representation over DFUDS as we do not need to adjust the degree of the micro-tree root and also incorporating the micro-tree dummy vertex is easier.
+
+The mini-tree-local offsets of the beginning and the end are stored for each run.
+The length of each run is bounded by the size of a micro-tree, therefore $O(1)$ queries of the BP representation are necessary.
+The size of BP representation of a micro-tree can be calculated from the stored offsets of the runs.
+Since it is at most $\frac{\log n}{2}$ bits, we can use a look-up table to transcode it into any other representation which is native for the TC structure.
+
+\section{Transformation to a Binary Tree}
+
+\todo{Whole section}

@@ -1,0 +1,17 @@
+digraph {
+	rlu [label="Right-leaning\ngoing up"];
+	llu [label="Left-leaning\n going up"];
+	rld [label="Right-leaning\ngoing down"];
+	lld [label="Left-leaning\ngoing down"];
+
+
+	llu -> lld;
+	llu -> rld;
+	
+	rld -> lld;
+
+	rlu -> llu;
+
+	lld -> llu [label="Initially"];
+	rld -> rlu [label="Initially"];
+}
