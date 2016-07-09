@@ -1,9 +1,9 @@
 all: thesis.pdf
 
 # LaTeX must be run multiple times to get references right
-thesis.pdf: thesis.tex $(wildcard *.tex) bibliography.bib
+thesis.pdf: thesis.tex $(wildcard *.tex) bibliography.bib Makefile
 	pdflatex $<
-#	bibtex thesis
+	bibtex thesis
 	pdflatex $<
 	pdflatex $<
 

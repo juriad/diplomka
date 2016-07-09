@@ -2,20 +2,34 @@
 
 \section{Model of Computation}
 
-We state our results for a version of \emph{Random Access Machine}, which resembles current computers however in its definition it is better equipped for dealing with bit strings.
+We state all our results for \emph{word-RAM}, a version of \emph{Random Access Machine}, which resembles current computers.
+A \emph{word} is a sequence of $w$ consecutive bits which can be accessed and processed in one step of the computation.
+The constant $w$ depends on the space complexity $S$ in words of the problem which is being solved.
+A lower bound of $w \ge \lceil \log S \rceil$\footnote{
+	All logarithms are binary. 
+	We will usually assume the ceiling function of the logarithm while not explicitly writing it.
+	This does not change the time nor space complexity of the algorithms as it is only a lower order term.
+}
+ is necessary in order to allow access to any piece of memory which is used during the computation.
+We usually assume that $w = \Theta(\log S)$ as working with larger words would make the model too powerful.
+
+\bigbreak
+
+There are many definitions of word-RAMs, therefore we briefly describe the one which we are going to use.
 
 RAM has access to two types of memory:
 \begin{itemize}
-	\item \textbf{Main memory} which forms a sequence of bits.
-	The sequence is potentially unbounded and fill with zeros when the program starts.
+	\item \textbf{Main memory} which forms a sequence of words, which are the smallest addressable unites.
+	The sequence is potentially unbounded, however only a limited number of words can be accessed depending on the word size.
 	
-	The constant $w$ depends on the space complexity $S$ of the problem which is being solved.
-	A lower bound of $w \ge \lceil \log S \rceil$ is necessary in order to allow access to any piece of memory which is used during the computation.
-	We usually assume that $w = \Theta(\log S)$ as working with larger words would make the model too powerful.
-	\item Constant number of \textbf{registers}; each of them stores $w$ bits, which we call a \emph{machine word} or simply a \emph{word}.
+	We assume (as in case of Turing machine), that the input is written in the main memory starting at position $0$.
+	The input can be encoded in various ways, for example prefixed with number of words it requires.
+	Except for the input, the memory is filled with zeros when the program starts.
+	
+	\item Constant number of \textbf{registers}; each of them stores a single word.
 \end{itemize}
 
-The instructions supported by the RAM are:
+The instructions supported by the word-RAM are:
 \begin{enumerate}
 	\item Program flow control used for determining what instruction to process next.
 	\begin{itemize}
@@ -30,87 +44,144 @@ The instructions supported by the RAM are:
 		Each function ends with a return instruction followed by a value.
 		After a return, the program continues with an instruction which follows the one which initiated the call.
 	\end{itemize}
-	\item Work with memory:
+	\item Instructions for accessing and modifying the main memory.
 	\begin{itemize}
-		\item \textbf{Read}: $register \gets Memory[position, length]$ \\ \todo{Change to $[position .. end\_position]$}
-		Reads $length \le w$ consecutive bits from memory starting at $position$.
-		Once they are read, it stores them in a named $register$ right aligned and padded with zeros from left.
-		\item \textbf{Write}: $Memory[position, length] \gets a$ \\
-		Overwrites $length$ bits of memory with the $length$ least significant bits of the value of $a$ in memory at given $position$.
-		\item \textbf{Section}: $register \gets a[position, length]$ \\
-		Similar to reading from memory but operates on registers.
+		\item \textbf{Read}: $register \gets Memory[position]$ \\
+		Reads a word from the main memory and stores it in a named $register$.
+		\item \textbf{Write}: $Memory[position] \gets a$ \\
+		Overwrites the word stored in the main memory at the given $position$ with the value $a$.
 	\end{itemize}
-	\item Operators on registers; the resulting value is always stored to a register: $register \gets operation$:
+	\item Instructions on registers; the resulting value is always stored to a register: $register \gets operation$.
 	\begin{itemize}
 		\item \textbf{Arithmetic}: $a + b, a - b, a \cdot b, a \mathbin{/} b, a \% b$ \\
 		All overflows are silently discarded; the division is integral.
 		\item \textbf{Bitwise}: $a \bitand b, a \bitor b, a \bitxor b, \bitnot a, a \bitlsh b, a \bitrsh b$ \\
 		Bit shifts are padded with zeros.
 		\item \textbf{Boolean}: $a \booland b, a \boolor b, \boolnot a$ \\
-		Integers are implicitly converted to boolean ($0 \Leftrightarrow false$) and booleans to integers ($true \Rightarrow 1; false \Rightarrow 0$).
+		Integers are implicitly converted to boolean ($0 \Leftrightarrow false$), and booleans to integers ($true \Rightarrow 1; false \Rightarrow 0$).
 		\item \textbf{Relational}: $a < b, a \le b, a > b, a \ge b, a = b, a \ne b$ \\
 		The result is a boolean value.
 		\item \textbf{Function call}: $fn(args\ldots)$ \\
 		Calls a function $fn$, provides it required number of arguments.
+		The result is the value returned by the function.
 	\end{itemize}
 \end{enumerate}
 All single letter arguments can be either names of the registers or constants of size $w$ bits.
 
-\section{Succinct Data Structures}
+\subsection{RAM for Bit Strings}
 
-In a universe $U$ every object can be represented as a sequence of $\lceil \log |U| \rceil$, which we will for convenience call $N$, bits simply by ordering all objects and encoding their number in binary.
-Although this encoding is optimal in terms of the space used, it is rarely useful for more advanced operations than iterations over the objects in the universe and reconstruction of the original object.
+The general word-RAM is too restrictive for us as we will need to address individual bits or ranges of bits which are not aligned with words in the main memory.
 
-Many operations cannot be supported unless the object is fully decoded into a more traditional form first; others can be processed on the encoded object however their time complexity is worse than optimal.
+\begin{lemma}
+	We redefine the operations Read and Write to reflect our needs.
+	
+	\begin{itemize}
+		\item \textbf{Read}: $register \gets Memory[start:end]$ \\
+		Reads the $end - start \le w$ bits from the main memory starting with the bit at position $start$, which is in $(start \% w)$-th word and stores them padded with zeros from left in a $register$.
+		\item \textbf{Write}: $Memory[start:end] \gets a$ \\
+		Overwrites the $end - start \le w$ bits stored in the main memory at the given starting position with the $end - start$ least significant bits of the value $a$.
+	\end{itemize}
+	
+	We also redefine $Memory[start]$ to be equal to $Memory[start:start + 1]$.
+\end{lemma}
+\begin{proof}
+	These redefined instructions can be emulated with a constant number of arithmetic, bitwise, and up to two original memory accessing or modifying instructions.
+\end{proof}
 
-An \emph{implicit data structure} for a universe $U$ is a data structure which has space complexity $ \log |U| + O(1) $ bits of space.
-Examples of such data structures are heaps implemented as arrays; the internal navigation and realization of operations consists in pure arithmetic computation, swaps, and comparisons.
+We define the precise way how the input is stored in the main memory.
+The first word (at position $0$) contains the total number of bits -- that can require up to $\log w S = \Theta \log S$ bits.
+Starting with the position $1$ the bits of the input are stored consecutively filling the words from the most significant to the least significant bits.
+For convenience of querying ranges past the end of the input, we keep the one word after the end of the input free.
 
-The part ``bits of space'' is important because in case of implicit data structures, the additional constant number of bits don't even allow to represent a pointer.
-Size of each pointer is word size from the definition of RAM, which is at least $\lceil \log |U| \rceil$ in order to support indexing of the whole memory.
+We prefer to express the space complexities in bits rather than words and except for the very last part we will not use words at all.
+All values that our algorithms will store in registers will fit into them.
 
-Restriction on at most constant additional space is often too strict.
-A \emph{succinct data structures} is a data structure whose space complexity is $ \log |U| + o(\log |U|) $ bits of space.
-Examples are some restricted classes of graphs, such as planar graphs, and trees.
+\section{Space-Efficient Data Structures}
 
-A \emph{compact data structure} is a data structure which uses $ O(\log |U|) $ bits of space.
-Sometimes it is easier to design a compact rather than a succinct data structure.
-Edges in general graphs have two ends; in order to support efficient traversal of the edges, it seems logical to store every edge twice.
+In a universe $U$ every object can be represented as a sequence of $\lceil \log |U| \rceil = N$ bits simply by ordering all objects in the universe and encoding their number in binary.
+Although this encoding is optimal in terms of the space used, it is rarely useful for more advanced applications than iterations over the objects in the universe and reconstruction of the original object.
+Many operations cannot be supported unless the object is fully decoded into a more traditional form first; others can be processed on the encoded object, however their time complexity is much worse than the optimal.
 
-% TODO do we need the last clause?
-From now on, we will describe only succinct data structures, unless we state otherwise.
+The goal of space-efficient data structures is to allow some additional space in exchange for more and faster operations.
+There are three major representatives depending on the space complexity.
+
+\begin{itemize}
+	\item An \emph{implicit data structure} for a universe $U$ is a data structure which has space complexity $ \log |U| + O(\log |U|) $ bits of space; sometimes only $O(1)$ extra bits is allowed.
+	The encoding of the input is important in case of the tighter definition as it does not allow storing the size of the input itself.
+	An example of an implicit structure is a C string of characters which is terminated by zero.
+	
+	Another example\label{ex:implicit-graph} are general directed labeled graphs on $n$ vertices which can be stored in $n (n - 1)$ bits -- for pair of vertices $i \ne j$ a bit is stored whether the edge $(i, j)$ is in the graph or not -- this is basically adjacency matrix without its diagonal.
+	The only supported operation in constant time is determining whether two vertices are connected by an edge.
+	
+	A few implicit structures are known since the restriction posed by the definition of an implicit data structure is often too strict.
+
+	\item A \emph{succinct data structures} is a data structure whose space complexity is $ \log |U| + o(\log |U|) $ bits.
+	There exist succinct data structures for encoding some restricted classes of graphs, such as planar graphs, and trees.
+	The rest of this thesis is about succinct structures.
+	
+	Extending our example of a general graph by operation for querying out-degrees of vertices results in a succinct data structure.
+	We simply add an array of precomputed out-degrees which requires $n \log n = o(n^2)$ bits.
+	
+	Moreover, there is a succinct structure which supports adjacency testing and iteration over the list of neighbors and more in constant time. \cite[Theorem~6.1]{raman2007succinct}
+	
+	\item A \emph{compact data structure} is a data structure which uses $ O(\log |U|) $ bits of space.
+	
+	A compact structure is often a byproduct of a succinct structure when the constants in space or time complexity prove to be too big for a real use. \cite{gonzalez2005practical}
+	
+	We can easily extend the succinct structure for directed graphs into a compact structure for undirected graphs by simply using it twice: for the original graph and the graph with reversed edges.
+\end{itemize}
+
+\bigbreak
+
+In this thesis we are only interested in succinct data structures.
 
 \section{Storage}
 
-There are two distinct approaches to representing data structures as bit strings depending on how they are stored.
-We formulate them in terms of graphs.
+There are two distinct approaches to representing data structures as bit strings depending on how the data are partitioned.
 
-The \emph{systematic approach} splits the encoding into two parts: the data sufficient for reconstruction of the data structure, and auxiliary indices which help to realize or speed up queries on the data structure.
-The first part is usually made by traversal or decomposition of the data structure and itself can answer to some queries on neighborhood of the active vertex.
-Indices then store additional information which is often intended to offer precomputed jumps for queries which cannot be answered locally.
-The size of the indices is dominated by the size of the data.
+The \emph{systematic approach} splits the encoding into two parts:
+\begin{itemize}
+	\item the data sufficient for reconstruction of the structure.
+	This could be an implicit structure, however a more verbose encoding is often used.
+	For example in case of trees, it can be made by a traversal or a decomposition of the tree.
+	It can often answer some local queries.
+	\item auxiliary indices which help to speed up or even realize more advanced operations on the data structure.
+	Indices store additional information which is intended to offer answers to queries which are non-local such as depth of a vertex or lowest common ancestor.
+
+	The size of the indices is dominated by the size of the data.	
+	We call an index succinct if its size if $o(N)$.
+	
+	Sometimes it is easier to think about \emph{density} of an index (or its part) in bits per bit of data.
+	The density of a succinct index is $o(1)$.
+\end{itemize}
+
+In systematic approach it is easy to add another index and thereby support new operations.
+It is also possible to drop indices which are not necessary for particular use-cases in order to make the encoded data structure a little smaller.
+It can sometimes be beneficial to save only the data while recomputing all of the indices when the data structure is loaded into memory.
+
+\bigbreak
 
 The \emph{non-systematic encoding} cannot be split into such two parts.
-The organization of data itself allows all kinds of queries to be supported in desired time.
-
-Both approaches have advantages and disadvantages.
-In systematic approach it is easy to add another index and thereby support new operations.
-It is also possible to drop indices which are not necessary for particular use-cases making the encoded data structure a little smaller.
-Sometimes it can be beneficial to save only the data while computing all of the indices when the data structure is first used.
+The organization of data itself allows all kinds of operations to be supported in desired time.
 
 Non-systematic representations are designed with the set of supported operations on one's mind.
 It is not possible to remove support for any operation in order to spare some space.
-Adding support of a new operation which was not planned beforehand requires its composition of from the supported operations or adding an index, which results in a hybrid data structure.
+Adding support of a new operation which was not planned beforehand requires its composition from the already supported operations.
+It is also possible to add an additional index to a non-systematic data-structure, which results in a hybrid structure.
+
+\bigbreak
+
+Most of the presented results are about complex indices for simple encodings of trees.
 
 \section{Basic Techniques}
 
-There are a few techniques which are used in every data structure.
+There are a few techniques which are used in nearly every data structure.
 The idea of most of them is simple, however when combined together they pose a strong tool.
 
-\subsection{Pointers}
+\subsection{Division and Pointers}
 
-Succinct data structure is a string of bits.
-In order to give it a meaning, we often needs to think about parts of the string: the data and the indices.
+Every data structure is only a string of bits and unless we can calculate offset in any other way (as in case of the implicit graphs \ref{ex:implicit-graph}), we need to divide the bit string into parts and use pointers to navigate between them.
+In the following lemma we show that a small number of independent parts can be concatenated in one bit string.
 
 \begin{lemma}
 	Let $K = o(\frac{N}{\log N})$ be number of bit strings $S_1, \ldots, S_K$ and $N_1, \dots, N_K$ their lengths which sum up to $N$.
@@ -118,59 +189,83 @@ In order to give it a meaning, we often needs to think about parts of the string
 	Typically $K = O(1)$.
 \end{lemma}
 \begin{proof}
-	The new bit string $S$ starts with a header in form of a table and continues with concatenated bit strings $S_1, \ldots, S_K$ without any delimiters.
+	The new bit string $S$ starts with the number of parts in binary followed by a header in form of a table and continues with concatenated bit strings $S_1, \ldots, S_K$ without any delimiters.
 	The table contains $K$ offsets of all the original bit strings within $S$ ignoring the space taken by the header.
-	Each offset is encoded as a binary number using $\lceil \log N \rceil$ bits, which results in the table having size $K \lceil \log (N) \rceil = o(N)$.
+	Each offset is encoded as a binary number using $\lceil \log N \rceil$ bits, which results in the table having size $\log K + K \lceil \log (N) \rceil = o(N)$.
 \end{proof}
 
-We stored offsets of the bits where the individual substrings start.
-We can look at this offset as a local pointer whose size depends on the range which it shall point into.
+This lemma is used whenever we add indices to a systematic succinct data structure, in such case we use it as a fact and do not emphasize it.
 
-Pointers which have different sizes allow us to decompose a big structure into small blocks.
-There will be a lot of pointers withing blocks, however they require only a small size, and pointers between blocks, which are large in space but used only seldom.
+When we store an offset -- which we also call a pointer -- relatively to a certain position in the bit string rather than absolutely from its beginning.
+The size of the offset in bits depends on the range into which it points.
+The fact that the pointers can have different sizes allow us to decompose a big structure into small parts with restricted pointers between them.
+There will be a lot of pointers within individual parts, however they require only a small size, and pointers between parts, which are large in size but used only seldom.
 
 \subsection{Precomputation}
 
 The goal of most succinct data structures is to perform queries in constant time.
-Even if this was possible on high level, in the end the query must be processed on data of size of a machine word.
+Even if this was possible on high level, in the end the query must be processed on data of size close to a machine word.
+The following lemma shows that we can precompute all queries restricted to a small block of data.
 
-Let's assume that we have a block of data of $B$ bits.
-Let's also have parameters of the query on block of such size; these parameters have size $P$ bits in total.
-And an expected result of size $R$ bits.
-As long as $B+P+\log R = o(\log N)$, we can afford to precompute result of all possible queries while still having a succinct data structure.
+\begin{lemma}
+	All answers to a query $Q$ with parameters of total size $P$ restricted to $B$ consecutive bits of memory with an answer of size $R$ bits can be solved in $O(1)$ time with an index of additional $2^{B+P} R$ bits.
+	
+	As long as $B + P + \log R < \log N$, this results in a succinct index.
+\end{lemma}
+\begin{proof}
+	We represent this as a table of consecutively stored precomputed answers to $2^{B+P}$ possible queries.
+	The index of the table is the $B$ bits of data concatenated with $P$ bits of parameters interpreted as a number.
 
-We represent this as a table -- denoted as a triplet $(B, P, R)$ -- with records of size $R$ bits.
-There are exactly $2^{B+P} = o(N)$ such records.
-Lookup is easy: $B$ and $P$ bits are concatenated and multiplied by $R$, which gives the offset of $R$ bits of result.
+	Lookup is easy: $B$ and $P$ bits are concatenated and multiplied by $R$, which gives the offset of result.
+	
+	The bound for a succinct index follows from the total size of the table.
+\end{proof}
 
-% TODO four Russians
-This technique is known as \url{https://en.wikipedia.org/wiki/Method_of_Four_Russians}.
+We can say that a look-up table captures the result of an algorithm with parameters of size $P$ accessing $B$ consecutive bits of the main memory and returning a result of $R$ bits.
 
-\subsubsection{\label{sss:precomputation-example}Example}
+We call the structure from the lemma a look-up table; this technique is also known as the Method of Four Russians.
+All our look-up tables will be succinct indices.
 
-Assume a bit string of length $N$ bits.
-For each block of $B = \lceil\frac{\log N}{2}\rceil$ bits, we want to run a range query asking for number of ones.
-The query has a parameter $end$ of size $\lceil \log {B} \rceil$ bits, and result of the same size.
-The size of the table is then $O(\sqrt{N} \log N \log\log N) = o(N)$.
+\bigbreak
 
-This example is one of building blocks used in design of the \emph{rank index}.
+\begin{example}\label{sss:precomputation-example}
+	We develop a compact index which answers queries on number of ones in a bit string of size $N$ from its beginning up to a position $i$ .
+	We split the bit string into blocks of size $B = \lceil\frac{\log N}{2}\rceil$ bits and for each block we precompute the number of ones in the preceding blocks.
+	These $\lceil \frac{N}{B} \rceil$ numbers are stored in a table.
+	As the number of ones is bounded by $N$, each item of the table requires $O(\log N)$ bits.
+	
+	It remains to find the number of ones in the block $\frac{i}{B}$ up to a position $i$, for which we use a look-up table.
+	The data supplied to the look-up table is the $B$ bits of the block and a parameter $i \% B$; the answer is in range $[0, B]$.
+	The algorithm captured by the look-up table simply iterates through the bits of the block and adds them together.
+	The look-up table is a succinct index as $B + \log B + \log (B + 1) < \log N$.
+	
+	Number of ones up to position $i$ is the sum of the number of ones in previous blocks and the answer of the look-up table for the block containing $i$.
+	Although the look-up table requires $o(N)$ bits, the total size is $O(N)$ due to the first table.
+	
+	If a more careful splitting into blocks is used, this index can be made succinct, which we show later.
+\end{example}
+
+\bigbreak
+
+The look-up tables can be used merely as a way to overcome the differences between the word-RAM and the real computers.
+The look-up table from the example \ref{sss:precomputation-example} could be replaced with an instruction \verb|POPCNT| which is provided by certain CPU architectures.
+Alternatively an algorithm with a theoretic running time $O(\log \log N)$ can be used; it can be implemented using a fixed number of instructions.
+
+If the algorithm captured by the look-up table can be split into several parts, then a single large look-up table can be replaced with two or more look-ups in substantially smaller tables.
+This can result in an implementation which is more considerate to caches in modern CPUs in exchange for a theoretical constant-time slowdown.
 
 \subsection{\label{ss:index-without-data}Index Without Data}
 
 Let's assume that we want to support an operation on derived data.
-Instead of counting ones, as in the previous example, we could want to count transitions from zero to one in bit string $S$.
-We can define a new bit string $T$ as:
+Instead of counting ones, as in the previous example, we want to count the transitions from zero to one in the bit string $S$.
+We can define a new bit string $T$ which has a bit with value one for each such transition:
 $$ T = \bitnot S \bitand (S \bitlsh 1)$$
-Any $w$ consecutive bits can be calculated in constant time; mind the adjustment for overflows and string ends.
 
-And on top of this bit string we build the rank index.
-Although the index is small, $o(N)$, the data is too big $N$, making our data structure compact and not succinct.
+On top of the bit string $T$ we build a succinct rank index.
+Although the index is small, $o(N)$, we cannot afford to store the whole bit string $T$ since it would make our data structure compact and not succinct.
 
-We solve it by keeping the small index but dropping the data.
-Whenever the algorithm asks for a block the data, it only wants $w$ bits at a time, which we can compute on the fly with a constant slow down.
-This technique works in general; we don't need to know how the operation works as long as we are able to provide it on request any chunk of $w$ bits of memory.
+We solve this issue by keeping only the small index while dropping the bit string $T$.
+Whenever the ranking algorithm accesses the bit string $T$, it can only request $w$ bits at a time, which we can compute on the fly with a constant slow down from the bit string $S$ using the given formula.
 
-\subsection{Space Complexity Analysis}
-
-Sometimes it is easier to think about \emph{density} of an index (or its part) in bits per bit of data.
-Then a succinct index is such index which has a constant number of parts with each of them accounting to $o(1)$ bits per $1$ bit of data.
+This technique works in general; any algorithm on word-RAM can access at most $w$ bits of the input in each step.
+We do not need to know how the operation works as long as we are able to provide it any chunk of $w$ bits of memory in constant time upon request.

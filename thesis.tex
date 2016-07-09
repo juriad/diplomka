@@ -42,13 +42,15 @@
 			    % of contents
 \usepackage{dcolumn}        % improved alignment of table columns
 \usepackage{booktabs}       % improved horizontal lines in tables
-\usepackage[defblank]{paralist}       % improved enumerate and itemize
+%\usepackage[defblank]{paralist}       % improved enumerate and itemize
+\usepackage[inline]{enumitem}
+
 \usepackage[usenames]{xcolor}  % typesetting in color
 
 %%% Basic information on the thesis
 
 % Thesis title in English (exactly as in the formal assignment)
-\def\ThesisTitle{Succinct Trees}
+\def\ThesisTitle{Succinct encodings of trees}
 
 % Author of the thesis
 \def\ThesisAuthor{Adam Juraszek}
@@ -59,20 +61,20 @@
 % Name of the department or institute, where the work was officially assigned
 % (according to the Organizational Structure of MFF UK in English,
 % or a full name of a department outside MFF)
-\def\Department{Name of the department}
+\def\Department{Department of Applied Mathematics}
 
 % Is it a department (katedra), or an institute (ústav)?
 \def\DeptType{Department}
 
 % Thesis supervisor: name, surname and titles
-\def\Supervisor{Supervisor's Name}
+\def\Supervisor{Mgr. Martin Mareš, Ph.D.}
 
 % Supervisor's department (again according to Organizational structure of MFF)
-\def\SupervisorsDepartment{department}
+\def\SupervisorsDepartment{Department of Applied Mathematics}
 
 % Study programme and specialization
-\def\StudyProgramme{study programme}
-\def\StudyBranch{study branch}
+\def\StudyProgramme{Master of Computer Science}
+\def\StudyBranch{Theoretical Computer Science }
 
 % An optional dedication: you can thank whomever you wish (your supervisor,
 % consultant, a person who lent the software, etc.)
@@ -85,11 +87,15 @@ Dedication.
 \def\Abstract{%
 	% TODO abstract
 Abstract.
+Stručné (succinct) říkáme těm datovým strukturám, kterým stačí prostor blízký k informačně-teoretickému optimu, a přitom stále mají příznivou časovou složitost vhodné množiny operací.
+
+Cílem práce je prozkoumat existující stručné datové struktury pro reprezentaci stromů, porovnat jejich chování a případně je vylepšit.
 }
 
 % 3 to 5 keywords (recommended), each enclosed in curly braces
 \def\Keywords{%
-{key} {words}
+	% TODO keywords
+{trees} {succinct data structures}
 }
 
 %% The hyperref package for clickable links in PDF and also for storing
@@ -106,7 +112,11 @@ Abstract.
 
 % Title page and various mandatory informational pages
 \begin{document}
-\setdefaultenum{(1)}{(a)}{}{}
+%\setdefaultenum{(1)}{(a)}{}{}
+\setlist{listparindent=\parindent, parsep=0pt}
+\setlist[enumerate,1]{label=(\arabic*)}
+\setlist[enumerate,1]{label=(\alph*)}
+\setlist[description]{labelindent=\parindent}
 
 \include{title}
 
