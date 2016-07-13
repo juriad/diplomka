@@ -89,7 +89,7 @@
 
 %%% My own macros
 
-\def\ph{\textvisiblespace}
+\def\ph{\relax\ifmmode*\else$*$\fi}
 
 \newcommand{\todo}[1]{}
 \renewcommand{\todo}[1]{{\color{red} TODO: {#1}}}
@@ -126,6 +126,64 @@
 
 \DeclareMathOperator*{\argmin}{arg\,min}
 \DeclareMathOperator*{\argmax}{arg\,max}
+
+\DeclareMathOperator{\textif}{\textrm{if}}
+\DeclareMathOperator{\textthen}{\textrm{then}}
+\DeclareMathOperator{\textelse}{\textrm{else}}
+\DeclareMathOperator{\textotherwise}{\textrm{otherwise}}
+
+\def\openingParen{\relax\ifmmode\textrm{'('}\else'('\fi}
+\def\closingParen{\relax\ifmmode\textrm{')'}\else')'\fi}
+
+\usepackage{xifthen}
+\newcommand{\defineName}[2][]{%
+	\expandafter\def\csname \if\relax\detokenize{#1}\relax#2\else#1\fi\endcsname{\relax\ifmmode\mathit{#2}\else\textsc{#2}\fi}%
+}
+
+% in Foundations
+\defineName{true}
+\defineName{false}
+
+% in Bit Strings, general definitions
+\defineName{rank}
+\defineName{select}
+\defineName{inspect}
+\defineName{pred}
+\defineName{succ}
+\defineName{prev}
+\defineName{next}
+
+% in Bit Strings, rank
+\defineName{block}
+\defineName[glob]{global}
+
+% in Bit Strings, select
+\defineName[blockEnum]{block\_enum}
+\defineName{blocks}
+\defineName[smallBlockEnum]{small\_block\_enum}
+\defineName[smallBlocks]{small\_blocks}
+
+% in Bit Strings, balanced definitions
+\defineName{match}
+\defineName{enclose}
+\defineName[findClose]{find\_close}
+\defineName[findOpen]{find\_open}
+\defineName{excess}
+\defineName[parenDepth]{paren\_depth}
+\defineName{rmqi}
+\defineName{rmq}
+\defineName{RMQi}
+\defineName{RMQ}
+
+% in Bit Strings, match, enclose
+\defineName{far}
+\defineName{paren}
+\defineName[fwdSearch]{fwd\_search}
+\defineName[bwdSearch]{fwd\_search}
+
+% in Bits Strings, rmq
+\defineName[rmqiSpan]{rmqi\_span}
+\defineName{Tm}
 
 \usepackage{environ}
 % \RenewEnviron{algorithmic}[2][\relax]{}

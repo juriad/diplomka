@@ -35,34 +35,34 @@ The instructions supported by the word-RAM are:
 	\begin{itemize}
 		\item \textbf{Termination}: $\textrm{halt}$ \\
 		Stops the program immediately.
-		\item \textbf{Jumps}: $label{:}\ instruction, \textrm{goto}\ label, \textrm{goto}\ label\ \textrm{if}\ a$ \\
+		\item \textbf{Jumps}: $\mathit{label}{:}\ \mathit{instruction}, \textrm{goto}\ \mathit{label}, \textrm{goto}\ \mathit{label}\ \textrm{if}\ a$ \\
 		Continues with execution of the instruction at the specified label.
-		In the latter case, it goes to the label only if $a$ is $true$, otherwise it continues with the next instruction.
-		\item \textbf{Functions}: $\textrm{function}\ fn(args\ldots), \textrm{return}\ a$ \\
-		Defines a function $fn$ with a constant number of arguments, possibly zero.
+		In the latter case, it goes to the label only if $a$ is $\mathit{true}$, otherwise it continues with the next instruction.
+		\item \textbf{Functions}: $\textrm{function}\ \mathit{fn}(\mathit{args}\ldots), \textrm{return}\ a$ \\
+		Defines a function $\mathit{fn}$ with a constant number of arguments, possibly zero.
 		A function has access to the main memory but not to any registers which were used by its caller.
 		Each function ends with a return instruction followed by a value.
 		After a return, the program continues with an instruction which follows the one which initiated the call.
 	\end{itemize}
 	\item Instructions for accessing and modifying the main memory.
 	\begin{itemize}
-		\item \textbf{Read}: $register \gets Memory[position]$ \\
-		Reads a word from the main memory and stores it in a named $register$.
-		\item \textbf{Write}: $Memory[position] \gets a$ \\
+		\item \textbf{Read}: $\mathit{register} \gets \mathit{Memory}[\mathit{position}]$ \\
+		Reads a word from the main memory and stores it in a named $\mathit{register}$.
+		\item \textbf{Write}: $\mathit{Memory}[\mathit{position}] \gets a$ \\
 		Overwrites the word stored in the main memory at the given $position$ with the value $a$.
 	\end{itemize}
-	\item Instructions on registers; the resulting value is always stored to a register: $register \gets operation$.
+	\item Instructions on registers; the resulting value is always stored to a register: $\mathit{register} \gets \mathit{operation}$.
 	\begin{itemize}
 		\item \textbf{Arithmetic}: $a + b, a - b, a \cdot b, a \mathbin{/} b, a \% b$ \\
 		All overflows are silently discarded; the division is integral.
 		\item \textbf{Bitwise}: $a \bitand b, a \bitor b, a \bitxor b, \bitnot a, a \bitlsh b, a \bitrsh b$ \\
 		Bit shifts are padded with zeros.
 		\item \textbf{Boolean}: $a \booland b, a \boolor b, \boolnot a$ \\
-		Integers are implicitly converted to boolean ($0 \Leftrightarrow false$), and booleans to integers ($true \Rightarrow 1; false \Rightarrow 0$).
+		Integers are implicitly converted to boolean ($0 \Leftrightarrow \false$), and booleans to integers ($\true \Rightarrow 1; \false \Rightarrow 0$).
 		\item \textbf{Relational}: $a < b, a \le b, a > b, a \ge b, a = b, a \ne b$ \\
 		The result is a boolean value.
-		\item \textbf{Function call}: $fn(args\ldots)$ \\
-		Calls a function $fn$, provides it required number of arguments.
+		\item \textbf{Function call}: $\mathit{fn}(\mathit{args}\ldots)$ \\
+		Calls a function $\mathit{fn}$, provides it required number of arguments.
 		The result is the value returned by the function.
 	\end{itemize}
 \end{enumerate}
@@ -76,13 +76,13 @@ The general word-RAM is too restrictive for us as we will need to address indivi
 	We redefine the operations Read and Write to reflect our needs.
 	
 	\begin{itemize}
-		\item \textbf{Read}: $register \gets Memory[start:end]$ \\
-		Reads the $end - start \le w$ bits from the main memory starting with the bit at position $start$, which is in $(start \% w)$-th word and stores them padded with zeros from left in a $register$.
-		\item \textbf{Write}: $Memory[start:end] \gets a$ \\
-		Overwrites the $end - start \le w$ bits stored in the main memory at the given starting position with the $end - start$ least significant bits of the value $a$.
+		\item \textbf{Read}: $\mathit{register} \gets \mathit{Memory}[\mathit{start}:\mathit{end}]$ \\
+		Reads the $\mathit{end} - \mathit{start} \le w$ bits from the main memory starting with the bit at position $\mathit{start}$, which is in $(\mathit{start} \% w)$-th word and stores them padded with zeros from left in a $register$.
+		\item \textbf{Write}: $\mathit{Memory}[\mathit{start}:\mathit{end}] \gets a$ \\
+		Overwrites the $\mathit{end} - \mathit{start} \le w$ bits stored in the main memory at the given starting position with the $\mathit{end} - \mathit{start}$ least significant bits of the value $a$.
 	\end{itemize}
 	
-	We also redefine $Memory[start]$ to be equal to $Memory[start:start + 1]$.
+	We also redefine $\mathit{Memory}[\mathit{start}]$ to be equal to $\mathit{Memory}[\mathit{start}:\mathit{start} + 1]$.
 \end{lemma}
 \begin{proof}
 	These redefined instructions can be emulated with a constant number of arithmetic, bitwise, and up to two original memory accessing or modifying instructions.
@@ -183,7 +183,7 @@ The idea of most of them is simple, however when combined together they pose a s
 Every data structure is only a string of bits and unless we can calculate offset in any other way (as in case of the implicit graphs \ref{ex:implicit-graph}), we need to divide the bit string into parts and use pointers to navigate between them.
 In the following lemma we show that a small number of independent parts can be concatenated in one bit string.
 
-\begin{lemma}
+\begin{lemma}\label{l:concat}
 	Let $K = o(\frac{N}{\log N})$ be number of bit strings $S_1, \ldots, S_K$ and $N_1, \dots, N_K$ their lengths which sum up to $N$.
 	Then we can combine all bit strings into a single bit string $S$ while maintaining succinctness and constant time access to the individual bit strings.
 	Typically $K = O(1)$.
@@ -228,28 +228,7 @@ All our look-up tables will be succinct indices.
 
 \bigbreak
 
-\begin{example}\label{sss:precomputation-example}
-	We develop a compact index which answers queries on number of ones in a bit string of size $N$ from its beginning up to a position $i$ .
-	We split the bit string into blocks of size $B = \lceil\frac{\log N}{2}\rceil$ bits and for each block we precompute the number of ones in the preceding blocks.
-	These $\lceil \frac{N}{B} \rceil$ numbers are stored in a table.
-	As the number of ones is bounded by $N$, each item of the table requires $O(\log N)$ bits.
-	
-	It remains to find the number of ones in the block $\frac{i}{B}$ up to a position $i$, for which we use a look-up table.
-	The data supplied to the look-up table is the $B$ bits of the block and a parameter $i \% B$; the answer is in range $[0, B]$.
-	The algorithm captured by the look-up table simply iterates through the bits of the block and adds them together.
-	The look-up table is a succinct index as $B + \log B + \log (B + 1) < \log N$.
-	
-	Number of ones up to position $i$ is the sum of the number of ones in previous blocks and the answer of the look-up table for the block containing $i$.
-	Although the look-up table requires $o(N)$ bits, the total size is $O(N)$ due to the first table.
-	
-	If a more careful splitting into blocks is used, this index can be made succinct, which we show later.
-\end{example}
-
-\bigbreak
-
-The look-up tables can be used merely as a way to overcome the differences between the word-RAM and the real computers.
-The look-up table from the example \ref{sss:precomputation-example} could be replaced with an instruction \verb|POPCNT| which is provided by certain CPU architectures.
-Alternatively an algorithm with a theoretic running time $O(\log \log N)$ can be used; it can be implemented using a fixed number of instructions.
+The look-up tables are sometimes used merely as a way to overcome the differences between the word-RAM and the real computers as there are instructions in modern computers which cannot be computed directly on word-RAM.
 
 If the algorithm captured by the look-up table can be split into several parts, then a single large look-up table can be replaced with two or more look-ups in substantially smaller tables.
 This can result in an implementation which is more considerate to caches in modern CPUs in exchange for a theoretical constant-time slowdown.
