@@ -1,407 +1,419 @@
 \chapter{Representations of Trees}
 
-There are many ways to represent trees in memory.
-The traditional approach is to have a structure for each vertex pointing to all its children and its parent, and sometimes storing an additional value.
-In our discussion we can assume that no additional value is present; if it was, we could move it to an external table and reference it by a pointer while maintaining the same space complexity.
-We are therefore interested in representation only of the structure of the tree.
+There are many ways to represent static ordinal trees in memory.
+The traditional way, which most people know and use, is to have a structure for each vertex pointing to all its children and its parent, and sometimes storing an additional value.
+Each edge of the tree is stored twice as a pointer of size $w$.
+Even if we did not need any other space to manage the vertex structures, the space occupied by the edges takes $\Omega (n \log n)$ bits.
 
-We can express how many such trees with $n$ vertices exist in total using Catalan numbers.
+In our discussion we assume that no additional value is present, and we are therefore interested in the structure of the tree itself.
+If it was, we could move it to an external table which is indexed by the number of the vertex to which it belongs.
+The number of the vertex can be its general \rank{}, or if we store values only in leaves, it can be its \leafRank{}.
+This transformation maintains the same space complexity.
+
+We can express how many ordinal trees with $n$ vertices exist in total using Catalan numbers.
 $$ | \mathcal{T}(n) | = C_{n-1} = \frac{1}{n} {2n - 2 \choose n - 1} $$
 The $-1$ stems from the tree having a single root.
-$$ \log | \mathcal{T}(n) | \sim \log \frac{1}{n}\frac{4^{n-1}}{\sqrt{(n-1)\pi}} = 2(n-1) - \frac{1}{2} \log{(n - 1)\pi} - \log n \sim 2n - O(\log n) $$
+$$ \log | \mathcal{T}(n) | \sim \log \frac{1}{n}\frac{4^{n-1}}{\sqrt{(n-1)\pi}} = 2(n - 1) - \frac{1}{2} \log{(n - 1)\pi} - \log n \sim 2n - O(\log n) $$
 When we design a succinct data structure for ordinal trees, we are limited by the space given by the leading term: $2n + o(n)$ bits.
 
-In the traditional data structures, each edge of the tree is stored twice as a pointer of size $w$.
-Even if we did not need any other space to manage the vertex structures, the space occupied by the edges takes $\Omega (n \log n)$.
-
-In this and in the next chapter we show several succinct data structures which overcome the logarithmic factor introduced by using pointers and get close to the optimum space complexity.
-We start with defining operations which we want to be able to be supported on the succinct structures.
-Then we define the distinct ways how to encode a tree in a single bit string of size $2n$ bits and support various operations using usually only the primitive operations which we developed in the chapter \ref{c:bit-strings}.
+In this and in the next chapter we show several succinct data structures which overcome the logarithmic factor introduced by using pointers, and get close to the optimum space complexity.
+We start with defining operations which are desired to be supported by the tree data structures.
+The rest of this chapter is then dedicated to simple representations which encode the whole tree in $\sim 2n$ bits and support various operations via additional indices, which we developed in the chapter \ref{c:bit-strings}.
+More advanced structures which do not have the limitations of the simple structures are shown in the next chapter.
 
 \section{Operations}
 
-We define operations which we discuss in context of tree data structures.
+\begin{table}
+	\centering
+	\begin{tabularx}{\textwidth}{|L{0.7}|J{1.3}|}
+		\hline
+		$\mathit{op}(\mathit{arg}) \rightarrow \mathit{ret}$
+		& Description \\ \hline \hline
+		
+		$\anyRank(i) \rightarrow r$, \newline
+		$\anySelect(r) \rightarrow j$, \newline
+		$\anyPrev(i) \rightarrow j$, \newline
+		$\anyNext(i) \rightarrow j$, \newline
+		$\anyFirst(i) \rightarrow j$, \newline
+		$\anyLast(i) \rightarrow j$, \newline
+		$\anySize() \rightarrow n$
+		& These are general operations which can be grouped together since it is usually desired to support them all.
+		The operations are defined for various parts of the tree, as it is shown in the following rows.
+		
+		All operations can be expressed using \anyRank{}, \anySelect{}, and \anySize, however those are not always available.
+		Alternatively an iteration over objects is possible if \anyPrev{}, \anyNext{}, \anyFirst{}, \anyLast{} are defined.
+		
+		In all algorithms we assume that the bounds are checked before the operation commences.\\ \hline \hline
+		
+		$\preRank(i)$, $\preSelect(r)$, \newline
+		$\postRank(i)$, $\postSelect(r)$, \newline
+		$\inRank(i)$, $\inSelect(r)$, \newline
+		$\dfudsRank(i)$, $\dfudsSelect(r)$, \newline
+		$\loRank(i)$, $\loSelect(r)$
+		& The \rank{} and \select{} operations come in several flavors based on method of the tree traversal and when the vertices are assigned their numbers.
+		\begin{itemize*}
+			\item Pre-order number is assigned when DFS visits a vertex from its parent;
+			\item post-order when DFS leaves a vertex to its parent;
+			\item in-order when DFS returns to a vertex from its child and leaves to another of its children;
+			\item dfuds-order is assigned to all children when its parent is first visited;
+			\item lo-order is assigned when BFS visits a vertex.
+		\end{itemize*}\\ \hline
+		
+		$\childAny$ operations, \newline
+		$\parent(i) \rightarrow j$, \newline
+		$\isRoot(i) \rightarrow b$
+		& \childSelect{} is provided also with the parent vertex as an additional argument.
+		\childFirst{}, \childLast{} are defined for the parent vertex rather than their siblings.
+		The operation \childSize{} is replaced by \degree{} which is defined for the parent vertex.
+		\parent{} and \isRoot{} complete the set of the navigation operations.\\ \hline
+	
+		$\levelAny$ operations, \newline
+		$\dep(i) \rightarrow l$
+		& The level operations can be parametrized in two orthogonal ways:
+		\begin{iteminline}
+			\item the level (or range thereof) of the tree in which we are interested,
+			\item and the subtree of a vertex to which the query is restricted.
+		\end{iteminline} \\ \hline
+		
+		$\leafAny$ operations, \newline
+		$\isLeaf(i) \rightarrow b$
+		& The order respects the ranks of the leaves (pre-order for DFS, lo-order for BFS).
+		The queries can be further restricted to levels and subtrees.\\ \hline \hline
+		
+		$\isAncestor(i_1, i_2) \rightarrow b$, \newline
+		$\levelAncestor(i, d) \rightarrow j$, \newline
+		$\lca(i_1, i_2) \rightarrow j$
+		$\distance(i_1, i_2) \rightarrow n$
+		& Ancestral operations are usually the hardest to support; they usually require specialized indices.
+		The operation \lca{} stands for Lowest Common Ancestor. \\ \hline
+		
+		$\hei(i) \rightarrow l$, \newline
+		$\deepestVertex(i) \rightarrow j$, \newline
+		$\subtreeSize(i) \rightarrow n$
+		& Some other operations which can be supported by tree data structures. \\ \hline
+	\end{tabularx}
+	\caption{List of operations defined for ordinal trees}
+	\label{tab:list-ops}
+\end{table}
 
-\todo{rank and select are counted from 1, sort of}
+The operations are defined in the table \ref{tab:list-ops}.
+The desired running time of all operations is $O(1)$.
 
-\noindent\begin{tabularx}{\textwidth}{|L{0.7}|L{1.3}|}
-	\hline
-	$op(arg) \rightarrow ret$
-	& Description \\ \hline \hline
-	
-	$*\_rank(i) \rightarrow n$, \newline
-	$*\_select(n) \rightarrow j$, \newline
-	$*\_prev(i) \rightarrow j$, \newline
-	$*\_next(i) \rightarrow j$, \newline
-	$*\_first(i) \rightarrow j$, \newline
-	$*\_last(i) \rightarrow j$, \newline
-	$*\_size() \rightarrow n$
-	& These are general operations which we may want to support on various parts of the tree.
-	All operations can be expressed using rank, select, and size, however those are not always available. \\ \hline \hline
-	
-	$\{pre,post,in,lo\}\_*$ operations
-	& The rank and select operations come in four flavors based on method of the tree traversal and when the vertex is assigned its number:
-	pre-order, in-order, post-order in case of DFS, and level-order in case of BFS. \\ \hline
-	
-	$child\_*$ operations, \newline
-	$parent(i) \rightarrow j$, \newline
-	$is\_root(i) \rightarrow b$
-	& The operation $child\_select$ needs an additional argument -- the parent vertex.
-	The operations $child\_first$, $child\_last$ can be take parent vertex as an argument instead of the sibling.
-	We add the operations $parent$ and $is\_root$ to this category to allow basic navigation queries.
-	The operation $child\_size$ is usually called $degree$ and takes the parent vertex as an argument.\\ \hline
+\emph{Navigation operations} are such operations which allow traversal of the tree.
+The operations \childRank{}, \childSelect{} and \degree{} are preferred over the relative operations \childPrev{}, \childNext{}, \childFirst{} and \childLast{}.
+In order to navigate up in the tree \parent{} and \isRoot{} are required.
 
-	$level\_*$ operations, \newline
-	$depth(i) \rightarrow l$
-	& The level operations can be parametrized in two orthogonal ways:
-	the level of the tree which we are interested in (or range thereof), and subtree of the tree we are restricted the queries to. \\ \hline
-	
-	$leaf\_*$ operations, \newline
-	$is\_leaf(i) \rightarrow b$
-	& Operations on the set of leaves in the tree.
-	The rank should be monotonous in respect to the vertex rank. 
-	Again, the queries can be restricted to levels and subtrees.\\ \hline \hline
-	
-	$is\_ancestor(i, j) \rightarrow b$, \newline
-	$level\_ancestor(i, d) \rightarrow j$, \newline
-	$lca(i_1, i_2) \rightarrow j$
-	$distance(i_1, i_2) \rightarrow n$
-	& The operation $lca$ stands for Lowest Common Ancestor.
-	Ancestral operations are usually hard to support and require specialized indices. \\ \hline
-	
-	$height(i) \rightarrow l$, \newline
-	$deepest\_vertex(i) \rightarrow j$, \newline
-	$subtree\_size(i) \rightarrow n$
-	& Other possible operations which could be supported by the data structure. \\ \hline
-\end{tabularx}
-
-In the queries we use $i$ and $j$ to refer to the internal representation of the vertex.
-Although it often is the same as position of a specific symbol related to the vertex in the representation, for the user of the structure it is an atomic value with no meaning other than a reference which can be used for querying the structure.
-If the number of the vertex matters, the user is advised to use one of the ranking operations which map the vertices into an interval $[0, n-1]$.
-This can be necessary if we want to interact with other structures, such as addressing the value of the vertex stored in an external table.
+In the definitions, we use $i$ and $j$ to refer to the internal representation of the vertex.
+They are not meant to be used for anything else except for being passed to an operation as an argument.
+If the number of the vertex matters, one of the supported ranking operations, which map the vertices into an interval $[0, n)$, shall be used.
 
 \section{Representations}
 
-A tree can be stored as a single bit string in several different ways.
-Here we describe how it is possible to store a tree in a bit string of size $\sim 2n$ bits.
-\begin{enumerate}
-	\item Level-Order Unary Degree Sequence -- a heap-like structure which supports the basic navigation queries requiring only rank and select.
-	\item Balanced Parentheses -- uses the natural mapping between ordinal trees and matching parentheses.
-	\item Depth-First Unary Degree Sequence -- combination of the previous two approaches offering an alternative mapping to matching parentheses.
-\end{enumerate}
-
-LOUDS is the oldest representation with most limitations on supported operations, which it compensates by its simplicity.
-The biggest limitation are subtree-restricted queries and ancestor queries because of storage of the vertices by levels, which causes each subtree to be spread in the representation.
-
-With match and enclose operations available on parentheses, the BP representation was invented.
-It supports the queries which were not possible before, however it pays for it by using multiple indices, which are necessary even for simple child queries.
-DFUDS representation is a hybrid representation, which takes the better parts of both previous ones.
-The navigation queries are fully supported while it retains the locality of subtrees.
-Authors often compete and equip their DFUDS or BP structures with more indices that support operations with which the other representation comes.
+An ordinal tree can be stored in a single bit string in several different ways.
+Here we describe how it is possible to store a tree in a bit string of size $N = \sim 2n$ bits\footnote{
+	We use $N$ to refer to size of the bit string, and $n$ to refer to number of vertices.
+}.
+\begin{description}
+	\item[Level-Order Unary Degree Sequence (LOUDS)]
+	LOUDS is the oldest representation with most limitations on supported operations, which it compensates by its simplicity as only \rank{} and \select{} operations are required.
+	It stores the data in a heap-like way by levels, which results in subtrees being spread throughout the representation.
+	The consequence of the storage is that it lacks all subtree-restricted and ancestral operations.
+	
+	\item[Balanced Parentheses (BP)]
+	With \match{} and \enclose{} operations available on balanced bit strings, the BP representation was invented.
+	It uses the natural mapping between ordinal trees and balanced bit strings.
+	It supports many operations which were not possible before, however the price for it is that multiple indices are necessary.
+	The \childRank{} and \childSelect{} operations are not supported natively.
+	
+	\item[Depth-First Unary Degree Sequence (DFUDS)]
+	DFUDS representation is a hybrid representation of the previous ones using an alternative mapping to a balanced bit string.
+	The navigation queries are fully supported while it retains the locality of the subtrees.
+	
+	Authors often compete and equip their DFUDS and BP structures with more indices that support operations with which the other representation comes.
+\end{description}
 
 \section{LOUDS}
 
-The first method of storing an ordinal tree succinctly was first described by Jacobson in \todo{article}.
-The encoding of the tree is based on its vertices reporting their degrees in unary system.
-Vertices are processed in by levels; the representation is prefixed by \verb|10|:
-
-\todo{Operations on Deque}
+The first method of representing an ordinal tree succinctly was first described by \cite{jacobson1989space}.
+The encoding of the tree is based on BFS traversal.
+The vertices report their degrees in unary system; we call it the \emph{degree sequence}
+The representation is prefixed by \str{10}.
 
 \begin{algorithmic}
-\Function{construct}{$R$}
-	\State $Q \gets \{R\}$ \Comment{The queue is initialized with the root of the tree}
-	\State $write("10")$
-	\While{$V \gets Q$}
-		\ForAll{$C \gets children(V)$}
-			\State $write("1")$
-			\State $Q \gets \{C\}$
+\Function{\LOUDSRepresentation}{$R$}
+	\State $Q \gets []; \enqueue(Q, R)$ \Comment{The queue is initialized with the root of the tree}
+	\State $\out(\str{10})$
+	\While{$V \gets \dequeue(Q)$}
+		\ForAll{$C \gets \children(V)$}
+			\State $\out(\str1)$
+			\State $\enqueue(Q, C)$
 		\EndFor
-		\State $write("0")$
+		\State $\out(\str0)$
 	\EndWhile
 \EndFunction
 \end{algorithmic}
 
 \begin{lemma}
-	In a LOUDS representation of a tree with $n$ vertices, there are $n$ ones and $n+1$ zeros.
-	Such encoding is succinct.
+	There are $n$ ones and $n+1$ zeros in the LOUDS representation of a tree with $n$ vertices.
 \end{lemma}
 \begin{proof}
-	The \verb|10| corresponds to an artifical supervertex which has a single child -- the root of the tree.
-	Each vertex of the tree is a child of some vertex and therefore was accounted in the parent's degree.
-	For each vertex, there is a one in its parent's representation.
-	The number of ones is the same as the number of vertices in the tree.
-	Each vertex is responsible for its own zero, plus there is a zero in the supervertex representation.
+	The \str{10} corresponds to an artifical supervertex which has a single child -- the root of the tree.
+	Each vertex of the tree is a child of a vertex and therefore was accounted by a one in the degree sequence of its parent.
+	The number of ones is therefore the same as the number of all vertices in the tree.
+	Each vertex is responsible for its own zero, plus there is one extra zero for the supervertex.
 	
-	As there are $2n+1$ bits in total, the representation is succinct.
+	The whole bit string, which we call $S$ has $N = 2n + 1$ bits.
 \end{proof}
 
-As there is a one and a zero belonging to each vertex, we can represent the $i$-th vertex by $i$-th one and $(i+1)$-th zero.
-It could be more convenient to represent the supervertex with only \verb|1| instead of \verb|10|.
-That way the operations would become clearer and off by one errors would not be an issue.
-However we follow the representation as it was originally proposed.
+As there is a one and a zero belonging to each vertex, we can associate the $i$-th vertex with the $i$-th one and the $(i+1)$-st zero.
+Note that the one is actually in the degree sequence of the parent of $i$, and the zero is terminating its degree sequence.
 
-\subsection{Basic Navigation Queries}
+We use the position of the associated one for the internal representation of a vertex.
+Zeros-based structure is also possible. \cite{rahman2006engineering}
 
-In order to support basic navigation queries in this representation, we add rank and select indices to turn it into a FID.
-We formulate all the operations in terms of one-based numbering of vertices.
-Zero-based implementation are also possible \todo{ref} and it even can compete the other representations.
-\todo{Engineering the LOUDS representation}
-Because of the correspondence between ones and zeros, we can easily change between them.
+\subsection{Navigation Operations}
+
+We equip the bit string $S$ storing the representation of the tree with \rank{} and \select{} indices.
+Because of the correspondence between ones and zeros, we can easily change between them using the following two functions.
+The extra function \toBeginning{} returns the position where the degree sequence starts.
 
 \begin{algorithmic}
-\Function{to\_ones}{$i$}
-	\State \Return{$select_1(rank_0(i) - 1)$}
+\Function{\toOnes}{$S, i$}
+	\State \Return{$\select_1(S, \rank_0(S, i) - 1)$}
 \EndFunction
 \end{algorithmic}
 
 \begin{algorithmic}
-\Function{to\_zeros}{$i$}
-	\State \Return{$select_0(rank_1(i) + 1)$}
+\Function{\toZeros}{$S, i$}
+	\State \Return{$\select_0(S, \rank_1(S, i) + 1)$}
 \EndFunction
 \end{algorithmic}
 
-The level-order rank and select operations are one-based rank and select on the underlying bit string.
+\begin{algorithmic}
+\Function{\toBeginning}{$S, i$}
+	\State \Return{$\select_0(S, \rank_1(S, i)) + 1$}
+\EndFunction
+\end{algorithmic}
 
-We know that the one of vertex is within the representation of its parent and the zero ends the list of ones belonging to its children.
-Support of the queries is easy:
+The vertex \inRank{} and \inSelect{} are simply $\rank_1(S, i)$ and $\select_1(S, r)$.
+No other vertex orderings are supported.
+
+The navigation operations are relatively easy.
+We also define an optimized version of the operation \childLast since we will need it later.
 
 \begin{algorithmic}
-\Function{is\_root}{$i$}
+\Function{\isRoot}{$S, i$}
 	\State \Return{$i = 0$}
 \EndFunction
 \end{algorithmic}
 
 \begin{algorithmic}
-\Function{is\_leaf}{$i$}
-	\State \Return{$select_0(rank_1(i)) + 1 = 0$} \Comment{Is there the first child?}
+\Function{\isLeaf}{$S, i$}
+	\State \Return{$\toZeros(S, i) = \toBeginning(S, i)$} \Comment{Degree sequence is empty}
 \EndFunction
 \end{algorithmic}
 
 \begin{algorithmic}
-\Function{parent}{$i$}
-	\If{$is\_root(i)$}
-		\State \Return{$-1$}
-	\Else
-		\State \Return{$select_1(rank_0(i))$} \Comment{Conversion from zeros to ones; off by one}
-	\EndIf
+\Function{\parent}{$S, i$}
+	\State \Return{$\toOnes(S, \succ_0(S, i))$} \Comment{Conversion from zeros to ones}
 \EndFunction
 \end{algorithmic}
 
 \begin{algorithmic}
-\Function{degree}{$i$}
-	\State $next_0 \gets select_0(rank_1(i) + 1)$ \Comment{The zero within the vertex representation}
-	\State $prev_0 \gets select_0(rank_1(i))$ \Comment{The zero within the previous vertex rep.}
-	\State \Return{$next_0 - prev_0 - 1$}
+\Function{\degree}{$S, i$}
+	\State \Return{$\toZeros(S, i) - \toBeginning(S, i)$} \Comment{Length of its degree sequence}
 \EndFunction
 \end{algorithmic}
 
 \begin{algorithmic}
-\Function{child\_select}{$i, k$}
-	\If{$is\_leaf(i)$}
-		\State \Return{$-1$}
-	\ElsIf{$k \ge degree(i)$}
-		\State \Return{$-1$}
-	\Else
-		\State $first \gets select_0(rank_1(i))$ \Comment{Preceding zero}
-		\State \Return{$first + k$}
-	\EndIf
+\Function{\childRank}{$S, i$}
+	\State \Return{$i - \pred_0(S, i)$} \Comment{Distance from the previous zero}
 \EndFunction
 \end{algorithmic}
 
 \begin{algorithmic}
-\Function{child\_last}{$i$} \Comment{\textsc{child\_first} is merrily $child\_select(i, 1)$}
-	\If{$is\_leaf(i)$}
-		\State \Return{$-1$}
-	\Else
-		\State $zero \gets select_0(rank_1(i) + 1)$ \Comment{Terminal zero}
-		\State \Return{$zero - 1$}
-	\EndIf
+\Function{\childSelect}{$S, i, k$}
+	\State \Return{$\toBeginning(S, i) + k - 1$}
 \EndFunction
 \end{algorithmic}
 
 \begin{algorithmic}
-\Function{child\_rank}{$i$}
-	\If{$is\_root(i)$}
-		\State \Return{$-1$}
-	\Else
-		\State $first \gets select_0(rank_0(i)) + 1$ \Comment{The left-most sibling}
-		\State \Return{$i - first$}
-	\EndIf
+\Function{\childLast}{$S, i$} \Comment{\childFirst{} is merrily $\childSelect(S, i, 1)$}
+	\State \Return{$\toZeros(S, i) - 1$}
 \EndFunction
 \end{algorithmic}
 
-\bigskip
+\bigbreak
 
-We show how we can support more types of queries by augmenting the data structure with sublinear indices.
-In our case, we use auxiliary bit strings and on top of them we build the ranking and selecting structures which we already know from FIDs.
+The data structure can support more operation when augmented with more succinct indices.
 
 \subsection{Depth and Level Queries}
 
-We propose a new index for LOUDS representation which allows to query depth of a vertex and supports all level queries without restriction on subtree.
-As far as we know, this index has not been described before.
+We propose a new index for the LOUDS representation which allows to query depth of a vertex and indirectly supports all level queries (without restriction on subtree).
+This was not possible before.
 
-If we knew where the boundaries of a level are in the bit string, stored also in a bit string, then a simple rank operation would give us the depth.
-The problem with storing boundaries of all levels is that there can be up to $O(n)$ levels in total.
-We work around the problem by utilizing the fact that if there are many levels, then these levels must be short.
-They are in fact short enough for us to precompute the level boundaries in a look-up table.
-
-We define a bit string $D$ which contains $1$ at the position of the terminal zero of the last vertex in a level, including the zero which belongs to the supervertex.
-Using $D$ we can support $level\_rank$, $level\_select$ (and thereby all general $level\_*$) and $depth$ operations.
+We define a bit string $D$ which contains $1$ at the position of level boundaries -- the terminal zero of the last vertex in each level, including the zero which belongs to the supervertex.
+We also add the succinct \rank{} a \select{} indices for the bit string $D$; note that only \select$_1$ is required.
+Using $D$ we can support \levelRank{}, \levelSelect{} (and thereby all \levelAny{} operations), and the operation \dep{}.
 
 \begin{algorithmic}
-\Function{level\_rank}{$i$}
-	\State $prev_0 \gets prev_1(D, i)$ \Comment{Terminal zero of the previous level}
-	\State \Return{$rank_1(S, i) - rank_1(S, prev_0)$}
+\Function{\levelRank}{$S, i$}
+	\State $z \gets \prev_1(D, i)$ \Comment{Terminal zero of the previous level}
+	\State \Return{$\rank_1(S, i) - \rank_1(S, z)$}
 \EndFunction
 \end{algorithmic}
 
 \begin{algorithmic}
-\Function{level\_select}{$i, l$}
-	\State $prev_0 \gets select_1(D, l)$ \Comment{Terminal zero of the previous level}
-	\State \Return{$select_1(S, rank_1(S, prev_0) + l)$}
+\Function{\levelSelect}{$S, i, l$}
+	\State $z \gets \select_1(D, l)$ \Comment{Terminal zero of the previous level}
+	\State \Return{$\select_1(S, \rank_1(S, z) + i)$}
 \EndFunction
 \end{algorithmic}
 
 \begin{algorithmic}
-\Function{level\_size}{$l$}
-	\State $prev_0 \gets select_1(D, l)$ \Comment{Terminal zero of the previous level}
-	\State $next_0 \gets select_1(D, l + 1)$ \Comment{Terminal zero of the next level}
-	\State \Return{$rank_1(S,  next_0) - rank_1(S, prev_0)$}
+\Function{\levelSize}{$S, l$}
+	\State $z \gets \select_1(D, l)$ \Comment{Terminal zero of the previous level}
+	\State $z' \gets \select_1(D, l + 1)$ \Comment{Terminal zero of the next level}
+	\State \Return{$\rank_1(S, z) - \rank_1(S, z')$}
 \EndFunction
 \end{algorithmic}
 
 \begin{algorithmic}
-\Function{depth}{$i$}
-	\State \Return{$rank_1(D, i)$}
+\Function{\dep}{$S, i$}
+	\State \Return{$\rank_1(D, i)$}
 \EndFunction
 \end{algorithmic}
 
-\subsection{Succinct Index for Depth}
+\subsubsection{Succinct Index for Depth}\label{ss:louds-depth}
 
-How to represent $D$ in $o(n)$ memory in order to keep the structure succinct?
-We split this string $D$ into blocks of size $b = \frac{\log 2n}{2}$ and for each block we remember only the position of the first $1$, or lack thereof.
-This table $D'$ requires $\frac{2n}{b} \log b = O(\frac{n \log\log n}{\log n}) = o(n)$ bits.
+The problem with storing boundaries of all levels is that there can be up to $O(n)$ levels in total, which leads to $O(N)$ bits even in case of an optimal FID.
+We work around the problem by utilizing the fact that if there are many levels, they must be short.
+They are in fact short enough to precompute the level boundaries in a look-up table.
 
-We now show how to restore any $b$ consecutive bits of the original bit string $D$ in constant time.
-If there is no $1$ in a block, there is also no level boundary and such block is all zeros.
-If there is a $1$ and its position is equal to $2n$, then it is the end of the last level and the block contains only this one $1$.
+We split the bit string $D$ into blocks of size $b = \frac{\log N}{2}$ and for each block we remember only the position of the first $1$, or lack thereof.
+This table $D'$ requires $\frac{N}{b} \log b = O(\frac{N \log\log N}{\log N}) = o(N)$ bits.
 
-Otherwise, there is $1$ at position $p$ and there must be a $1$ in the representation of the level, because it is not the last one.
-We find this last inner vertex of the layer using predecessor search on $S$ and find position $z$ of its zero; this is the end of the next level.
-If $z$ is outside of the block, we end.
+\begin{lemma}
+	We can restore any $b$ consecutive bits of the original bit string $D$ in constant time.
+\end{lemma}
+\begin{proof}
+	If there is no one in the block $i$, there is also no level boundary and the block contains only zeros.
+	If there is a $1$ and its position is equal to $2n$, then it marks the end of the last level; the rest of the block is filled with zeros.
 
-The whole level spanning $S[p+1, z]$ is contained within the block.
-Now we can use a look-up table which we index by the part of $S$ which belongs to the block $b$ and by offsets of $p$ and $z$.
-The look-up table gives us all positions of ends of levels within the block.
-Such table merrily captures the repeated computation of finding last inner vertex on a level and turning it into zero-based number.
+	Otherwise, there is a $1$ at position $p$ and there must be a $1$ at position $q < p$ in the representation of the level, because it is not the last level.
+	We find this vertex $q$ of the level using predecessor search on $S$ and find position $z$ of its zero; this is the end of the next level.
+	If $z$ is outside of the block, we end.
+	
+	The whole level spanning over the interval $[p + 1, z]$ is contained within the block $i$.
+	We can use a look-up table \blockOfD{} which we index by the block $i$ bits of $S$ and by the offsets of $p$ and $z$.
+	The look-up table gives us all positions of ends of levels within the block $i$.
+	Given the boundaries of a single level, the boundaries of the next level can be determined by counting the same number of zeros as there were ones in the previous level.
+\end{proof}
 
 \begin{algorithmic}
-\Function{block\_of\_D}{$i$}
+\Function{\blockOfD}{$S, i$} \Comment{$i$ is a block number}
 	\State $p' \gets D'[i]$
-	\If{$p' = -1$} \Comment{No $1$ in block}
-		\State \Return{$0^b$}
+	\If{$p' = -1$} \Comment{No $1$ in the block}
+		\State \Return{$0$}
 	\Else
 		\State $p \gets i b + p'$
-		\If{$p = 2n$} \Comment{End of the last level}
-			\State \Return{$0^b \bitor (1 \bitlsh (b - p' - 1))$} \Comment{$1$ at position $p'$}
+		\If{$p = 2n$} \Comment{The end of the last level}
+			\State \Return{$1 \bitlsh (b - p' - 1)$} \Comment{$1$ at position $p'$}
 		\Else
-			\State $z \gets to\_zeros(pred_1(S, p))$
-			\If{$z \ge (i+1) b $} \Comment{Level ends outsize block $b$}
-				\State \Return{$0^b \bitor (1 \bitlsh (b - p' - 1))$}
+			\State $z \gets \toZeros(S, \pred_1(S, p))$
+			\If{$z \ge (i + 1) b $} \Comment{The level ends outsize of the block $i$}
+				\State \Return{$1 \bitlsh (b - p' - 1)$}
 			\Else
-				\State \Return{$table[S[i b:(i+1)b], p', z - i b]$}
+				\State \Return{$\blockOfD[S[i b : (i + 1) b], p', z \% b]$}
 			\EndIf
 		\EndIf
 	\EndIf
 \EndFunction
 \end{algorithmic}
 
-\subsection{\label{ss:leaf-queries}Leaf Queries}
+\subsection{\label{ss:leaf-queries}Leaf Operation}
 
-Tree data structures often allows traversal of leaves in left to right fashion.
-This seems to be impossible to support in our LOUDS representation.
-Instead, we support enumeration of leaves and access to leaves in BFS order.
-Although we defined the operations in sheer generality to be performed on a subtree of the tree, we allow no such restriction here.
-When incorporate the depth index, we can parametrize the operations by depth of the leaves -- a pair of minimum and maximum depth: $dp = (min, max): min \le max$; either value can be left unbounded.
+Tree data structures often allow a direct iteration of its leaves.
+Although the usual order of leafs corresponds to DFS traversal, LOUDS supports an access to the leaves in level-order in accordance with the its only ranking operation -- \inRank{}.
+We also parametrize the operations by the desired depth of the leaves -- upper and lower bounds $u \le l$.
 
 \begin{lemma}
 	Whenever there are two consecutive zeros in LOUDS representation, the latter one is associated with a leaf.
 \end{lemma}
 \begin{proof}
 	There is always a zero immediately preceding the representation of every vertex.
-	A leaf is a vertex with degree equal to zero; LOUDS representation of such vertex is only a single zero.
-	A leaf can therefore be localized by looking for two consecutive zeros; this gives us its zero-based number.
+	A leaf is a vertex with its degree equal to zero; the degree sequence consists of only a single zero.
+	A leaf can therefore be localized by looking for two consecutive zeros; this gives us its zeros-based number.
 \end{proof}
 
+The original idea for this index comes from \cite{munro1998space}.
 We have seen a solution to a similar problem in \ref{ss:index-without-data}.
-Here the formula for the derived bit string is:
+
+We derive a bit string $L$ and build \rank{} and \select{} indices for it.
 $$L = \bitnot S \bitand \bitnot (S \bitrsh 1)$$
-As we have already mentioned, we build rank and select indices on top of this calculated bit string $L$.
+
+All the functions require a correction by one if the first vertex of the level $l$ is a leaf.
 
 \begin{algorithmic}
-\Function{leaf\_size}{$dp$}
-	\State $first \gets level\_first(dp.min)$ \Comment{First vertex matching $dp$}
-	\State $first_0 \gets to\_zeros(first)$
-	\State $last_0 \gets to\_zeros(level\_last(dp.max))$
-	\State \Return $rank_1(L, last_0) - rank_1(L, first_0) + is\_leaf(first)$
+\Function{\leafSize}{$S, l, u$}
+	\State $f \gets \levelFirst(S, l)$ \Comment{First vertex in the range}
+	\State $f_0 \gets \toZeros(S, f)$
+	\State $z_0 \gets \toZeros(S, \levelLast(S, u))$
+	\State \Return $\rank_1(L, z_0) - \rank_1(L, f_0) + \isLeaf(S, f)$
 \EndFunction
 \end{algorithmic}
 
 \begin{algorithmic}	
-\Function{leaf\_rank}{$dp, i$}
-	\If{$depth(i)\ not\ within \ dp$}
-		\State \Return{$-1$}
-	\ElsIf{$not\ is\_leaf(i)$}
-		\State \Return{$-1$}
-	\Else
-		\State $first_0 \gets to\_zeros(level\_first(dp.min))$
-		\State $rank_1(L, to\_zeros(i)) - rank_1(L, first_0)$
-	\EndIf
+\Function{\leafRank}{$S, l, i$} \Comment{We assume $i$ is a leaf at the admissible level}
+	\State $f \gets \levelFirst(S, l)$ \Comment{First vertex in the range}
+	\State $f_0 \gets \toZeros(S, f)$
+	\State \Return{$\rank_1(L, \toZeros(i)) - \rank_1(L, f_0) + \isLeaf(S, f)$}
 \EndFunction
 \end{algorithmic}
 
 \begin{algorithmic}
-\Function{leaf\_select}{$dp, n$}
-	\If{$n \ge leaf\_size(dp)$}
-		\State \Return{$-1$}
-	\Else
-		\State $first_0 \gets to\_zeros(level\_first(dp.min))$
-		\State $offset \gets rank_1(L, first_0)$
-		\State \Return{$to\_ones(select_1(L, n + offset))$}
-	\EndIf
+\Function{\leafSelect}{$S, l, i$}
+	\State $f \gets \levelFirst(S, l)$ \Comment{First vertex in the range}
+	\State $f_0 \gets \toZeros(S, f)$
+	\State $o \gets \rank_1(L, f_0) - \isLeaf(S, f)$ \Comment{Offset}
+	\State \Return{$\toOnes(S, \select_1(L, o + i))$}
 \EndFunction
 \end{algorithmic}
 
-\bigskip
+\subsection{Final Thoughts}
 
-The main problem of this representation appears to lay in non-locality of the data.
-We often want to work in limited subtrees, which in this representation are spread throughout the bit string.
-On he other hand its easy implementation requiring only two types of indices make it suitable for cases when we don't pose many requirements on the supported operations.
+The main problem of this representation appears to stem for the non-locality of the near vertices.
+The unsupported operations are more concerned about ancestors and subtrees than siblings and levels.
+We developed a new index for the operation \dep{} and \levelAny{} which greatly expands the possibilities.
+Its simple implementation requiring only three types of indices (\rank{}, \select{}, \blockOfD{}) make it suitable for cases when there are not many requirements set on the supported operations.
 
 \section{BP}
 
-In the previous section, we have seen that it is possible to build a succinct data structure for storing trees which requires only rank and select queries from the underlying bit string.
-Here we focus on a different schema which exploits the property that the two symbols associated with a vertex are correctly matched in the bit string, for which we utilize the match and enclose operations which we developed earlier in \ref{s:op-bp}.
+In the previous section, we have seen that it is possible to build a succinct data structure for storing trees which requires essentially only the \rank{} and \select{} operations on the underlying bit string.
+Here we focus on a different schema which exploits the property that the two symbols associated with a vertex are correctly matched in the bit string.
+We represent them as parentheses in a balanced bit string, for which we utilize the \match{} and \enclose{} operations which we developed earlier in \ref{s:match-enclose}.
 
 The representation is based on Depth-First Search and follows two rules:
 \begin{enumerate}
-	\item When we enter a vertex from its parent, we \emph{open} it, which is denoted in the representation by an opening parenthesis.
-	\item When we leave a vertex to its parent, we \emph{close} it, which is denoted by a closing parenthesis.
+	\item When a vertex is entered from its parent, the vertex is \emph{opened} and an opening parenthesis is outputted in the representation.
+	\item When a vertex is left to its parent, the vertex is \emph{closed} and a closing parenthesis is outputted.
 \end{enumerate}
-Although the root vertex does not have a parent, we open and close it as if it had one.
+Although the root vertex does not have a parent, it is opened and closed as if it had one.
 
 \begin{algorithmic}
-\Function{construct}{$R$}
-	\State $S \gets \{R\}$ \Comment{The stack is initialized with the root of the tree}
-	\While{$V \gets S$}
-		\If{$V.state = UNSEEN$} \Comment{We came from its parent}
-			\State $ S \gets \{V\}$ \Comment{We return to $V$ after all its children}
-			\State $V.state \gets OPEN$
-			\State $write("(")$
-			\State $ S \gets children(V)$
-		\ElsIf{$V.state = OPEN$} \Comment{All children has been processed}
-			\State $V.state \gets CLOSED$
-			\State $write(")")$
+\Function{\BPRepresentation}{$R$}
+	\State $S \gets []; \push(S, R)$ \Comment{The stack is initialized with the root of the tree}
+	\While{$V \gets \pop(S)$}
+		\If{$V.\state = \UNSEEN$} \Comment{We came from its parent}
+			\State $\push(S, V)$ \Comment{We return $V$ to the stack}
+			\State $V.\state \gets \OPEN$
+			\State $\out(\openingParen)$
+			\ForAll{$C \in \reverse(\children(V))$}
+				\State $\push(S, C)$
+			\EndFor
+		\ElsIf{$V.\state = \OPEN$} \Comment{All children has been processed}
+			\State $V.\state \gets \CLOSED$
+			\State $\out(\closingParen)$
 		\EndIf
 	\EndWhile
 \EndFunction
@@ -410,155 +422,134 @@ Although the root vertex does not have a parent, we open and close it as if it h
 An alternative definition of this schema can be expressed recursively:
 \begin{enumerate}
 	\item A leaf is encoded with a pair of parentheses.
-	\item An inner vertex is encoded as a concatenated list of encodings of its children enclosed by a pair of parentheses.
+	\item An inner vertex is encoded as a concatenated string of encodings of its children enclosed by a pair of parentheses.
 \end{enumerate}
-From this definition, we can see that each subtree occupies a continuous substring.
+We can see from this definition that each subtree occupies a continuous substring.
 
-\bigskip
+\bigbreak
 
-We associate each vertex with its opening parenthesis; because of the symmetry in comparison to LOUDS representation, there is no reason to choose opening or closing parentheses over the others.
-By using the operation $match$ we can easily switch between these two.
+We associate each vertex with its opening parenthesis.
+By using the operation \match we can easily switch between these two.
 
-We can immediately support pre-order and post-order ranks and selects as opening-based and closing-based ranks and selects on the underlying bit string $S$.
-We show implementation of the operations which do not need any auxiliary index and can be expressed using only the primitives provided by $S$.
-
-\todo{Use \textbackslash{}mathit pretty much everywhere}
+The operations \preRank, \preSelect, \postRank, and \postSelect are immediately supported by opening-based and closing-based \rank{}s and \select{}s on the underlying bit string $S$.
+We first show implementation of the operations which do not need any auxiliary index and can be expressed using only the primitives provided by $S$.
 
 \begin{algorithmic}
-\Function{is\_root}{$i$}
+\Function{\isRoot}{$S, i$}
 	\State \Return{$i = 0$}
 \EndFunction
 \end{algorithmic}
 
 \begin{algorithmic}
-\Function{is\_leaf}{$i$}
-	\State \Return{$S[i+1] = ')'$} \Comment{Is the parenthesis immediately closed?}
+\Function{\isLeaf}{$S, i$}
+	\State \Return{$S[i + 1] = \closingParen$} \Comment{Is the parenthesis immediately closed?}
 \EndFunction
 \end{algorithmic}
 
 \subsubsection{Basic Navigation Queries}
 
 \begin{algorithmic}
-\Function{parent}{$i$}
-	\If{$is\_root(i)$}
-		\State \Return{$-1$}
-	\Else
-		\State \Return{$enclose(i)$}
-	\EndIf
+\Function{parent}{$S, i$}
+	\State \Return{$\enclose(S, i)$}
 \EndFunction
 \end{algorithmic}
 
-Neither $degree$ nor $child\_rank$ nor $child\_select$ is possible to support without an additional index; we therefore resort to implementation of the rest of the $child\_*$ operations:
+Neither \degree{} nor \childRank{} nor \childSelect{} are available without an additional index; we therefore resort to the direct implementation of the rest of the \childAny{} operations:
 
 \begin{algorithmic}
-\Function{child\_first}{$i$}
-	\If{$is\_leaf(i)$}
-		\State \Return{$-1$}
-	\Else
-		\State \Return{$i+1$}
-	\EndIf
+\Function{\childFirst}{$S, i$}
+	\State \Return{$i + 1$}
 \EndFunction
 \end{algorithmic}
 
 \begin{algorithmic}
-\Function{child\_last}{$i$}
-	\If{$is\_leaf(i)$}
-		\State \Return{$-1$}
-	\Else
-		\State \Return{$find\_close(i) - 1$}
-	\EndIf
+\Function{\childLast}{$S, i$}
+	\State \Return{$\findClose(S, i) - 1$}
 \EndFunction
 \end{algorithmic}
 
 \begin{algorithmic}
-\Function{child\_next}{$i$}
-	\State {$n = find\_close(i) + 1$}
-	\If{$S[n] = ')'$}
-		\State \Return{$-1$}
-	\Else
-		\State \Return{$n$}
-	\EndIf
+\Function{\childNext}{$S, i$}
+	\State \Return{$\findClose(S, i) + 1$}
 \EndFunction
 \end{algorithmic}
 
 \begin{algorithmic}
-\Function{child\_prev}{$i$}
-	\If{$S[i - 1] = '('$}
-		\State \Return{$-1$}
-	\Else
-		\State \Return{$find\_open(i - 1)$}
-	\EndIf
+\Function{\childPrev}{$S, i$}
+	\State \Return{$\findOpen(S, i - 1)$}
 \EndFunction
 \end{algorithmic}
 
-\subsubsection{Other Operation}
+\subsubsection{Other Native Operation}
 
-Other natively supported operations use the property that a subtree of $v$ is fully contained in the representation of $v$.
+The following natively supported operations use the property that a subtree of $v$ is fully contained in the representation of $v$.
 
 \begin{algorithmic}
-\Function{depth}{$i$}
-	\State \Return{$paren\_depth(i)$}
+\Function{\dep}{$i$}
+	\State \Return{$\parenDepth(i)$}
 \EndFunction
 \end{algorithmic}
 
 \begin{algorithmic}
-\Function{is\_ancestor}{$i, j$}
-	\State \Return{$i \le j \booland find\_close(i) \ge j$}
+\Function{\isAncestor}{$i_1, i_2$}
+	\State \Return{$i_1 \le i_2 \booland \findClose(i_1) \ge i_2$}
 \EndFunction
 \end{algorithmic}
 
 \begin{algorithmic}
-\Function{subtree\_size}{$i$}
-	\State \Return{$rank_1(find\_close(i)) - rank_1(i) + 1$}
+\Function{\subtreeSize}{$i$}
+	\State \Return{$\rank_1(\findClose(i)) - \rank_1(i) + 1$}
 \EndFunction
 \end{algorithmic}
 
-The group of operations consisting of $lca$, $distance$, $height$ and $deepest\_vertex$ has one thing in common: they all can be solved by solved by range queries.
+The group of operations consisting of \lca, \distance, \deepestVertex, and \hei can be solved by minimum or maximum range queries.
 
 \begin{algorithmic}
-\Function{lca}{$i_1, i_2$}
-	\If{$is\_ancestor(i_1, i_2)$}
+\Function{\lca}{$i_1, i_2$}
+	\If{$\isAncestor(i_1, i_2)$}
 		\State \Return{$i_1$}
-	\ElsIf{$is\_ancestor(i_2, i_1)$}
+	\ElsIf{$\isAncestor(i_2, i_1)$}
 		\State \Return{$i_2$}
 	\Else
-		\State \Return{$enclose(i_1, i_2)$}
+		\State \Return{$\enclose(i_1, i_2)$}
 	\EndIf
 \EndFunction
 \end{algorithmic}
 
 \begin{algorithmic}
-\Function{distance}{$i_1, i_2$}
-	\State $a \gets lca(i_1, i_2)$
-	\State \Return{$depth(i_1) + depth(i_2) - 2 depth(a)$}
+\Function{\distance}{$i_1, i_2$}
+	\State $a \gets \lca(i_1, i_2)$
+	\State \Return{$\dep(i_1) + \dep(i_2) - 2 \dep(a)$}
 \EndFunction
 \end{algorithmic}
 
 \begin{algorithmic}
-\Function{deepest\_vertex}{$i$}
-	\State \Return{$RMQi(i, match(i))$}
+\Function{\deepestVertex}{$i$}
+	\State \Return{$\RMQi(i, \match(i))$}
 \EndFunction
 \end{algorithmic}
 
 \begin{algorithmic}
-\Function{height}{$i$}
-	\State \Return{$depth(deepest\_vertex(i)) - depth(i)$}
+\Function{\hei}{$i$}
+	\State \Return{$\dep(\deepestVertex(i)) - \dep(i)$}
 \EndFunction
 \end{algorithmic}
 
-\subsubsection{In-Order Rank and Select}
+\subsubsection{In-Order Rank and Select and Leaf Operations}
+
+
 
 \todo{in-order}
 
-\bigskip
+	We showed the technique in \ref{ss:leaf-queries} where we were looking for the pattern $0\underline{0}$, whereas for BP it would be $\underline{(})$.
+
+\subsubsection{Final Thoughts}
 
 Various indices were proposed to extend the set of supported operations beyond what we have shown.
 \todo{Refs: Balanced Parentheses Strike Back}
 \begin{itemize}
 	\item index support for $child\_rank$ and $child\_select$;
 	\item index support for $level\_ancestor$;
-	\item index support for querying leaves in a subtree.
-	We showed the technique in \ref{ss:leaf-queries} where we were looking for the pattern $0\underline{0}$, whereas for BP it would be $\underline{(})$.
 \end{itemize}
 
 \section{DFUDS}
@@ -789,7 +780,7 @@ Various indices were proposed to extend the set of supported operations beyond w
 	Note that in case when the tree root is a leaf, this does not work, however this special case is easy to handle.
 \end{itemize}
 
-\subsection{Comparison of BP and LOUDS}
+\subsection{Comparison of BP and DFUDS}
 
 BP is the easiest way to encode a tree in an array of $2n$ bits.
 Its main advantage is the simplicity and once natural support of $depth$ queries, for which it pays by hard $child\_rank$, $child\_select$ and $degree$ operations.

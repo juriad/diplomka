@@ -96,6 +96,7 @@
 
 \usepackage{tabularx}
 \newcolumntype{L}[1]{>{\hsize=#1\hsize\raggedright\arraybackslash}X}%
+\newcolumntype{J}[1]{>{\hyphenpenalty=100\hsize=#1\hsize\arraybackslash}X}%
 \newcolumntype{R}[1]{>{\hsize=#1\hsize\raggedleft\arraybackslash}X}%
 \newcolumntype{C}[2]{>{\hsize=#1\hsize\columncolor{#2}\centering\arraybackslash}X}%
 
@@ -109,6 +110,25 @@
 \algrenewtext{Else}{\algorithmicelse\textbf{:}}
 
 \algnewcommand\Break{\textbf{Break}}
+
+
+\let\oldAlgorithmic\algorithmic
+\let\oldEndAlgorithmic\endalgorithmic
+
+\usepackage{float}
+%\floatstyle{ruled}
+\newfloat{program}{H}{lop}
+\floatname{program}{Program}
+
+\setlength{\floatsep}{5pt plus 2pt minus 2pt}
+\setlength{\textfloatsep}{5pt plus 2pt minus 2pt}
+\setlength{\intextsep}{5pt plus 2pt minus 2pt}
+
+\def\algorithmic{\begin{program}\oldAlgorithmic}
+\def\endalgorithmic{\oldEndAlgorithmic\end{program}}
+
+\usepackage{environ}
+% \RenewEnviron{algorithmic}[2][\relax]{}
 
 \let\percent\%
 \def\%{\ifmmode\mathbin{\percent}\else\percent\fi}
@@ -132,13 +152,23 @@
 \DeclareMathOperator{\textelse}{\textrm{else}}
 \DeclareMathOperator{\textotherwise}{\textrm{otherwise}}
 
-\def\openingParen{\relax\ifmmode\textrm{'('}\else'('\fi}
-\def\closingParen{\relax\ifmmode\textrm{')'}\else')'\fi}
+\def\str#1{\relax\ifmmode\texttt{"#1"}\else\texttt{"#1"}\fi}
+\def\openingParen{\str(}
+\def\closingParen{\str)}
 
 \usepackage{xifthen}
 \newcommand{\defineName}[2][]{%
-	\expandafter\def\csname \if\relax\detokenize{#1}\relax#2\else#1\fi\endcsname{\relax\ifmmode\mathit{#2}\else\textsc{#2}\fi}%
+	\expandafter\def\csname \if\relax\detokenize{#1}\relax#2\else#1\fi\endcsname{\hyphenpenalty=500\relax\ifmmode\mathit{#2}\else\textsc{#2}\fi}%
 }
+
+% deque operations
+\defineName{push}
+\defineName{pop}
+\defineName{enqueue}
+\defineName{dequeue}
+
+% output
+\defineName[out]{output}
 
 % in Foundations
 \defineName{true}
@@ -149,6 +179,7 @@
 \defineName{select}
 \defineName{inspect}
 \defineName{pred}
+\let\origSucc\succ
 \defineName{succ}
 \defineName{prev}
 \defineName{next}
@@ -185,5 +216,76 @@
 \defineName[rmqiSpan]{rmqi\_span}
 \defineName{Tm}
 
-\usepackage{environ}
-% \RenewEnviron{algorithmic}[2][\relax]{}
+% in Bit Strings, sublinear FID
+\defineName[characteristicBlock]{characteristic\_block}
+
+\newcommand{\defineRS}[2][]{%
+	\def\name{\if\relax\detokenize{#1}\relax#2\else#1\fi}
+	\expandafter\defineName\expandafter[\name Rank]{#2\_rank}
+	\expandafter\defineName\expandafter[\name Select]{#2\_select}
+	\expandafter\defineName\expandafter[\name Any]{#2\_\ph}
+}
+
+\newcommand{\defineOps}[2][]{%
+	\edef\name{\if\relax\detokenize{#1}\relax#2\else#1\fi}
+	\expandafter\defineName\expandafter[\name Rank]{#2\_rank}
+	\expandafter\defineName\expandafter[\name Select]{#2\_select}
+	\expandafter\defineName\expandafter[\name Prev]{#2\_prev}
+	\expandafter\defineName\expandafter[\name Next]{#2\_next}
+	\expandafter\defineName\expandafter[\name First]{#2\_first}
+	\expandafter\defineName\expandafter[\name Last]{#2\_last}
+	\expandafter\defineName\expandafter[\name Size]{#2\_size}
+	\expandafter\defineName\expandafter[\name Any]{#2\_\ph}
+}
+
+% in Trees, operations
+\defineOps[any]{\ph}
+\defineRS{pre}
+\defineRS{post}
+\defineRS{in}
+\defineRS{dfuds}
+\defineRS{lo}
+
+\defineOps{child}
+\defineName{degree}
+\defineName{parent}
+\defineName[isRoot]{is\_root}
+
+\defineOps{level}
+\defineName[dep]{depth}
+
+\defineOps{leaf}
+\defineName[isLeaf]{is\_leaf}
+
+\defineName[isAncestor]{is\_ancestor}
+\defineName[levelAncestor]{level\_ancestor}
+\defineName{lca}
+\defineName{distance}
+
+\defineName[hei]{height}
+\defineName[deepestVertex]{deepest\_vertex}
+\defineName[subtreeSize]{subtree\_size}
+
+% representations
+\defineName[LOUDSRepresentation]{LOUDS\_representation}
+\defineName[BPRepresentation]{BP\_representation}
+\defineName[DFUDSRepresentation]{DFUDS\_representation}
+
+% in Trees, LOUDS
+\defineName{children}
+\defineName[toOnes]{to\_ones}
+\defineName[toZeros]{to\_zeros}
+\defineName[toBeginning]{to\_beginning}
+\defineName[blockOfD]{block\_of\_D}
+
+% in Trees, BP
+\defineName{state}
+\defineName{reverse}
+\defineName[UNSEEN]{\str{UNSEEN}}
+\defineName[OPEN]{\str{OPEN}}
+\defineName[CLOSED]{\str{CLOSED}}
+
+\usepackage[nobottomtitles*]{titlesec}
+\renewcommand{\bottomtitlespace}{.2\textheight}
+
+\usepackage[section]{placeins}
