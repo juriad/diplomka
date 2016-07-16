@@ -1,51 +1,57 @@
-\chapter{Alternative Structures}
+\chapter{Advanced Data Structures}
 
-In the previous chapter we showed how rank and select operation (and later match and enclose) could be used on top of thee different encoding of tree into a bit string.
-Here we present data structures, which are fundamentally different in either the primitive operations they use or that they are not-systematic -- they are not based on a single bit string with additional indices.
+In the previous chapter, we showed how three different bit string encodings of ordinal trees can be turned into data structures which support wide varieties of operations provided that they are equipped with the \rank{} and \select{} (and later \match{} and \enclose{}) indices.
+Here we present data structures which are fundamentally different in either the primitive operations which they use, or that they require more advanced encoding instead of being based on a single bit string.
 
-\begin{enumerate}
-	\item Fully-Functional -- a data structure built on top of a sequence of matching parentheses, however it uses different primitives then rank and select;
-	\item Tree Covering -- recursive decomposition of the tree into smaller trees which are then encoded;
-	\item Universal Succinct Representation -- a structure which provides access to both BP and DFUDS representations at the same time.
-\end{enumerate}
-
-There are three direction where the development of succinct data structures for trees continued.
-Later in time but close to what we have described is so called fully functional approach which keeps bit string of BP, however it replaces all indices for the primitive operations with a single index.
-Rank and select are only implications of more general \emph{linear search operations}; ancestral and child operations are translated to range minimum queries.
-
-Leaving the realm of pure bit strings, we can decompose the tree into smaller trees; we do this recursively.
-We represent the trees on different levels in different ways.
-There has been many decompositions proposed, trying to maintain the number of smaller trees limited and their sizes balanced.
-
-Finally, there has been an attempt to diminish the differences between several representations -- a succinct structure which provides a view to a BP and DFUDS bit string representation.
-Its advantage is it automatically benefits from any new index for either BP or DFUDS representation.
+\begin{description}
+	\item[Fully-Functional (FF)] 
+	A data structure built on top of the BP representation which replaces the set of traditional indices by new more general index.
+	This results in a structure which supports not only all operations which BP did -- the old primitive operations are special cases of the new ones, but also allows to implement those operations which either required a specialized index, or they simply were not possible.
+	
+	\item[Tree Covering (TC)]
+	Tree covering is a data structure based on a recursive decomposition of the tree into mini-trees and micro-trees which are then encoded.
+	Each level of the decomposition is stored and processed in a different way.
+	Since it is more structure rather than bit string oriented, it is easier to augment it with small pieces of information which are required by various operation.
+	This is a big difference from
+	\begin{enuminline}
+		\item discovering, more than inventing, the inner rules of the representations, which we did with ranking and selecting;
+		\item or developing a general indices which covers the bit string in various blocks on multiple levels.
+	\end{enuminline}
+	\item[Universal Succinct Representation (USR)]
+	An attempt to develop a universal data structure which diminishes the differences between several representations.
+	It provides a view to the BP and DFUDS bit string representation as well as decomposition into micro-trees.
+	Its main advantage is that it automatically benefits from any indices which are proposed for either BP, DFUDS or TC representations.
+\end{description}
 
 \section{FF}
 
-All the previous data structures were based on operations rank and select, which do not take into account the structure of data which we are representing.
-The operations match and enclose work only on proximity of the current vertex.
+Both BP representation which we described in the previous chapter was based on using \rank{} and \select{}, and \match{} and \enclose{} operations as the main tool.
+There were several operations which required an additional index (\childAny{} and \levelAncestor{}), and several operations which were not supported at all (\levelAny{}).
+All the operations which we have just listed have one thing in common, they all can be expressed using more general operations.
+We did not show the indices for \levelAncestor in the BP and DFUDS representations for a reasons: they were unnecessarily complicated, whereas here in the Fully Functional data structure, it is going to be one of the easiest operations.
 
-The first truly powerful operation was $lca$ -- it allows to ask queries which are not restricted to a neighborhood of any vertex.
-This was achieved by using a range minimum query; it was also the only place where it proved to be useful.
-What if we generalized $rmq$ and replaced our old set of operations thereby?
-We did not show the algorithms for $level\_ancestor$ in BP and DFUDS for a reasons: they were too complicated, whereas here in the Fully Functional data structure, it is going to be one of the easiest operations.
-
-\todo{intro}
+We define a new set of primitive operations for which we then design a single index, incorporating even the range operation.
 
 \subsection{New Operations}
 
-We follow on \ref{ss:rmq-def} and define operations on the array $S$ with function $g$.
-\begin{itemize}
-	\item $sum(S, g, i, j) = \sum_{k=i}^j g(S[k])$ -- it is equivalent to $G[j] - G[i - 1]$ from \ref{ss:rmq-def}.
-	Since $rank$ operation will no longer be a primitive operation, we cannot use it to compute $G[i]$.
-
-	\item Linear search operations:
-	\begin{itemize}
-		\item $fwd\_search(S, g, i, d) = \min_{j > i} \{j : sum(S, g, i, j) = d\}$ returns the first position such that the difference of values in $G$ is $d$;
-		\item $bwd\_search(S, g, i, d) = \max_{j < i} \{j : sum(S, g, j, i) = d\}$ works the same way as $fwd\_search$ but searches in direction towards the beginning of the array.
-	\end{itemize}
+We follow on \ref{ss:rmq-def} and define operations on the bit string $S$ parametrized by the function $g$ which is to be applied.
+\begin{description}
+	\item[The sum operation]
+	Since \rank{} will no longer be a primitive operation, we cannot use it to compute $G[i]$.
+	It is therefore replaced by an operation \summ{} which is equivalent to $G[j] - G[i - 1]$, which we used before in \ref{ss:rmq-def}.
+	$$\summ(S, g, i, j) = \sum_{k=i}^j g(S[k])$$
 	
-	\item We extend and generalize the range queries:
+	\item[Linear search operations]
+	We replace \select{} in all forms by linear searching operations.
+	\begin{itemize}
+		\item $\fwdSearch(S, g, i, d) = \min_{j > i} \{j : \summ(S, g, i, j) = d\}$ returns the first position $j$ such that the values sum up to $d$;
+		\item $\bwdSearch(S, g, i, d) = \max_{j < i} \{j : \summ(S, g, j, i) = d\}$ works the same way as \fwdSearch{} except that it searches in direction towards the beginning of the bit string.
+	\end{itemize}
+	Note that despite using the same names in \ref{s:match-enclose}, their definition here is different.
+	They refer to operations defined for all $i \in [0, N)$, rather than only to look-up tables. 
+	
+	\item[Range operations]
+	We extend and generalize the range queries:
 	\begin{itemize}
 		\item $rmq(S, g, i, j) = sum(S, g, 0, i - 1) + \min_{i \le k \le j} sum(S, g, i, k)$ -- returns the value of the minimum in the given range.
 		\item $rmq\_size(S, g, i, j) = | \{ i \le k \le j : sum(S, g, i, k) = rmq(S, g, i, j) \} | $ -- returns how many times the minimum occurred in the given range;
@@ -63,7 +69,7 @@ We follow on \ref{ss:rmq-def} and define operations on the array $S$ with functi
 		\item $rmq\_select(S, g, i, j, n) = \min_{k \ge i} rmq\_rank(S, g, i, j, k) = n$ -- returns position of $n$-th minimum in range $i, j$;
 		\item $RMQ, RMQ\_size, RMQ\_rank, RMQ\_select$ are defined similarly.
 	\end{itemize}
-\end{itemize}
+\end{description}
 
 We show how it is possible to realize all operations which we used as primitives in the previous succinct data structures only by searches and range queries on calculated arrays.
 We immediately get a data structure for BP and DFUDS representations which supports all queries which were supported before.

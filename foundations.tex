@@ -32,39 +32,39 @@ RAM has access to two types of memory:
 The instructions supported by the word-RAM are:
 \begin{enumerate}
 	\item Program flow control used for determining what instruction to process next.
-	\begin{itemize}
-		\item \textbf{Termination}: $\textrm{halt}$ \\
+	\begin{description}
+		\item[Termination: \textnormal{$\textrm{halt}$}]
 		Stops the program immediately.
-		\item \textbf{Jumps}: $\mathit{label}{:}\ \mathit{instruction}, \textrm{goto}\ \mathit{label}, \textrm{goto}\ \mathit{label}\ \textrm{if}\ a$ \\
+		\item[Jumps: \textnormal{$\mathit{label}{:}\ \mathit{instruction}, \textrm{goto}\ \mathit{label}, \textrm{goto}\ \mathit{label}\ \textrm{if}\ a$}]
 		Continues with execution of the instruction at the specified label.
 		In the latter case, it goes to the label only if $a$ is $\mathit{true}$, otherwise it continues with the next instruction.
-		\item \textbf{Functions}: $\textrm{function}\ \mathit{fn}(\mathit{args}\ldots), \textrm{return}\ a$ \\
+		\item[Functions: \textnormal{$\textrm{function}\ \mathit{fn}(\mathit{args}\ldots), \textrm{return}\ a$}]
 		Defines a function $\mathit{fn}$ with a constant number of arguments, possibly zero.
 		A function has access to the main memory but not to any registers which were used by its caller.
 		Each function ends with a return instruction followed by a value.
 		After a return, the program continues with an instruction which follows the one which initiated the call.
-	\end{itemize}
+	\end{description}
 	\item Instructions for accessing and modifying the main memory.
-	\begin{itemize}
-		\item \textbf{Read}: $\mathit{register} \gets \mathit{Memory}[\mathit{position}]$ \\
+	\begin{description}
+		\item[Read: $\mathit{register} \gets \mathit{Memory}[\mathit{position}\char93$]
 		Reads a word from the main memory and stores it in a named $\mathit{register}$.
-		\item \textbf{Write}: $\mathit{Memory}[\mathit{position}] \gets a$ \\
+		\item[Write: $\mathit{Memory}[\mathit{position}\char93 \gets a$]
 		Overwrites the word stored in the main memory at the given $position$ with the value $a$.
-	\end{itemize}
+	\end{description}
 	\item Instructions on registers; the resulting value is always stored to a register: $\mathit{register} \gets \mathit{operation}$.
-	\begin{itemize}
-		\item \textbf{Arithmetic}: $a + b, a - b, a \cdot b, a \mathbin{/} b, a \% b$ \\
+	\begin{description}
+		\item[Arithmetic: $a + b, a - b, a \cdot b, a \mathbin{/} b, a \% b$]
 		All overflows are silently discarded; the division is integral.
-		\item \textbf{Bitwise}: $a \bitand b, a \bitor b, a \bitxor b, \bitnot a, a \bitlsh b, a \bitrsh b$ \\
+		\item[Bitwise: $a \bitand b, a \bitor b, a \bitxor b, \bitnot a, a \bitlsh b, a \bitrsh b$]
 		Bit shifts are padded with zeros.
-		\item \textbf{Boolean}: $a \booland b, a \boolor b, \boolnot a$ \\
+		\item[Boolean: \textnormal{$a \booland b, a \boolor b, \boolnot a$}]
 		Integers are implicitly converted to boolean ($0 \Leftrightarrow \false$), and booleans to integers ($\true \Rightarrow 1; \false \Rightarrow 0$).
-		\item \textbf{Relational}: $a < b, a \le b, a > b, a \ge b, a = b, a \ne b$ \\
+		\item[Relational: $a < b, a \le b, a > b, a \ge b, a = b, a \ne b$]
 		The result is a boolean value.
-		\item \textbf{Function call}: $\mathit{fn}(\mathit{args}\ldots)$ \\
+		\item[Function call: $\mathit{fn}(\mathit{args}\ldots)$]
 		Calls a function $\mathit{fn}$, provides it required number of arguments.
 		The result is the value returned by the function.
-	\end{itemize}
+	\end{description}
 \end{enumerate}
 All single letter arguments can be either names of the registers or constants of size $w$ bits.
 
@@ -75,12 +75,12 @@ The general word-RAM is too restrictive for us as we will need to address indivi
 \begin{lemma}
 	We redefine the operations Read and Write to reflect our needs.
 	
-	\begin{itemize}
-		\item \textbf{Read}: $\mathit{register} \gets \mathit{Memory}[\mathit{start}:\mathit{end}]$ \\
+	\begin{description}
+		\item[Read: $\mathit{register} \gets \mathit{Memory}[\mathit{start}:\mathit{end}\char93$]
 		Reads the $\mathit{end} - \mathit{start} \le w$ bits from the main memory starting with the bit at position $\mathit{start}$, which is in $(\mathit{start} \% w)$-th word and stores them padded with zeros from left in a $register$.
-		\item \textbf{Write}: $\mathit{Memory}[\mathit{start}:\mathit{end}] \gets a$ \\
+		\item[Write: $\mathit{Memory}[\mathit{start}:\mathit{end}\char93 \gets a$]
 		Overwrites the $\mathit{end} - \mathit{start} \le w$ bits stored in the main memory at the given starting position with the $\mathit{end} - \mathit{start}$ least significant bits of the value $a$.
-	\end{itemize}
+	\end{description}
 	
 	We also redefine $\mathit{Memory}[\mathit{start}]$ to be equal to $\mathit{Memory}[\mathit{start}:\mathit{start} + 1]$.
 \end{lemma}
