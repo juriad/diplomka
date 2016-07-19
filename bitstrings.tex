@@ -544,9 +544,10 @@ In this section we first define a more general problem (which we solve in a late
 Although Range Minimum Query can is defined for an arbitrary bit string, it will be useful only for balanced bit strings.
 That is the reason why we present it here.
 
-\subsubsection{Bit Functions}\label{ss:rmq-def}
+\subsubsection{$\pm 1$ Functions}\label{ss:rmq-def}
 
-We first describe all possible functions $g$ on mapping the values of bits $\{0, 1\}$ in a set $\{-1, 0, 1\}$:
+We first describe all possible functions $g$ which are mapping the values of bits $\{0, 1\}$ into a set $\{-1, 0, 1\}$.
+We call all the functions $g$ as $\pm 1$ functions.
 \begin{itemize}
 	\item $\phi(b) = b$
 	\item $\psi(b) = 1 - b$
@@ -557,8 +558,8 @@ We first describe all possible functions $g$ on mapping the values of bits $\{0,
 \end{itemize}
 
 We define an array $G$ for a function $g$ as:
-$$ G_g[i] = \sum_{k = 0}^i g(S[i]) $$
-The values $G_g[i] = 0$ for $i < 0$.
+$$ G[i] = \sum_{k = 0}^i g(S[i]) $$
+The values $G[i] = 0$ for $i < 0$.
 
 \bigbreak
 
@@ -587,7 +588,7 @@ $$ D[i] = \sum_{k=0}^i \delta(S[i - 1], S[i]) = \parenDepth(i) $$
 
 The property that $| G[i] - G[i-1] | \le 1$ will be useful much later when we introduce a more complicated and also more versatile structure.
 
-\subsubsection{A Simple Index}
+\subsubsection{A Simple Index}\label{sss:rmq-index}
 
 We build a succinct index supporting range minimum/maximum queries for the array of excesses.
 We only show the case of \rmqi{} as \RMQi{} is realized the same way; also \rmq{} and \RMQ{} can be implemented straightforward using \rmqi{} as \RMQi{} and \excess{}.
@@ -724,7 +725,7 @@ We define structures supporting various operations, which we already know from t
 	\item[dictionary]
 	A \emph{dictionary} is a data structure which stores $A$ and can answer membership queries $x \in A$.
 	
-	\item[indexed dictionary]
+	\item[indexed dictionary] \todo{change indexed -> indexable}
 	An \emph{indexed dictionary} (ID) is a dictionary which can answer \rank{} for elements of the set $A$ and \select{} queries.
 	\begin{align*}
 		\rank(A, i) &= |\{ a \in A : a \le i \}| \\
@@ -751,9 +752,17 @@ We will use the notation from general bit strings:
 	\select_1(A, j) &= \select(A, j) \\
 	\select_0(A, j) &= \select(\overline{A}, j) \\
 \end{align*}
-Sometimes, when we are clearly using indexed dictionaries, we may omit the subscript $_1$.
 
-\subsection{Sublinear Fully Indexed Dictionary}
+\bigbreak
+
+\begin{lemma}\label{l:succint-indexed-dictionary}
+	There is a succinct indexed dictionary which uses $\log {N \choose K} + o(K) + O(\log \log N)$ bits.
+	This is the main result of \cite[Theorem~4.1]{raman2007succinct}.
+\end{lemma}
+
+\subsection{Sublinear Fully Indexed Dictionary}\label{ss:sublinear-fid}
+
+\todo{ref}
 
 We show a simple fully indexed dictionary of a sublinear size which uses the succinct indices for \rank{} and \select{} which we showed in section \ref{s:op-bs}.
 It is also the missing piece in the structure for \match{} and \enclose{} \ref{s:match-enclose}.
@@ -765,7 +774,7 @@ We split the characteristic vector $S$ into blocks $S_1, S_2, \ldots$ of size $B
 We extend $N$ so that the last block is full; this difference is negligible.
 
 We represent each block $i$ implicitly by a binary number $[0, {B \choose K_i})$ encoded in $b_i \le S$ bits.
-The space bound for storing all blocks consecutively in as a bit string $S'$ follows from Generalized Vandermonde's identity:
+The space bound for storing all blocks consecutively in as a bit string $S'$ follows from the generalized Vandermonde's identity:
 \begin{align*}
 	\sum_{\sum_i K_i = K} \prod_i {s \choose K_i} &= {N \choose K} \\
 	\sum_i \log {s \choose K_i} &\le \log {N \choose K} \\
@@ -792,65 +801,118 @@ This is essentially the same as the partitioning which we used for \rank{} \ref{
 \end{algorithmic}
 
 The implementation of the operations \rank{}, \select{}, and \inspect{}, which are required by the definition of FID, is straightforward.
-The total size of the structure is ${N \choose K} + O(\frac{N \log \log N}{\log N}) = {N \choose K} + o(N)$
-
-\subsection{Combining Dictionaries}
+The total size of the structure is ${N \choose K} + O(\frac{N \log \log N}{\log N}) = {N \choose K} + o(N)$.
 
 \subsection{Compressed Array}
 
-We will often define an array $A$ which consists of $\tau_1$ (or $\tau_2$) names of a set of vertices in some particular order.
-We call a consecutive subsequence of the same names a \emph{run}.
-We compress this array by introducing three structures:
-\begin{itemize}
-	\item $A\_names$ -- an array of names like the the original $A$; all runs are replaced by a single value;
-	\item $A\_prefix$ -- a prefix sum structure of numbers of occurrences of names in runs in the array $A$;
-	\item $A\_run$ -- an array of numbers of how many times there was a run with such name before;
-	\item $A\_before$ -- an array of numbers of how many time the same there was the names in previous runs.
-\end{itemize}
+In an array, a \emph{run} is a consecutive sequence of the same elements.
 
-Both arrays $A\_run$ and $A\_before$ contains the same number of elements as $A\_names$; size of their elements is also bounded by the size of element of $A\_names$.
-Storing the information takes asymptotically less or the same space.
+Let's assume that we have an array $A$ of $a$ elements od size $s$ which contains $r = o(a)$ runs.
+The desired setup will be to store $A$ in space $o(a)$.
 
-The composed operations available to this compressed array are:
-\begin{itemize}
-	\item querying a value of the array:
-		$$A[i] = A\_names[prefix\_geq(A\_prefix, i)]$$
-	\item finding the upper and lower borders of the run containing $i$: 
+We can \emph{compress} such array $A$ by storing:
+\begin{description}
+	\item[\AFID]
+	A fully indexed dictionary containing the positions of the last elements of each run.
+	$$ \AFID = [i : A[i + 1] \ne A[i] $$
+	The FID contains $r$ values resulting in the space complexity $\log {a \choose r} + o(a)$.
+
+	\item[\AElems]
+	An array $A$ with each run reduced to a single (last) element.
+	$$ \AElems = [A[i] : i \in \AFID] $$
+	The array contains $r$ elements of total size $rs$ bits.
+	
+	\item[\ABefore]
+	An array containing the numbers of occurrences of the element $A$ before the current run.
+	$$ \ABefore = [|\{ j : j < \prev_1(\AFID, i) \booland A[j] = A[i] \}| : i \in \AFID ] $$
+	The size of the array is $r \log a$.
+\end{description}
+
+We define several operation for this compressed array:
+\begin{description}
+	\item[\elementIndex(A, i)]
+	A helper operation which simplifies the following ones.
+	$$ \elementIndex(A, i) = \rank_1(\AFID, \succ_1(\AFID, i)) $$
+
+	\item[$A[i\char93$]
+	It provides access to any element:
+	$$ A[i] = \AElems[\elementIndex(A, i)] $$
+
+	\item[\runFirst{}, \runLast{}, \runLength{}]
+	It returns the position of the first and last elements of the run containing $i$.
+	\runLength{} returns the length of the run.
 	\begin{align*}
-		lower(i) &= prefix\_sum(A\_prefix, prefix\_geq(A\_prefix, i) - 1) \\
-		upper(i) &= prefix\_sum(A\_prefix, prefix\_geq(A\_prefix, i))
-	\end{align*} 
-	\item finding the current number of repetitions of the run containing $i$:
-	$$ run(i) = A\_run[prefix\_geq(A\_prefix, i)] $$
-	\item finding how many $A[i]$ there were in $A$ before the position $i$:
-	$$ before(i) = A\_before[prefix\_geq(A\_prefix, i)] + i - lower(i) $$
-	\item finding the length of the array if it is not stored explicitly:
-	$$ length() = prefix\_sum(A\_prefix, \infty)$$
-\end{itemize}
-
-We use this compressed array in two different settings:
-\begin{itemize}
-	\item A single array $A$ containing $a$ elements of size $s$ in $r$ runs.
-	Then the size of $A\_names$ is $r s$ bits.
-	The prefix structure can be stored using $\log {a \choose r} + o(r) + O(\log \log a) = O(r \log a)$ bits.
+		\runFirst(A, i) &= \prev_1(\AFID, i) + 1 \\
+		\runLast(A, i) &= \succ_1(\AFID, i) \\
+		\runLength(A, i) &= \runLast(A, i) - \runFirst(A, i) + 1
+	\end{align*}
 	
-	Specifically, if we store $\tau_1$ names of all vertices of the tree requiring $O(1)$ runs per name, then the space is $O(\frac{n}{B} \log n) = o(n)$ bits.
-	Equivalently for $\tau_2$ names of vertices of a given mini-tree it is $O(\frac{B}{b} \log b) = o(B)$ bits.
-	\item A collection of $r$ arrays $A_i$, each containing up to $a$ elements of size $s$, with $r$ runs in total in all arrays of the collection.
-	Then the arrays $A\_names$ require space $r s$ bits.
-	The size of the $A\_prefix$ structures can be bounded using Jensen's inequality to $O(r \log a)$ bits.
+	\item[\before{}]
+	Provides direct access to the array \ABefore{}.
+	$$ \before(A, i) = \ABefore[\elementIndex(A, i)] $$
 	
-	If each $\tau_1$ name occurs in at most one array in a single run, then partitioning all vertices of the tree requires $O(\frac{n}{B} \log n) = o(n)$ bits.
-	Storing $\tau_2$ names of vertices in a given mini-tree under the same conditions gives the space $O(\frac{B}{b} \log B) = o(B)$ bits.
-\end{itemize}
-If $A$ contains all vertices of the tree (or a mini-tree) with at most $O(1)$ runs per name, 
+	\item[\rank{}]
+	Returns how many elements same as $A[i]$ there has been until the position $i$:
+	$$ \rank(A, i) = \before(A, i) + (i - \runFirst(A, i) + 1) $$
+\end{description}
 
-The other use concerns multiple compressed arrays, with each vertex being present in $O(1)$ of them (it can even not appear at all), however every run of a name occurs at most once per compressed array.
-For the whole tree with a compressed array per mini-tree, the arrays $A\_name$ add up to $O(\frac{n}{B})$ elements.
-Jensen's inequality for the $A\_prefix$ gives us an upper bound of $O(\frac{n}{B} \log n) = o(n)$ bits in total.
-The additional terms of the index dictionary $\sum_i (o(r_i) + O(\log \log n)) = O(\frac{n}{B} + \frac{n}{B} \log \log n) = o(n)$ also cause no problem.
+\subsubsection{Extending Compressed Array}
 
-Multiple compressed arrays on a micro-tree level, in the same settings provide the arrays $A\_name$ to have $O(\frac{B}{b})$ elements in total.
-The $A\_prefix$ structures are bounded together by $O(\frac{B}{b} \log B) = o(B)$ with the additional terms $O(\frac{B}{b} + \frac{B}{b} \log \log B) = o(B)$.
+A compressed array can be built on top of several arrays $A_0, A_2, \ldots, A_{t-1}$ with sizes $a_i$ containing $r_i$ runs.
+The space complexity the follows from a simple summation: $a = \sum_i a_i$ and $r = \sum_i r_i$.
 
-% The rest was deleted 2016-07-14
+We extend the structure of the compressed array by the following field:
+\begin{description}
+	\item[\AParts{}]
+	It contains $t + 1$ elements of positions where $A_i$ starts.
+	\begin{align*}
+		\AParts[0] &= 0 \\
+		\AParts[i] &= \sum_{j = 0}^{i - 1} |A_{j}|
+	\end{align*}
+	The size of \AParts{} is the same as the size of \ABefore{} which was built on top of an array of the same size containing a single part.
+\end{description}
+
+The compressed array is then built on top of a concatenated array
+$$A = A_0 \cdot A_2 \cdots A_{t-1}$$
+with the exception that the first element of an array $A_i$ always starts a new run.
+This makes sure that runs do not extend over several parts, which would make it harder, yet not impossible, to handle.
+This is already incorporated in the total number of runs: $r = \sum_i r_i$.
+
+Using this extra array, which has same size as \ABefore{}, we can support the operations on part $p \in [0, t)$ which differs by an initial offsetting of $i$:
+$$i' = \AParts[p] + i$$
+Note that we also can check the bounds before an operation is commenced.
+
+\bigbreak
+
+We define a way how to turn a partially filled array $A'$ with a characteristic vector $C$, which is usually obvious from the context and definition of $A'$, into a compressed array $A$ for a given operation \op{} which is one of \pred{}, \succ{}, \prev{}, \next{}.
+$$A[i] = A'[\op(C, i)] \:\forall i$$
+
+\subsection{Tiny Compressed Array}
+
+The compressed array, as we defined it using the FID, is going to be sufficient for most cases.
+However it is impractical in situations when the number of runs is very small since the size of the FID depends polynomially on the size of the universe $a$ rather than on the number of elements $r$ which are represented by the set. 
+We are interested in developing a more space-efficient structure for $r = O(\log a)$.
+
+The polynomial dependency of FID on the size of the universe $a$ is not only problem of our quite simple data structure; in fact there is no known FID which does not suffer with this problem. \cite{grossi2009more}, \cite{patrascu2008succincter}
+We overcome the problem by replacing the FID by two more advanced data structures which together provide the same result under this restricted $r$.
+The resulting space complexity will be $O(\log^2 a)$ bits.
+
+When we apply it to out settings, the space complexity is $O(\log^2 a)$.
+
+The indexed dictionary will also be used independently.
+
+\subsubsection{Fusion Tree}
+A \emph{fusion tree} is a data structure which stores $n$ $l$-bit integers and supports \pred{} and \succ{} operations in time $O(\log_l n)$ requiring space $O(n l)$ bits. \cite{fredman1993surpassing} \cite{puatracscu2006time}
+
+Applied to our problem of a set containing $O(\log a)$ values, we get a data structure which uses $O(\log^2 a)$ bits and answers the operations in time $O(1)$.
+
+\bigbreak
+
+The fusion tree provides the operations \pred{} and \succ{}.
+The operation \rank$_1$ is needed only by \elementIndex{} where its argument is already member of the dictionary (that was arranged by \succ{}).
+We use the succinct indexable dictionary from lemma \ref{l:succint-indexed-dictionary} to support \rank$_1$.
+
+\bigbreak
+
+It is worth noting, that the tiny compressed array is a theoretical data structure as it can be replaced by a simple sorted array.
+The operations \rank{}, \select{}, \pred{}, and \succ{} can be then processed in time $O(\log \log a)$, which for all practical purposes ($\log \log a \le 6$) is negligible.

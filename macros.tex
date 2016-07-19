@@ -89,6 +89,8 @@
 
 %%% My own macros
 
+\def\naive{naïve}
+
 \def\ph{\relax\ifmmode*\else$*$\fi}
 
 \newcommand{\todo}[1]{}
@@ -111,12 +113,15 @@
 
 \algnewcommand\Break{\textbf{Break}}
 
+\usepackage{mdframed}
+\newmdenv[topline=false,bottomline=false,leftline=false,linewidth=1pt]{programborder}
+% takes too much space :-(
 
 \let\oldAlgorithmic\algorithmic
 \let\oldEndAlgorithmic\endalgorithmic
 
 \usepackage{float}
-%\floatstyle{ruled}
+%\floatstyle{boxed}
 \newfloat{program}{H}{lop}
 \floatname{program}{Program}
 
@@ -219,6 +224,23 @@
 % in Bit Strings, sublinear FID
 \defineName[characteristicBlock]{characteristic\_block}
 
+% in Bit Strings, compressed array
+\newcommand{\defineCompressed}[2][]{%
+	\def\name{\if\relax\detokenize{#1}\relax#2\else#1\fi}
+	\expandafter\defineName\expandafter[\name FID]{#2\_FID}
+	\expandafter\defineName\expandafter[\name Elems]{#2\_elems}
+	\expandafter\defineName\expandafter[\name Before]{#2\_before}
+	\expandafter\defineName\expandafter[\name Parts]{#2\_parts}
+}
+\defineCompressed{A}
+\defineName[elementIndex]{element\_index}
+\defineName[runFirst]{run\_first}
+\defineName[runLast]{run\_last}
+\defineName[runLength]{run\_length}
+\defineName{before}
+\defineName[compressedArray]{compressed\_array}
+\defineName{op}
+
 \newcommand{\defineRS}[2][]{%
 	\def\name{\if\relax\detokenize{#1}\relax#2\else#1\fi}
 	\expandafter\defineName\expandafter[\name Rank]{#2\_rank}
@@ -290,8 +312,58 @@
 \defineName[toLast]{to\_last}
 \defineName[toSymetric]{to\_symetric}
 
-% in structures, FF
+% in structures, FF operations
 \defineName[summ]{sum}
+\defineName[rmqSize]{rmq\_size}
+\defineName[rmqRank]{rmq\_rank}
+\defineName[rmqSelect]{rmq\_select}
+\defineName[RMQSize]{RMQ\_size}
+\defineName[RMQRank]{RMQ\_rank}
+\defineName[RMQSelect]{RMQ\_select}
+
+% in structures, FF min-max tree
+\defineName{ms}
+\defineName{Ms}
+\defineName[sumBlock]{sum\_block}
+\defineName[fwdSearchBlock]{fwd\_search\_block}
+\defineName[nodeSearch]{node\_search}
+\defineName[rightSiblings]{right\_siblings}
+\defineName[rmqInfo]{rmq\_info}
+\defineName[rmqList]{rmq\_list}
+\defineName{append}
+\defineName{prepend}
+\defineName{concatenate}
+\defineName[rmqBlock]{rmq\_block}
+\defineName[rmqSizeBlock]{rmq\_size\_block}
+\defineName[rmqSelectBlock]{rmq\_select\_block}
+\defineName[leftSiblingsInclusive]{left\_siblings\_inclusive}
+\defineName[minSearch]{min\_search}
+\defineName[nodeRange]{node\_range}
+
+% in structures, FF macro search
+\defineName{lrm}
+\defineName{LRM}
+\defineName{rlm}
+\defineName{RLM}
+\defineName[lrmSearch]{lrm\_search}
+\defineName[LRMSearch]{LRM\_search}
+\defineName{root}
+\defineName{length}
+\defineName{start}
+\defineName[endd]{end}
+\defineName{ladder}
+
+% in structures, FF macro range
+\defineName{prefix}
+\defineName{suffix}
+\defineName[spann]{span}
+\defineName{mr}
+\defineName{mi}
+\defineName[mpp]{mp}
+\defineName{first}
+\defineName{last}
+
+\def\struct#1#2{#1{:}\ #2}
 
 \usepackage[nobottomtitles*]{titlesec}
 \renewcommand{\bottomtitlespace}{.2\textheight}

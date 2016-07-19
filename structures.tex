@@ -31,6 +31,7 @@ All the operations which we have just listed have one thing in common, they all 
 We did not show the indices for \levelAncestor in the BP and DFUDS representations for a reasons: they were unnecessarily complicated, whereas here in the Fully Functional data structure, it is going to be one of the easiest operations.
 
 We define a new set of primitive operations for which we then design a single index, incorporating even the range operation.
+The index will be general -- any of the representations (LOUDS, BP, DFUDS) can use it, however only BP will benefit from it.
 
 \subsection{New Operations}
 
@@ -43,236 +44,298 @@ We follow on \ref{ss:rmq-def} and define operations on the bit string $S$ parame
 	
 	\item[Linear search operations]
 	We replace \select{} in all forms by linear searching operations.
-	\begin{itemize}
-		\item $\fwdSearch(S, g, i, d) = \min_{j > i} \{j : \summ(S, g, i, j) = d\}$ returns the first position $j$ such that the values sum up to $d$;
-		\item $\bwdSearch(S, g, i, d) = \max_{j < i} \{j : \summ(S, g, j, i) = d\}$ works the same way as \fwdSearch{} except that it searches in direction towards the beginning of the bit string.
-	\end{itemize}
+	\begin{description}
+		\item[\fwdSearch{}]
+		Returns the first position $j$ such that the values sum up to $d$.
+		$$\fwdSearch(S, g, i, d) = \min_{j > i} \{j : \summ(S, g, i, j) = d\}$$
+		
+		\item[\bwdSearch{}]
+		Works the same way as \fwdSearch{} except that it searches in direction towards the beginning of the bit string.
+		$$\bwdSearch(S, g, i, d) = \max_{j < i} \{j : \summ(S, g, j, i) = d\}$$
+	\end{description}
+	
 	Note that despite using the same names in \ref{s:match-enclose}, their definition here is different.
 	They refer to operations defined for all $i \in [0, N)$, rather than only to look-up tables. 
 	
 	\item[Range operations]
-	We extend and generalize the range queries:
-	\begin{itemize}
-		\item $rmq(S, g, i, j) = sum(S, g, 0, i - 1) + \min_{i \le k \le j} sum(S, g, i, k)$ -- returns the value of the minimum in the given range.
-		\item $rmq\_size(S, g, i, j) = | \{ i \le k \le j : sum(S, g, i, k) = rmq(S, g, i, j) \} | $ -- returns how many times the minimum occurred in the given range;
-		\item $rmq\_rank(S, g, i, j, k)$ -- returns how many minima there are in the given range up to position $k$.
-		\item This can be directly implemented using $rmq$ and $rmq\_size$:
+	We generalize the range operations for any function $g$.
+	We also extend the original operation \rmqi{} into \rmqSelect{}, so that it does not only return the first occurrence of the minimum, but any occurrence in general.
+	
+	\begin{description}
+		\item[\rmq{}]
+		Returns the value of the minimum in the given range.
+		$$\rmq(S, g, i, j) = \summ(S, g, 0, i - 1) + \min_{i \le k \le j} \summ(S, g, i, k)$$
+
+		\item[\rmqSize{}]
+		Returns how many occurrences there are in the given range.
+		$$\rmqSize(S, g, i, j) = | \{ i \le k \le j : \summ(S, g, i, k) = \rmq(S, g, i, j) \} | $$
+		
+		\item[\rmqRank{}]
+		Returns how many occurrences of minimum there are in the given range up to position $r$.
+		This can be directly implemented using \rmq{} and \rmqSize{}:
 		\begin{algorithmic}
-			\Function{rmq\_rank}{$S, g, i, j, k$}
-				\If{$rmq(S, g, i, j) \ne rmq(S, g, i, k)$}
+			\Function{\rmqRank}{$S, g, i, j, r$}
+				\If{$\rmq(S, g, i, j) \ne \rmq(S, g, i, r)$}
 					\State \Return{$0$}
 				\Else
-					\State \Return{$rmq\_size(S, g, i, k)$}
+					\State \Return{$\rmqSize(S, g, i, r)$}
 				\EndIf
 			\EndFunction
 		\end{algorithmic}
-		\item $rmq\_select(S, g, i, j, n) = \min_{k \ge i} rmq\_rank(S, g, i, j, k) = n$ -- returns position of $n$-th minimum in range $i, j$;
-		\item $RMQ, RMQ\_size, RMQ\_rank, RMQ\_select$ are defined similarly.
-	\end{itemize}
+		
+		\item[\rmqSelect{}]
+		Returns the position $p$ of the $r$-th minimum in the range $i, j$.
+		$$\rmqSelect(S, g, i, j, r) = \min_{p \ge i} \{p : \rmqRank(S, g, i, j, p) \ge r\}$$
+		
+		\item[\RMQ{}, \RMQSize{}, \RMQRank{}, \RMQSelect{}]
+		The maximum variants of the range operations are defined similarly.
+	\end{description}
 \end{description}
 
-We show how it is possible to realize all operations which we used as primitives in the previous succinct data structures only by searches and range queries on calculated arrays.
-We immediately get a data structure for BP and DFUDS representations which supports all queries which were supported before.
-Later we show that even more operations which were impossible or required complicated indices are now feasible.
+\bigbreak
 
-Ranking and selecting:
-\begin{align*}
-	rank_1(i) &= sum(S, \phi, 0, i) \\
-	select_1(n) &= fwd\_search(S, \phi, 0, n) \\
-	rank_0(i) &= sum(S, \psi, 0, i) \\
-	select_0(n) &= fwd\_search(S, \psi, 0, n)
-\end{align*}
+We show how it is possible to realize all operations which we used as primitives in the previous succinct data structures only by sums, searches and range operations on calculated arrays.
+We immediately get data structure equivalent to those in the previous chapter in terms of the operations which they support.
+Later we will show that even more operations becomes feasible for the BP representation.
 
-Operations on sequences of matching parentheses:
-\begin{align*}
-	find\_close(i) &= fwd\_search(S, \pi, i, 0) \\
-	find\_open(i) &= bwd\_search(S, \pi, i, 0) \\
-	enclose(i) &= bwd\_search(S, \pi, i, 2) \\
-	enclose(i_1, i_2)&\ \textrm{stays the same} \\
-	rmqi(E, i, j) &= rmq\_select(S, \pi, i, j, 1) \\
-	RMQi(E, i, j) &= RMQ\_select(S, \pi, i, j, 1)
-\end{align*}
+\begin{description}
+	\item[Operations on general bit strings]
+	\begin{align*}
+		\rank_1(i) &= \summ(S, \phi, 0, i) \\
+		\select_1(n) &= \fwdSearch(S, \phi, 0, n) \\
+		\rank_0(i) &= \summ(S, \psi, 0, i) \\
+		\select_0(n) &= \fwdSearch(S, \psi, 0, n)
+	\end{align*}
+	
+	\item[Operations on balanced bit strings]
+	\begin{align*}
+		\findClose(i) &= \fwdSearch(S, \pi, i, 0) \\
+		\findOpen(i) &= \bwdSearch(S, \pi, i, 0) \\
+		\enclose(i) &= \bwdSearch(S, \pi, i, 2) \\
+		\enclose(i_1, i_2)&\ \textrm{stays the same} \\
+		\rmqi(E, i, j) &= \rmqSelect(S, \pi, i, j, 1) \\
+		\RMQi(E, i, j) &= \RMQSelect(S, \pi, i, j, 1)
+	\end{align*}
+\end{description}
 
-\subsection{The Data Structure}
+Therefore, while designing the index, we can focus only on the new operations.
 
-As we are describing a universal structure independent on its specific usage for representing trees, we again use $N$ to denote the size of the bit string.
-We assume a general $\pm 1$-function $g$.
+\subsection{The Succinct Index}
 
-The bit string $S$ is first split into blocks, which are roughly of polylogarithmic size.
-Each block is then split into small blocks of size $\frac{\log N}{2}$.
-Queries withing a small block are processed by look-up tables.
+As we are describing a universal index which is independent of its specific usage for representing trees, we again use $N$ to denote the size of the bit string.
+We also parametrize all operations by the function $g$.
+
+The structure of the index follows the general idea of dividing into blocks and them into small blocks.
+Here the blocks will be of roughly polylogarithmic size and small blocks of size $b = \frac{\log N}{2}$ in order to be processed by using look-up tables.
 If the query spans multiple small blocks withing a single block, the queries are handled by min-max trees.
 The queries spanning multiple blocks are answered by a macro structure.
 
-\subsubsection{Small Blocks}
+\bigbreak
 
-The lowest level of small blocks of size $b = \frac{\log N}{2}$ is the easiest.
 The small blocks are small enough to by used as indices of precomputed look-up tables, which answer all queries in constant time.
-We require the following look-up tables:
-\begin{itemize}
-	\item For given range $i, j$ returns the sum $v$.
-	\item For given position $i$ and value $d$, returns the first next and previous position $p$ where the difference is $d$.
-	\item For given range $i, j$ returns the local value $v$ of minimum and maximum.
-	\item For given range $i, j$ returns the number $n$ of occurrences of minima and maxima.
-	\item For given range $i, j$ and $n$, return the position $p$ of $n$-th minimum and maximum in the small block.
-\end{itemize}
-The values of $i, j, n$ are in range $[0, b - 1]$; the values $d, v$ are in range $[-b, b]$; the value of $p$ is in range $[0, b - 1]$ plus one special value indicating that such position does not exist in the small block.
-Together we have 8 precomputed tables; each of them requires $O(\sqrt{N} \log N \log \log^3 N)$ bits of memory.
+We use the following look-up tables which directly implement the primitive operations on small blocks:
+\begin{description}
+	\item[\summ{}]
+	For a given range $i, j$, it returns the sum $v$.
+	
+	\item[\fwdSearch{}, \bwdSearch{}]
+	For a given position $i$ and value $d$, they return the first next and previous position $p$ where the difference is $d$.
+	If the answer is not present, a special value is returned.
+	
+	\item[\rmq{}, \RMQ{}]
+	For a given range $i, j$, they return the local value $v$ of minimum and maximum.
+	
+	\item[\rmqSize{}, \RMQSize{}]
+	For a given range $i, j$, they return the number $r$ of occurrences of them minimum and maximum.
+	
+	\item[\rmqSelect{}, \RMQSelect{}]
+	For a given range $i, j$ and $r$, they return the position $p$ of $r$-th minimum and maximum in the small block.	
+\end{description}
+
+The values of $i, j, r$ are in range $[0, b - 1]$; the values $d, v$ are in range $[-b, b]$; the value of $p$ is in range $[0, b - 1]$ plus the special value indicating that such position does not exist in the small block.
+Together we have 9 precomputed tables; each of them requires $O(\sqrt{N} \log N \log \log^3 N)$ bits of memory.
 
 The tables are used to answer all range operations whenever $i$ and $j$ are in the same small block.
-In case of searches, they also determine that the answer lay outside of the block.
+In case of the searches, they also determine that the answer is not present in the small block.
 
-\subsubsection{Min-Max Tree}
+We also use the look-up tables to handle the prefix and suffix of a range query, or at the beginning or end of a search query.
+
+\subsection{Min-Max Tree}
 
 Each block contains $k^c$ small blocks for $k = \frac{\log N}{\log \log N}$ and an arbitrary constant $c \le 1$.
-The $l$-th block covers an interval of $B = b k^c$ bits spanning from position $(l-1) B$ to $l B - 1$.
-To simplify the description we isolate the block by shifting the offsets so that it covers the range $[0, B - 1]$.
-We also assume that the values in the array $G$ are in range $[-B, B]$; the global values can be computed simply by adding the value $G[(l-1) B - 1]$.
-This does not have any impact on correctness of the operations on the block level.
+The purpose of the min-max tree is to lift the operations from $b$ bits to $b k^c$ while retaining their constant running time.
 
-We build a perfect $k$-ary tree on top of the sequence of small blocks; we call it a \emph{min-max tree}.
+The $l$-th block covers an interval of $B = b k^c$ bits spanning from the position $l B$ to $(l + 1) B - 1$.
+To simplify the description we isolate the block by shifting the offsets so that it covers the range $[0, B - 1]$ by setting $l = 0$.
+We also assume that the values in the array $G$ are in range $[-B, B]$; the global values can be computed simply by adding the value $G[l B - 1]$.
+This does not have any impact on the correctness of the operations on the block level.
+
+We extend the bit string $S$ to the nearest multiple of $B$ in order to ensure that each block is full.
+The extra space caused by the extension is negligible.
+Only the \fwdSearch{} operation could return an answer from the extended part, however it can happen only if the answer was not found earlier -- this case is easy to handle in the end.
+
+\bigbreak
+
+We build a perfect $k$-ary tree on top of the sequence of the small blocks (belonging to the block); we call it the \emph{min-max tree}.
 The tree has a constant height equal to $c$.
-Its leaves represent the information from small blocks provided by look-up tables; the inner nodes aggregate information from their children.
-We store the following values in each node spanning the range $i, j$:
-\begin{itemize}
-	\item $e = sum(S, g, 0, j)$ -- the value at the end of the range;
-	\item $m = rmq(S, g, i, j), ms = rmq\_size(S, g, i, j)$ -- the value of minimum and how many times it occurred;
-	\item $M = RMQ(S, g, i, j), Ms = RMQ\_size(S, g, i, j)$ -- the value of maximum and how many times it occurred.
-\end{itemize}
+Its leaves represent the information from the small blocks provided by the look-up tables; the inner nodes aggregate the information from their children.
+We store the following values in each node which spans over the range $i, j$:
+\begin{description}
+	\item[$e = \summ(S, g, 0, j)$] 
+	The value at the end of the range.
+	
+	\item[$m = \rmq(S, g, i, j), \ms = \rmqSize(S, g, i, j)$]
+	The minimum value and how many times it occurs.
+	
+	\item[$M = \RMQ(S, g, i, j), \Ms = \RMQSize(S, g, i, j)$]
+	The maximum value and how many times it occurs.
+\end{description}
 
-The aggregation in inner node is obvious: the last value for $e$; minimum for $m$, maximum for $M$; sum for $ms$ and $Ms$.
+The aggregation in the inner node is the obvious one:
+\begin{iteminline}
+	\item the last value for $e$;
+	\item minimum for $m$, maximum for $M$;
+	\item sum for $\ms$ and $\Ms$.
+\end{iteminline}
 All values within a node require only $O(\log b)$ bits each.
 
-We number the nodes of the tree in a heap-like fashion and store their values in arrays $e[\cdot], m[\cdot], ms[\cdot], M[\cdot], Ms[\cdot]$.
-Note that all children of a node are stored together in consecutive $O(k \log \log N) = O(\log N) = c' b$ bits of memory, for a constant $c'$.
-There are $\frac{k^c}{k-1} = O(k^{c-1})$ nodes, each of them requires $O(\log b)$ bits.
-The density of the tree built on top of the block is $\frac{O(k^c \log b)}{k^c b} = O(\frac{\log b}{b}) = o(1)$.
+As it is a perfect $k$-ary tree, we store the values of the nodes in a heap-like fashion in arrays $e[\cdot], m[\cdot], \ms[\cdot], M[\cdot], \Ms[\cdot]$.
+We can navigate in this tree from an node with number $n$ to the parent ($n / k$), first child ($n \cdot k$), last child ($n \cdot k + k - 1$), previous sibling $n - 1$, next sibling $n + 1$.
+
+All children of a node are stored together in consecutive $O(k \log \log N) = O(\log N) = c' b$ bits of memory, for a constant $c'$.
+There are $\frac{k^{c + 1}}{k - 1} = O(k^c)$ nodes, each of them requires $O(\log b)$ bits.
+The density of the tree structure built on top of the sequence of the small blocks is $O(\frac{k^c \log b}{k^c b}) = O(\frac{\log b}{b}) = o(1)$.
 
 \bigskip
 
-We show how we support the operations on block level using traversal of the min-max tree and possibly a delegation to small blocks.
-By $b(i) = \lfloor\frac{i}{b}\rfloor$ we denote the index of the small block which contains $i$.
-To simplify the notation we assume that the node numbers of leaves are the same as indices of the small blocks with which they are associated.
+We show how to support the operations on the block level using traversal of the min-max tree and possibly delegation to small blocks.
+By $b(i)$ we denote the index of the small block which contains the position $i$.
+Contrary to the defined numbering of nodes, in order to simplify the notation, we assume in the algorithms that the node numbers of leaves are the same as indices of the small blocks with which they are associated.
+We will use subscripts to refer to bits of $S$ represented by a small block $n$: $S_n = S[n b : (n + 1) b]$
 
 \begin{algorithmic}
-\Function{sum\_block}{$S, g, i, j$}
-	\State $x \gets e[b(i - 1) - 1] + sum\_small\_block(S_{b(i - 1)}, g, 0, (i - 1) \% b)$
-	\State $y \gets e[b(j) - 1] + sum\_small\_block(S_{b(j)}, g, 0, j \% b)$
+\Function{\sumBlock}{$S, g, i, j$}
+	\State $x \gets e[b(i - 1) - 1] + \summ[S_{b(i - 1)}, g, 0, (i - 1) \% b]$
+	\State $y \gets e[b(j) - 1] + \summ[S_{b(j)}, g, 0, j \% b]$
 	\State \Return{$y - x$}
 \EndFunction
 \end{algorithmic}
 
-\paragraph{Search Operations}
+\subsubsection{Search Operations}
+
+We say that the small block $j$ \emph{covers} a value $v$ if $m[j] \le v \le M[j]$.
 
 \begin{lemma}\label{l:search}
-	The result of search operations starting at $i$ and looking for a difference $d$ (which does not have a result in the small block $h$ containing $i$) lays in the first small block $j$ such that $m[j] \le v = sum(S, g, 0, ) + d \le M[j]$.
-	We say that the value $v$ is covered by the extremes (minimum and maximum).
+	The answer to a search query starting at $i$ and looking for a difference $d$ (such that it is not answered in the small block $b(i)$) is in the first small block $j$ such that covers $v = \summ(S, g, 0, i) + d$.
 	
-	No small block in subtree of a node of the min-max tree whose extremes do not cover the value $v$ contains the answer.
+	No small block in the subtree of a min-max tree node not covering the value $v$ contains the answer.
 \end{lemma}
 \begin{proof}
-	The function $g$ which is used for calculating the array $G$ requires that $| G[k] - G[k-1] | \le 1$, which is the property introduced in \ref{ss:rmq-def}.
-	From that follows that each small block contains all values between the minimum and maximum in the array $G$.
-	The first small block which satisfies the condition on the extremes contains the desired value $v$.
+	We remind an important property of the $\pm 1$ functions $g$: 
+	$$| G[i] - G[i-1] | \le 1$$
+	From that follows that each small block contains all values between its minimum and maximum.
+	The first small block which which covers the desired value $v$ has to contain it.
 	
-	Moreover, if $v < \textrm{minimum of the rest of the block } b(i)$, then it is sufficient to find the first small block $j$ such that $m[j] \ge v$ because $M[j] \ge m[j-1]$.
-	Similar statement holds for $v$ greater than the maximum.
+	Moreover, if $v < \rmq[S_{b(i)}, (i + 1) \% b, b - 1]$ (less than minimum of the rest of the small block), then it is sufficient to find the first small block $j$ such that $m[j] \ge v$ because $M[j] \ge m[j-1]$.
+	A similar statement holds for $v$ being greater than the maximum.
 	
-	A leaf is associated with a small block and so its extremes are the same as of the small block.
-	By contradiction, if a small block in a subtree contained the answer, the extremes of the leaf would cover $v$.
-	An internal node aggregates the minimum and maximum of its subtree and so if its child contained the answer, the aggregation would assure that the extremes of the node cover $v$.
+	The extremes of a leaf are the same as of the small block with which it is associated.
+	If a small block $j$ contains the answer, then the value $v$ is covered by the leaf $j$.
+	Because of the aggregation method of inner vertices, all ancestors of $j$ cover $v$ too.
+	An inner vertex covers $v$ only if a leaf in its subtree covers $v$.
 \end{proof}
 
-When we process the search operations, we first check the containing small block for an answer.
-If the answer is present there, we return the position and end.
+When we process the search operations, we first check the small block containing $i$ for an answer.
+If the answer is present there, we return the position, and end.
 
 Otherwise, we compute the desired value $v$ and traverse the tree up until we find the answer or until we reach the root.
 If we get to root, we signal that this block does not contain the answer by returning a special value.
-When we are in node $a$, we check the extremes of its siblings in the direction in which we are searching.
-This check can be performed in time $c'$ using precomputed look-up tables as all siblings are stored in consecutive $c' b$ bits.
+When we are in a node $a$, we check the extremes of its siblings in the direction in which we are searching.
+This check can be performed in time $c'$ using a precomputed look-up table as all siblings are stored in consecutive $c' b$ bits.
+Only one-sided checks are necessary as we noted in the lemma \ref{l:search}.
 
-When we find such sibling, we move to it and start descending to the first child whose extremes cover the value $v$.
+When we find a sibling covering $v$, we move to it and start descending to its first child covering the value $v$.
 Finding such child again requires time $c'$ and another set of precomputed tables.
-Once we descend into a leaf $j$, we compute the value $d' = v - e[j - 1]$ which we are going to look for in the associated small block using a look-up table. 
+Once we descend to a leaf $j$, we compute the value $d' = v - e[j - 1]$ which we are going to look for in the associated small block using a look-up table. 
 As the height of the tree is $c$, the whole operation takes at most $O(2 c c') = O(1)$ steps.
 
-By an asterisk we denote a repeated application of look-up table on a list of consecutive nodes in the tree.
+We show the pseudocode for the operation \fwdSearch{}.
+By an asterisk superscript we denote a repeated application of a look-up table on the list of consecutive nodes in the tree.
 
 \begin{algorithmic}
-\Function{fwd\_search\_block}{$S, g, i, d$}
-	\State $p \gets fwd\_search\_small\_block(S_{b(i)}, g, i \% b, d)$
+\Function{\fwdSearchBlock}{$S, g, i, d$}
+	\State $p \gets \fwdSearch[S_{b(i)}, g, i \% b, d]$
 	\If{$p \ne -1$}
 		\State \Return{$p + b(i) b$}
 	\Else
-		\State $v \gets e[b(i) - 1] + sum\_small\_block(S_{b(i)}, g, 0, i \% b) + d$
+		\State $v \gets e[b(i) - 1] + \summ[S_{b(i)}, g, 0, i \% b] + d$
 		\State $n \gets b(i)$ \Comment{The current node, initialized to be a leaf}
-		\While{$(j \gets table_1^*[right\_siblings(n), v]) = -1$} \Comment{Sibling covering $v$}
-			\State $n \gets parent(n)$
-			\If{$is\_root(n)$}
+		\While{$(j \gets \nodeSearch^*[\rightSiblings(n), v]) = -1$} \Comment{Sibling search}
+			\State $n \gets \parent(n)$
+			\If{$\isRoot(n)$}
 				\State \Return{$-1$}
 			\EndIf
 		\EndWhile
-		\While{$\boolnot is\_leaf(j)$}
-			\State{$j \gets table_1^*[children(j), v]$} \Comment{The first child covering $v$}
+		\While{$\boolnot \isLeaf(j)$}
+			\State{$j \gets \nodeSearch^*[\children(j), v]$} \Comment{The first child covering $v$}
 		\EndWhile
 		\State $d' \gets v - e[j - 1]$ \Comment{The remaining difference}
-		\State \Return{$j b + fwd\_search\_small\_block'(S_{j}, g, 0, d')$} \Comment{$d'$ in block $j$}
+		\State \Return{$j b + \fwdSearch'(S_j, g, 0, d')$} \Comment{$d'$ in the small block $j$}
 	\EndIf
 \EndFunction
 \end{algorithmic}
 
-Note that the final $fwd\_search\_small\_block'$ is the standard $fwd\_search\_small\_block$ altered to allow the answer $0$, which is prohibited by the original definition.
-This can be handled with a simple check for $sum\_small\_block(S_{j}, g, 0, 0) = d'$.
+Note that the final \fwdSearch' is the standard \fwdSearch{} altered to allow the answer $0$, which is prohibited by the original definition.
+This can be handled with a simple check for $\summ[S_j, g, 0, 0] = d'$.
 
-\paragraph{Range Operations}
+\subsubsection{Range Operations}
 
-The range operations works similarly, they traverse the tree up gathering information on the way, and then descend down in case of range select operations.
-If the query is fully contained within a small block, we get the answer from a lookup table and end.
+The range operations work similarly: they traverse the tree up gathering information on the way, and in case of range select operations, they descend down.
+If the query is fully contained within a small block, the answer is found in a look-up table.
+In order to solve the other queries, we use two helper functions.
+By the same argument as for the search operations, the running time is $O(2 c c') = O(1)$.
 
-First we find the lowest common ancestor $a$ of the leaves $u = b(i)$ and $v = b(j)$.
-We keep two lists of partial answers, one for each branch starting at $u$ and $v$.
+The helper function \rmqInfo{} which returns aggregated information for all siblings of a given node.
+The function returns a tuple containing: the number of the first node, the number of the last node, the minimum, the maximum, the number of occurrences of the minimum, the number of occurrences of the maximum.
+It iterates over $\frac{k}{c'}$ nodes in each step using look-up tables, which results in the running time $O(c')$.
 
+Another helper function \rmqList{} gathers all aggregated info for subranges between $i$ and $j$.
+It starts with the leaves $u = b(i)$ and $v = b(j)$, and keeps two lists of partial answers, one for each starting point.
 We first ask the small blocks for their answers and remember them in their respective lists.
-In a loop until $u$ becomes $a$ we get the answers from the right siblings of $u$ and the left siblings of $v$, we remember them in the lists and move to their parents.
-In the last iteration the left siblings and right siblings overlap; therefore we store the answers in only one of the lists.
-Note that each list contains at most $c c'$ values as the table look-ups aggregate the answers.
 
+In a loop until $u$ and $v$ merge, we get the answers from the right siblings of $u$ and the left siblings of $v$, we remember them in the lists and move to their parents.
+In the last iteration the left siblings and the right siblings overlap; therefore we store the answers in only one of the lists.
+Each list contains at most $c$ values as the table look-ups aggregate the answers.
 We combine the lists into a single list and find the answer to the queries in it.
-For $rmq$ we return the minimum of the list.
-For $rmq\_size$ we sum $ms$ for those nodes whose minimum is equal to $rmq$.
-In case of $rmq\_select$ we find the first node in the list such that the prefix sum of $ms$ is greater or equal to $n$.
-We descend in such node to a child whose left siblings including itself sum up to $n$, and repeat until we get to a leaf.
-Once we are in a leaf, we use a look-up table to solve the select there.
-
-By the same argument as in search operations, the running time is $O(2 c c') = O(1)$.
 
 \begin{algorithmic}
-\Function{rmq\_list}{$S, g, i, j$} \Comment{$b(i) \ne b(j)$}
-	\State $left \gets []; right \gets []$ \Comment{Initialization of the empty lists}
-	\State $left.append(\{node{:}\ b(i), m{:}\ rmq\_small\_block(S_{b(i)}, g, i \% b, b - 1) + e[b(i) - 1],\allowbreak ms{:}\ rmq\_size\_small\_block(S_{b(i)}, g, i \% b, b - 1), M {:}\ \ldots, Ms{:}\ \ldots \})$
-	\State $right.prepend(\{node{:}\ b(j), m{:}\ \ldots, ms{:}\ \ldots, M{:}\ \ldots, Ms{:}\ \ldots\})$
-	\State $a \gets lca(u, v)$
-	\While{$parent(u) \ne a$} \Comment{$u, v$ in different subtrees}
-		\State $left.append(rmq\_info(S, g, u, "right"))$
-		\State $right.prepend(rmq\_info(S, g, v, "left"))$
+\Function{\rmqList}{$S, g, i, j$} \Comment{$b(i) \ne b(j)$}
+	\State $L \gets []; R \gets []$ \Comment{Initialization of the empty lists}
+	\State $i_m \gets \rmq[S_{b(i)}, g, i \% b, b - 1] + e[b(i) - 1];$ \Comment{Similarly $j_m; i_M; j_M$}
+	\State $i_{\ms} \gets \rmqSize[S_{b(i)}, g, i \% b, b - 1];$ \Comment{Similarly $j_{\ms}; i_{\Ms}; j_{\Ms}$}
+	\State $\append(L, \{\struct{f}{b(i)}, \struct{l}{b(i)}, \struct{m}{i_m}, \struct{\ms}{i_{\ms}}, \struct{M}{i_M}, \struct{\Ms}{i_{\Ms}} \})$ \Comment{Info for $b(i)$}
+	\State $\prepend(R, \{\struct{f}{b(j)}, \struct{l}{b(j)}, \struct{m}{j_m}, \struct{\ms}{j_{\ms}}, \struct{M}{j_M}, \struct{\Ms}{j_{\Ms}} \})$ \Comment{Info for $b(j)$}
+	\While{$\parent(u) \ne \parent(v)$} \Comment{$u, v$ in different subtrees}
+		\State $\append(L, \rmqInfo(S, g, u, \str{r}))$
+		\State $\prepend(R, \rmqInfo(S, g, v, \str{l}))$
 	\EndWhile
-	\State $left.append(rmq\_info(S, g, u, v))$ \Comment{Between $u$ and $v$}
-	\State $left.append(right)$
-	\State \Return{$left$}
+	\State $\append(L, \rmqInfo(S, g, u, v))$ \Comment{Between $u$ and $v$}
+	\State \Return{$\concatenate(L, R)$}
 \EndFunction
 \end{algorithmic}
 
-The function $rmq\_info$ returns list of touples containing: node number, minimum, maximum, number of minima, number of maxima.
-It processes the siblings of given vertex from left to right producing aggregated info per each $\frac{k}{c'}$ processed siblings.
+\bigbreak
+
+For \rmq{} we return the minimum of the list obtained from \rmqList{}.
 
 \begin{algorithmic}
-\Function{rmq\_block}{$S, g, i, j$}
+\Function{\rmqBlock}{$S, g, i, j$}
 	\If{$b(i) = b(j)$}
-		\State \Return{$rmq\_small\_block(S_{b(i)}, g, i \% b, j \% b) + e[b(i) - 1]$}
+		\State \Return{$\rmq[S_{b(i)}, g, i \% b, j \% b] + e[b(i) - 1]$}
 	\Else
-		\State $list \gets rmq\_list(S, g, i, j)$
+		\State $L \gets \rmqList(S, g, i, j)$
 		\State $m \gets \infty$
-		\ForAll{$I \gets list$}
+		\ForAll{$I \gets L$}
 			\State $m \gets \min(m, I.m)$
 		\EndFor
 		\State \Return{$m$}
@@ -280,263 +343,360 @@ It processes the siblings of given vertex from left to right producing aggregate
 \EndFunction
 \end{algorithmic}
 
+For \rmqSizeBlock{} we sum $\ms$ for those info-nodes whose minimum is equal to the global one calculated by \rmq{}.
+
 \begin{algorithmic}
-\Function{rmq\_size\_block}{$S, g, i, j$}
+\Function{\rmqSizeBlock}{$S, g, i, j$}
 	\If{$b(i) = b(j)$}
-		\State \Return{$rmq\_size\_small\_block(S_{b(i)}, g, i \% b, j \% b)$}
+		\State \Return{$\rmqSize[S_{b(i)}, g, i \% b, j \% b]$}
 	\Else
-		\State $list \gets rmq\_list(G, i, j)$
-		\State $m \gets rmq\_block(G, i, j)$
+		\State $m \gets \rmqBlock(G, i, j)$
+		\State $L \gets \rmqList(G, i, j)$
 		\State $ms \gets 0$
-		\ForAll{$I \gets list$}
+		\ForAll{$I \gets L$}
 			\If{$I.m = m$}
-				\State $ms \gets ms + I.ms$
+				\State $\ms \gets \ms + I.\ms$
 			\EndIf
 		\EndFor
-		\State \Return{$ms$}
+		\State \Return{$\ms$}
 	\EndIf
 \EndFunction
 \end{algorithmic}
 
+In case of \rmqSelect{}, we find the first node $n$ in the list such that the prefix sum of $\ms$ is greater than or equal to $r$.
+We descend in such node into the first child whose left siblings including itself sum up to $r$, and repeat until we get to a leaf.
+Once we are in a leaf, we use a look-up table to solve the select there.
+
 \begin{algorithmic}
-\Function{rmq\_select\_block}{$S, g, i, j, n$} \Comment{Assuming $n$-th min exists}
+\Function{\rmqSelectBlock}{$S, g, i, j, r$} \Comment{Assuming $n$-th min exists}
 	\If{$b(i) = b(j)$}
-		\State $p \gets rmq\_select\_small\_block(S_{b(i)}, g, i \% b, j \% b, n)$
+		\State $p \gets \rmqSelect[S_{b(i)}, g, i \% b, j \% b, r]$
 		\State \Return{$b(i) b + p$}
 	\Else
-		\State $list \gets rmq\_list(G, i, j)$
-		\State $m \gets rmq\_block(G, i, j)$
+		\State $m \gets \rmqBlock(G, i, j)$
+		\State $L \gets \rmqList(G, i, j)$
 		\State $ms \gets 0$
-		\ForAll{$I \gets list$}
+		\ForAll{$I \gets L$}
 			\If{$I.m = m$}
-				\State $ms \gets ms + I.ms$
-				\If{$ms \ge n$}
+				\If{$\ms + I.\ms \ge r$}
 					\State \Break
 				\EndIf
+				\State $\ms \gets \ms + I.\ms$
 			\EndIf
 		\EndFor
 \algstore{rmqselect}
 \end{algorithmic}
 
-Now $I$ contains aggregated information for up to $\frac{k}{c'}$ nodes.
-Using a table look-up we find the correct node $p$ and also a new $n$ which applies to the node $p$.
+When the loop is broken, $I$ contains the information about list of siblings node with one of them containing the desired minimum.
+Using look-up tables which are similar to \nodeSearch{}, we descend into the right child.
+The table also returns the new remaining number of occurrences by subtracting those which are in nodes before $p$.
+
+We first search the restricted range of nodes provided by $I$ keeping track of the number of the occurrences which we are interested in.
 
 \begin{algorithmic}
 \algrestore{rmqselect}
-		\State $(p, n) \gets table_1[left\_siblings\_inclusive(I.node), ms - n]$
-		\While{$\boolnot is\_leaf(p)$}
-			\State $(p, n) \gets table_1^*[children(p), n]$
+		\State $(p, r) \gets \minSearch^*[\nodeRange(I.f, I.l), r - I.ms]$
+		\While{$\boolnot \isLeaf(p)$}
+			\State $(p, r) \gets \minSearch^*[\children(p), r]$
 		\EndWhile
-		\State $x \gets max(i, p b) \% b; y \gets min(j, (p+1) b -1) \% b$
-		\State \Return{$b(p)b + rmq\_select\_small\_block(S_{p}, g, x, y)$}
+		\State $x \gets \max(i, p b) \% b; y \gets \min(j, (p + 1) b - 1) \% b$
+		\State \Return{$b(p)b + \rmqSelect[S_{p}, g, x, y]$}
 	\EndIf
 \EndFunction
 \end{algorithmic}
 
-There are 8 look-up tables necessary for traversal and processing the tree.
-The tables have an additional (non-mentioned) parameter which restricts the size of the block to be processed.
-\begin{itemize}
-	\item $fwd\_search$ -- looking for the first occurrence of $v$ in block of consecutive nodes.
-	$bwd\_search$ requires another table returning the position of the last occurrence $v$.
-	\item $rmq\_info$ -- aggregates info from consecutive nodes; four tables are necessary in total.
-	\item $rmq\_select$ -- looking for $n$-th minimum returning index of the node among its siblings and number of minima in its preceding siblings.
-	$RMQ\_select$ requires a similar table for maxima.
-\end{itemize}
-All of them work on blocks of $b$ bits with $O(1)$ parameters of size $O(\log k^c) = O(\log \log N)$.
+There are 7 look-up tables necessary for traversal and processing the tree.
+The tables have an additional (not mentioned) parameter which restricts the size of the block to be processed.
+Whenever an index of a node is returned, it is turned into a node number by adding the number of left-most node involved in the query.
+\begin{description}
+	\item[\fwdSearch]
+	The table is looking for the node which contains the first occurrence of $v$ in the block of consecutive nodes.
+	\bwdSearch requires another table returning the position of the last occurrence $v$.
+	
+	\item[\rmqInfo]
+	Four tables aggregating information for consecutive nodes are necessary; the tables compute minimum, maximum, and sum conditioned by the value of minimum or maximum of the other nodes in the given range.
+	
+	\item[\rmqSelect]
+	One table which is looking for $r$-th occurrence of the minimum.
+	It returns the index of the node and the number of occurrences of the minimum in its preceding siblings.
+	\RMQSelect requires a similar table for occurrences of the maximum.
+\end{description}
+All tables are defined for blocks of $b$ bits with $O(1)$ parameters of size $O(\log k^c) = O(\log \log N)$.
 
-\subsubsection{Macro Structure}
+\subsection{Macro Structure}
 
-The macro structure starts with five arrays which summarize the results from the underlying blocks (root nodes of their min-max trees).
-\begin{itemize}
-	\item $e[i]$ --  the value at the end of the block $i$;
-	In comparison to the block level, here we store the absolute values (the same for minima and maxima).
+The macro structure starts with five arrays which summarize the results from the underlying blocks (the root nodes of their min-max trees).
+\begin{description}
+	\item[$e[i\char93$]
+	The value at the end of the block $i$; in comparison to the block level, here we store the absolute values (the same for minima and maxima).
 	Each element has size of $O(\log N)$ bits.
-	\item $m[i]$, $M[i]$ -- the minimum and maximum values of the block $i$.
-	\item $ms[i]$, $Ms[i]$ -- the number of occurrences in the block $i$.
-	Each element is of size $O(\log\log N)$ bits.
-\end{itemize}
+	
+	\item[$m[i\char93$, $M[i\char93$]
+	The minimum and maximum values of the block $i$.
+	
+	\item[$ms[i\char93$, $Ms[i\char93$]
+	The number of their occurrences in the block $i$.
+	Each element is of size $O(\log \log N)$ bits.
+\end{description}
 
-First we deal with $sum$.
-We use $B(i) = \lfloor\frac{i}{B}\rfloor$ to refer to the index of a block containing $i$.
-The algorithm is very similar to $sum\_small\_block$.
+\bigbreak
+
+We denote $B(i)$ to the index of the block containing the position $i$.
+
+The algorithm for \summ is very similar to \sumBlock.
 
 \begin{algorithmic}
-\Function{sum\_block}{$S, g, i, j$}
-	\State $x \gets e[B(i - 1) - 1] + sum\_block(S_{B(i - 1)}, g, 0, (i - 1) \% B)$
-	\State $y \gets e[B(j) - 1] + sum\_block(S_{B(j)}, g, 0, j \% B)$
+\Function{\summ}{$S, g, i, j$}
+	\State $x \gets e[B(i - 1) - 1] + \sumBlock(S_{B(i - 1)}, g, 0, (i - 1) \% B)$
+	\State $y \gets e[B(j) - 1] + \sumBlock(S_{B(j)}, g, 0, j \% B)$
 	\State \Return{$y - x$}
 \EndFunction
 \end{algorithmic}
 
-\paragraph{A structure for the Search Operation}
+\subsubsection{Search Operations}
 
-For each block $i$ we define the arrays of \emph{left-to-right minima} $lrm(i)$ such that $lrm(i)[0] = i, lrm(i)[j] < lrm(i)[j+1], m[lrm(i)[j]] < m[lrm(i)[j+1]]$.
-Similarly we define left-to-right maxima arrays $LRM(i)$.
+For each block $i$ we define an array of \emph{left-to-right minima} $\lrm_i$ such that
+\begin{align*}
+	\lrm_i[0] &= i \\
+	\lrm_i[j] &< \lrm_i[j+1] \\
+	m[\lrm_i[j]] &< m[\lrm_i[j+1]]
+\end{align*}
+Similarly we define left-to-right maxima arrays $\LRM_i$, and for backward searching we define the arrays $\rlm_i$ and $\RLM_i$.
+We focus only on left-to-right direction.
 
-We can use the $lrm$ and $LRM$ arrays to implement $fwd\_search(S, g, i, d)$.
+The arrays $\lrm$ and $\LRM$ can be used to implement the global operation $\fwdSearch(S, g, i, d)$.
 Let's assume that the result is not in block $B(i)$, if it was, we can solve it on the block level.
-We look for a value $v = sum(S, g, 0, i) + d$ in the block $B(i) + 1$ using the min-max tree on the block level to find the answer.
-If the answer exists in the block $B(i)+1$, we return the position and end.
-Otherwise, either $v > M[B(i) + 1]$ or $v < m[B(i) + 1]$; in the first case we follow with the search in $lrm$, else in $LRM$.
-We either find a block $j$ which contains the answer, and we finish the operation on the block level, or report a failure.
+We are looking for a block $j \ge B(i) + 1 = n$ such that $j$ covers the value $v = \summ(S, g, 0, i) + d$.
+There are three possibilities of how to find the block $j$:
+\begin{enumerate}
+	\item If $n$ covers $v$, then the first block after $B(i)$ contains the answer.
+	\item If $v < m[n]$, we search for the block in the array $\lrm$.
+	\item Otherwise, we search in the array $\LRM$.
+\end{enumerate}
+It can happen that the value $v$ is not covered by any block $j$, in which case we report a failure.
 
 \begin{algorithmic}
-\Function{fwd\_search}{$S, g, i, d$}
-	\State $p \gets fwd\_search\_block(S_B(i), g, i \% B, d)$
+\Function{\fwdSearch}{$S, g, i, d$}
+	\State $p \gets \fwdSearchBlock(S + B(i) B, g, i \% B, d)$ \Comment{Block operations are offsetted}
 	\If{$p \ne -1$}
 		\State \Return{$B(i) B + p$}
 	\Else
-		\State $v \gets sum(S, g, 0, i) + d$
+		\State $v \gets \summ(S, g, 0, i) + d$
 		\State $n \gets B(i) + 1$
 		\If{$v < m[n]$}
-			\State $j \gets lrm\_search(n, v)$
+			\State $j \gets \lrmSearch(n, v)$
 		\ElsIf{$v > M[j]$}
-			\State $j \gets LRM\_search(n, v)$
+			\State $j \gets \LRMSearch(n, v)$
 		\Else
 			\State $j \gets n$
 		\EndIf
-		\If{$j = root$}
+		\If{$j = -1$} \Comment{A search reported that $v$ is not covered}
 			\State \Return{$-1$}
 		\Else
-			\State $d' \gets v - sum(S, g, 0, B(j) B - 1)$
-			\State \Return{$B(j) B  + fwd\_search\_block'(S_{B(j)}, g, 0, d')$}
+			\State $d' \gets v - \summ(S, g, 0, B(j) B - 1)$
+			\State \Return{$B(j) B  + \fwdSearchBlock'(S_{B(j)}, g, 0, d')$}
 		\EndIf
 	\EndIf
 \EndFunction
 \end{algorithmic}
 
-Note that the final $fwd\_search\_block'$ is the standard $fwd\_search\_block$ altered to allow the answer $0$.
+Note that the final call of \fwdSearchBlock{}' is the standard block operation \fwdSearchBlock{} altered to allow the answer $0$.
+The same was necessary for the search on the block level.
 
-\bigskip
+\bigbreak
 
-It remains to solve the $lrm\_search(n, v)$ in constant time ($LRM_search$ is similar).
-Every node has at most $\frac{N}{B}$ ancestors; also for every node $i$ (except for the root) $m[i] - m[j] \le N$.
-We could try to encode each array $lrm(i)$ as a bit string $lrm_i$ of size $N$ such that it has ones at positions $m[i] - lrm(i)[j] \forall j \ge 0$.
-Then we could use the $pred_1(lrm_n, m[n] - v)$ operation to find a node $j$ which contains the value $v$.
-However such representation leads to $O\left(\left(\frac{N}{B}\right)^2\right)$ elements in all $lrm$ arrays combined.
+It remains to show a constant time algorithm for the operation \lrmSearch{} (\LRMSearch{} is similar).
+The \naive{} approach would be to store each $\lrm_i$ as an array $A$ turned into a compressed array using operation \succ{}.
+$$ A[M[i] - m[j]] = j \:\forall j \in \lrm_i$$
+The problem with this approach is that, the compressed arrays for all $i$ can contain $O\left(\left(\frac{N}{B}\right)^2\right)$ runs in total, which is too much.
 
-We observe that $lrm$ arrays are alike.
+\bigbreak
+
+We observe that the arrays $\lrm_i$ are alike.
 \begin{lemma}
-	Let block $a$ be in two different sequences $lrm(i): lrm(i)[x_i] = a$ and $lrm(j): lrm(j)[x_j] = a$, then all following values in the sequence are the same: $lrm(i)[x_i+k] = lrm(j)[x_j+k] \forall k \ge 0$.
+	Let block $a$ be in two different arrays $\lrm_i$ and $\lrm_j$: 
+	$$\lrm_i[x_i] = a = \lrm_j[x_j]$$
+	then all following values in the arrays are the same:
+	$$ \lrm_i[x_i + k] = \lrm_j[x_j + k] \:\forall k \ge 0 $$
 \end{lemma}
 
-\label{Tlrm}
-We use $lrm$ to construct a tree $T_{lrm}$ which is a trie of reversed $lrm$ sequences with an artificial root with assigned minimum $m[root] = -\infty$.
+\label{Tlrm} We define a tree $T_{\lrm}$ which is built as a trie for reversed $\lrm$ arrays; it has an artificial root with assigned minimum $m[\root] = -\infty$.
 The properties of the tree are:
 \begin{enumerate}
-	\item $m[i] > m[parent(i)]$;
-	\item $i < parent(i)$;
+	\item $m[i] > m[\parent(i)]$;
+	\item $i < \parent(i)$;
 	\item the tree has $\frac{N}{B} + 1$ nodes.
 \end{enumerate}
 
-The search for a value $v$ in $lrm(n)$ is transformed to a search for an ancestor $n'$ of $n$ in the tree $T_{lrm}$ such that $m[n'] \le v$.
+The search for the value $v$ in $\lrm_i$ is transformed to a search for an ancestor $j$ of $i$ in the tree $T_{\lrm}$ such that $m[j] \le v$.
 We split the search into two parts:
 \begin{enumerate}
-	\item a search in $lrm$ restricted to powers of two;
-	\item a search in $lrm$ with a bounded distance.
+	\item a search in $\lrm_i$ restricted to powers of two;
+	\item a search in $\lrm_i$ with a bounded distance.
 \end{enumerate}
 
-We reduce the $lrm$ arrays to contain at most $\log N$ elements each.
-$$lrm'(i)[j] = lrm(i)[2^j] \forall j \ge 0$$
-Then we represent the arrays as bit strings as we proposed earlier.
-We also store an array of at most $\log N$ elements translating $j$-th one to a node number.
+\bigbreak
 
-After the first jump we have an estimate of depths and heights and also a bound on number of ancestors which we have to search through.
+Instead of searching through the whole array $\lrm_i$, we limit the number of elements to $\log N$:
+$$ \lrm'_i[j] = \lrm_i[2^j] \forall j \ge 0$$
+This array is turned into a tiny compressed array of jumps $J_i$ requiring only $O(\log^2 N)$ bits of space, which is $O(\frac{N}{B} \log^2 N) = o(N)$ for $c > 2$.
+
+By using the tiny compressed array, we move to a node $j'$ of $T_{\lrm}$ for which we bounds on depth and height, and the number of ancestors which we have to search through.
 \begin{align*}
-depth(n'') - depth(n') &< depth(n) - depth(n'') \\
-height(n'') &\ge depth(n) - depth(n'') \\
-depth(n'') - depth(n') &\le height(n'')
+	\dep(j') - \dep(j) &< \dep(i) - \dep(j') \\
+	\hei(j') &\ge \dep(i) - \dep(j') \\
+	\dep(j') - \dep(j) &< \hei(j')
 \end{align*}
 
-We decompose the tree iteratively to paths; in each step the longest path $p$ is removed.
+Note that if we tried to be more clever and represent nodes $j$ which cover values $m[i] - m[j]$ instead of those at distance $2^j$, then the bounds would not hold.
+
+\bigbreak
+
+The tree gets decomposed iteratively to paths; in each step the longest path $p$ from an inner node $\start(p)$ to a leaf $\endd(p)$ is removed.
+If the path contains $l = \length(p)$ nodes, we prepend it with $l$ more ancestors (or less if the root is reached) and call it a \emph{ladder}.
+There are as many ladders as leaves of the tree $T_{\lrm}$, and all ladders together contain $\le 2 \frac{N}{B}$ nodes.
+Note that the root of the tree $T_{\lrm}$ is not represented in the ladders.
+
+The previous bound guaranties that $j$ is in the ladder which was extended from a path containing $j'$.
+We represent each ladder by an array of block indices (which are nodes of $T_{\lrm}$) covering the value $M[\start(p)] - v$ (using maximum makes sure that the whole block $\start(p)$ is represented).
+We combine all ladders together in a single compressed array $L$ which leads to $2 \frac{N}{B}$ runs in total; as the difference of $m[i] - m[\parent(i)] \le B$ is bounded, the total number of elements is $O(N)$.
+The space complexity of the compressed array $L$ is $O(\frac{N}{B} \log N) + o(N) = o(N)$
+
+For each block $i$, we also store the index $l$ of the ladder, which is also the index of the part in the compressed dictionary $L$, in an array $\ladder$.
+The size of the array is $O(\frac{N}{B} \log N) = o(N)$ bits.
+
+\begin{algorithmic}
+\Function{\lrmSearch}{$i, v$}
+	\State $j' \gets J_i[M[i] - v]$ \Comment{Jump by power of two}
+	\State $l \gets \ladder[j']$ \Comment{The ladder containing $j'$}
+	\State $\endd \gets L[l, 0]$
+	\State $j \gets L[l, M[\endd] - v]$ \Comment{If the index is out of the range, $-1$ is returned}
+	\State \Return{$j$}
+\EndFunction
+\end{algorithmic}
+
+\subsubsection{Range Operations}
+
+We split the queried range into prefix, suffix, and span.
+The solution for prefix an suffix is solved on the block level; we focus on supporting the operations for spans of the queries.
+
+We define a helper function \rmqiSpan{} which was defined in lemma \ref{lemma:rmq2} with two minor differences:
+\begin{enumerate}
+	\item it is defined directly for the array $m[\cdot]$ instead of $E$ and $P$;
+	\item it returns indices of the first and the last block containing the minimum;
+	\item contrary to \rmqi{} shown in \ref{sss:rmq-index}, it is sufficient to use only one level provided that we set $c > 2$.
+\end{enumerate}
+
+\begin{algorithmic}
+\Function{\rmq}{$S, g, i_1, i_2$}
+	\State $m_1 \gets e[B(i_1) - 1] + \rmqBlock(S_{B(i_1)}, g, \prefix(i_1, i_2))$
+	\State $m_2 \gets e[B(i_2) - 1] + \rmqBlock(S_{B(i_2)}, g, \suffix(i_1, i_2))$
+	\State $(f, l) \gets \rmqiSpan(m, \spann(i_1, i_2))$
+	\State $m_3 \gets m[f]$
+	\State \Return{$\min(m_1, m_2, m_3)$}
+\EndFunction
+\end{algorithmic}
+
+The structure for \rmqiSpan{} cannot be extended for querying the number of occurrences of the minimum nor selecting the $r$-th one.
+If we augmented each precomputed interval of size $2^k$ with the number of occurrences, we would still fit in the same space.
+The problem stems for the inability of an easily combination of information from the two intervals, like the $\min$ function does.
+In this case, the inclusion-exclusion principle would have to be used: adding the numbers of occurrences in both intervals and subtracting the number of occurrences in the overlapping part.
+Since the size of the overlapping part is not a power of two in general, and so its number of occurrences is not precomputed, it leads to a recursion and running time $O(\log N)$.
+
+\subsubsection{Structures for \rmqSize{} and \rmqSelect{}}
+
+We store the several indexed and fully indexed dictionaries which use the properties of the minima of the blocks.
+The idea is to reorder the blocks, which are represented by elements in $m[\cdot]$ so that all blocks containing the same minimum are stored consecutively. 
+
+There are at most $\frac{N}{B}$ distinct minima in range $[-N, N]$.
+We store the minima in an indexed dictionary $\mr{}$ offsetted by $N$ to become a range $[0, 2 N]$
+The indexed dictionary uses $O(\frac{N}{B} \log B)$ bits and supports \rank{} on the minima in constant time.
+This is used for referring to $k$-th smallest minimum in the following structures.
+We omit the correction of an off-by-one error caused by \rank{} as the smallest minimum has $k = 1$ instead of desired $k = 0$.
+
+For each block minimum $m$ (which is the $k$-th smallest), we define a set containing all blocks which have minimum $m$: $\{ i : m[i] = m\}$.
+We represent the set as an indexed dictionary $\mi_k$.
+Because of the inequality derived from the generalized Vandermonde's identity \ref{ss:sublinear-fid}, the space complexity of all $\mi_m$ together can be bounded to:
 \begin{align*}
-height(start(p)) = length(p)
+	\sum_m S(\mi_k) &= \sum_m \left( \log {\frac{N}{B} \choose |\mi_k|} + o(|\mi_k|) + O(\log \log N) \right) \\
+	&\le \log {\left(\frac{N}{B}\right)^2 \choose \frac{N}{B}} + o(\frac{N}{B}) + O(\frac{N}{B} \log \log N) \\
+	&= O(\frac{N}{B} \log N) = o(N)
 \end{align*}
-We extend the path $p$ into a ladder $l$ by including $length(p)$ of ancestors of $start(p)$.
-With the previous bound, we are guarantied that $n'$ is in the same ladder as $n''$.
-There are as many ladders as leaves of the tree $T_{lrm}$.
-All ladders combined contain $O\left(\frac{N}{B}\right)$ nodes.
 
-For each node of the tree, we have a mapping of its number to the representation of the ladder it belongs to and its position withing the ladder.
-The ladder is a bit string $ladder_l$ of size $N$ containing $length(l)$ ones at positions $m[end(l)] - m[l[j]] \forall j \ge 0$ (the leaf is at position $0$).
-In a ladder we perform a successor search for a value $m[end(l)] - v$ and translate the position back to node number.
+Finally we define an array $\mpp_k$ for each block minimum $m$ (which is again the $k$-th smallest):
+$$\mpp_k[\sum_{\substack{j \in \mi_k \\ j \le i}} \ms[j] ] = i \:\forall i \in \mi_k$$
+We turn all these arrays into a single compressed array $\mpp$ using the operation \succ{}.
+The property of this array, from which it was also derived, connects it to a block $t$ which contains the $r$-th occurrence of the $k$-th smallest minimum:
+$$ t = \select_1(\mi_k, \mpp[k, r]) $$
+
+\bigbreak
+
+As we restricted our queries to their spans, and from \rmqiSpan{} we know the indices of the first and last block containing the minimum, it is easy to find how many occurrences there were before the any block.
 
 \begin{algorithmic}
-\Function{lrm\_search}{$n, v$}
-	\State $n'' \gets ancestor_1[n][rank_1(pred_1(lrm_n, m[n] - v))]$
-	\State $(l, p) \gets ladder[n'']$ \Comment{The index of the ladder and the position within}
-	\State $n' \gets ancestor_2[l][rank_1(succ_1(ladder_l, m[end[l]] - v))]$
-	\Return{$n'$}
+\Function{\rmqSize}{$S, g, i_1, i_2$}
+	\State $\ms_1 \gets 0; \ms_2 \gets 0; \ms_3 \gets 0$
+	\State $m \gets \rmq(S, g, i_1, i_2)$
+	
+	\If{$e[B(i_1) - 1] + \rmqBlock(S_{B(i_1)}, g, \prefix(i_1, i_2)) = m$} \Comment{In prefix?}
+		\State $\ms_1 \gets \rmqSizeBlock(S_{B(i_1)}, g, \prefix(i_1, i_2))$
+	\EndIf
+	
+	\If{$e[B(i_2) - 1] + \rmqBlock(S_{B(i_2)}, g, \suffix(i_1, i_2)) = m$} \Comment{In suffix?}
+		\State $\ms_2 \gets \rmqSizeBlock(S_{B(i_2)}, g, \suffix(i_1, i_2))$
+	\EndIf
+
+	\State $(f, l) \gets \rmqiSpan(m, \spann(i_1, i_2))$
+	\If{$m[f] = m$} \Comment{In span?}
+		\State $k \gets \rank_1(\mr, m)$ \Comment{$k$-th smallest minimum}
+		\State $x \gets \runFirst(\mpp, k, \rank_1(\mi_k, f))$ \Comment{Elements before the run of block $f$}
+		\State $y \gets \runFirst(\mpp, k, \rank_1(\mi_k, l))$ \Comment{The block $l$ is not accounted}
+		\State $\ms_3 \gets y - x + \ms[l]$
+	\EndIf
+	\State \Return{$m_1 + m_2 + m_3$}
 \EndFunction
 \end{algorithmic}
 
-There are several bit strings and tables:
-\begin{itemize}
-	\item $lrm_n$ -- a collection of $\frac{N}{B}$ bit strings of size $N$ containing $\le \log N$ ones.
-	They can be represented using an indexed dictionary in space $O(\frac{N}{B}) (\log {N \choose \log N} + o(\log N) + O(\log \log N)) = O(\frac{N}{B} \log^2 N)$, which requires $c \ge 3$.
-	\item $ancestor_1$ -- a collection of $\frac{N}{B}$ tables mapping $i$-th ancestor in $lrm'$ to a node number.
-	Each of $\log N$ elements has size $\log N$; the total space is therefore $O(\frac{N}{B} \log^2 N) = o(N)$ as long as $c \ge 3$.
-	\item $ladder$ -- a table mapping node number to ladder index and position within.
-	It contains $\frac{N}{B}$ elements of size $\log{N}$.
-	\item $ladder_l$ -- a collection of up to $\frac{N}{B}$ bit strings of size $N$ containing in total $2 \frac{N}{B}$ ones.
-	Using Jensen's inequality, we get an upper bound of $O(\frac{N}{B} \log N)$; the costs of the dictionaries $o(\frac{N}{B}) + O(\frac{N}{B} \log \log N)$ are negligible.
-	\item $end$ -- maps ladder index to a node number of its leaf.
-	It contains $\le \frac{N}{B}$ elements of size $\log{N}$.
-	\item $ancestor_2$ -- a collection of $\le \frac{N}{B}$ tables which for a given ladder index translates the position in the ladder to a node number.
-	It contains $\le \frac{N}{B}$ elements of size $\log{N}$.
-\end{itemize}
-The total space of this structure is $O(\frac{N}{B} \log^2 N)$.
-
-\paragraph{Range Queries}
-
-We can use the structure from lemma \ref{lemma:rmq2} with a minor changes (it works with values rather than positions) to solve $rmq$ and $RMQ$.
-This time it is sufficient to use it only once provided that we set $c \ge 3$.
-
-The structure for $rmq$ is however not suitable for querying the total number of occurrences of minimum nor selecting $n$-th of such.
-If we augmented each precomputed interval of size $2^k$ with the number of occurrences, we would still fit in the same space, however computing the number of occurrences cannot easily combine information from only two intervals like the $\min$ function does.
-In this case, we have to use the inclusion-exclusion principle: adding the numbers of occurrences in both intervals and subtracting the number of occurrences in the overlapping part.
-The size of the overlapping part is not a power of two in general and so, its number of occurrences is not precomputed, which leads to a recursion and running time $O(\log N)$.
-
-\paragraph{Bitmaps of Minima and Maxima}
-
-For each minimum $r$ (and maximum $R$, but we formulate the structure for minima only as the maxima case is symmetric) we define two bit strings:
-\begin{itemize}
-	\item $p_r[i] = (m[i] = r)$; $p_r$ is a bitmap which marks blocks containing the minimum $r$.
-	For purposes of $rmq\_size$ and $rmq\_select$ only these are interesting because the other blocks either do not contain the minimum $r$ (if their minimum is $> r$) or cannot be accounted (if their minimum $r' < r$, then a query spanning over this block has a minimum $r'$ rather than $r$).
-	Each bit string has size $N$ and contains $k_r$ ones (which is number of blocks with such minimum).
-	Because $p_r$ is a partitioning of $[0, N - 1]$, $\sum{r} k_r = \frac{N}{B}$.
-	\item $s_r$ from the lemma \ref{l:sps} applied on numbers of occurrences of the minimum $r$ in blocks.
-	The bit string has size up to $N$ (we extend it to $N$) and contains $k_r$ ones.
-\end{itemize}
-There exist at most $\frac{N}{B}$ distinct minima and therefore the same number of bit strings.
-
-Using these two sets of arrays, we can support $rmq\_size$ and $rmq\_select$.
-It only necessary for us to focus on the span of the query as we the prefix and suffix can be handled using the min-max trees on the block level.
-Without loss of generality we assume that the query has only span.
+The operation \rmqSelect{} first looks for the minimum in prefix, then in span, and finally in suffix.
+The idea of the search in span is to use the property of $\mpp$.
 
 \begin{algorithmic}
-\Function{rmq\_size}{$S, g, i, j$}
-	\State $r \gets rmq(S, g, i, j)$
-	\State $y \gets rank_1(p_r, B(j)); x \gets rank_1(p_r, B(i) - 1)$
-	\State \Return{$prefix\_sum(s_r, y) - prefix\_sum(s_r, x)$}
+\Function{\rmqSelect}{$S, g, i_1, i_2, r$}
+	\State $m \gets \rmq(S, g, i_1, i_2)$
+	\If{$e[B(i_1) - 1] + \rmqBlock(S_{B(i_1)}, g, \prefix(i_1, i_2)) = m$} \Comment{In prefix?}
+		\State $\ms_1 \gets \rmqSizeBlock(S_{B(i_1)}, g, \prefix(i_1, i_2))$ \Comment{Prefix size}
+		\If{$\ms_1 \ge r$}
+			\State \Return{$B(i_1) B + \rmqSelectBlock(S_{B(i_1)}, g, \prefix(i_1, i_2), r)$}
+		\Else
+			\State $r \gets r - \ms_1$
+		\EndIf
+	\EndIf
+	
+	\State $(f, l) \gets \rmqiSpan(m, \spann(i_1, i_2))$
+	\If{$m[f] = m$} \Comment{In span?}
+		\State $\ms_3 \gets \rmqSize(S, g, \spann(i_1, i_2))$
+		\If{$\ms_3 \ge r$}
+			\State $k \gets \rank_1(\mr, m)$ \Comment{$k$-th smallest minimum}
+			\State $x \gets \runFirst(\mpp, k, \rank_1(\mi_k, f))$ \Comment{Before the run of $f$}
+			\State $t' \gets \mpp[k, r + x]$
+			\State $t \gets \select_1(\mi_k, t')$ \Comment{Block containing the desired occurrence}
+			\State $y \gets \runFirst(\mpp, k, t')$ \Comment{Elements before the run of block $t$}
+			\State \Return{$t B + \rmqSelectBlock(S_t, g, 0, B - 1, r - y)$}
+		\Else
+			\State $r \gets r - \ms_3$
+		\EndIf
+	\EndIf
+
+	\If{$e[B(i_2) - 1] + \rmqBlock(S_{B(i_2)}, g, \suffix(i_1, i_2)) = m$} \Comment{In suffix?}
+		\State $\ms_2 \gets \rmqSizeBlock(S_{B(i_2)}, g, \suffix(i_1, i_2))$ \Comment{Prefix size}
+		\If{$\ms_2 \ge r$}
+			\State \Return{$B(i_2) B + \rmqSelectBlock(S_{B(i_2)}, g, \suffix(i_1, i_2), r)$}
+		\Else
+			\State \Comment{This cannot happen as the bounds of $r$ has been checked}
+		\EndIf
+	\EndIf
 \EndFunction
 \end{algorithmic}
-
-\begin{algorithmic}
-\Function{rmq\_select}{$S, g, i, j, n$}
-	\State $r \gets rmq(S, g, i, j)$
-	\State $s \gets prefix\_sum(s_r, rank_1(p_r, B(i) - 1))$ \Comment{Prefix sum before $i$}
-	\State $a \gets select_1(p_r, prefix\_leq(s_r, s + n))$ \Comment{Block containing the $n$-th minimum}
-	\State $n' \gets s + n - prefix\_sum(s_r, a - 1)$ \Comment{$n$-th within block $a$}
-	\State \Return{$B a + rmq\_select\_block(S_a, 0, B - 1, n')$}
-\EndFunction
-\end{algorithmic}
-
-In the general case, the minimum $r$ might have occurred only in prefix or suffix and not span; then the bit string $m_r$ does not exist and we simply skip the span.
-In case of select, we first check using $rmq\_size$ in which part the answer lays and then call $rmq\_size$ on that part with altered $n$ by the number occurrences in the preceding parts.
-
-We represent the collections of bit strings $p_r$ and $s_r$ using the previous lemma. \todo{structure}
-The space complexity of $p_r$ is $O\left(\frac{N}{B} \log \frac{N}{B}\right) = o(N)$; in case of $s_r$ the space complexity is $O\left(\frac{N}{B} \log N \right) = o(N)$.
 
 \subsection{$\pm 1$ Functions Revisited}
 
