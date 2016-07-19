@@ -588,10 +588,10 @@ We define a helper function \rmqiSpan{} which was defined in lemma \ref{lemma:rm
 \end{enumerate}
 
 \begin{algorithmic}
-\Function{\rmq}{$S, g, i_1, i_2$}
-	\State $m_1 \gets e[B(i_1) - 1] + \rmqBlock(S_{B(i_1)}, g, \prefix(i_1, i_2))$
-	\State $m_2 \gets e[B(i_2) - 1] + \rmqBlock(S_{B(i_2)}, g, \suffix(i_1, i_2))$
-	\State $(f, l) \gets \rmqiSpan(m, \spann(i_1, i_2))$
+\Function{\rmq}{$S, g, i, j$}
+	\State $m_1 \gets e[B(i) - 1] + \rmqBlock(S_{B(i)}, g, \prefix(i, j))$
+	\State $m_2 \gets e[B(j) - 1] + \rmqBlock(S_{B(j)}, g, \suffix(i, j))$
+	\State $(f, l) \gets \rmqiSpan(m, \spann(i, j))$
 	\State $m_3 \gets m[f]$
 	\State \Return{$\min(m_1, m_2, m_3)$}
 \EndFunction
@@ -629,27 +629,29 @@ We turn all these arrays into a single compressed array $\mpp$ using the operati
 The property of this array, from which it was also derived, connects it to a block $t$ which contains the $r$-th occurrence of the $k$-th smallest minimum:
 $$ t = \select_1(\mi_k, \mpp[k, r]) $$
 
+All the structures require only $o(N)$ bits of memory.
+
 \bigbreak
 
 As we restricted our queries to their spans, and from \rmqiSpan{} we know the indices of the first and last block containing the minimum, it is easy to find how many occurrences there were before the any block.
 
 \begin{algorithmic}
-\Function{\rmqSize}{$S, g, i_1, i_2$}
+\Function{\rmqSize}{$S, g, i, j$}
 	\State $\ms_1 \gets 0; \ms_2 \gets 0; \ms_3 \gets 0$
-	\State $m \gets \rmq(S, g, i_1, i_2)$
+	\State $m \gets \rmq(S, g, i, j)$
 	
-	\If{$e[B(i_1) - 1] + \rmqBlock(S_{B(i_1)}, g, \prefix(i_1, i_2)) = m$} \Comment{In prefix?}
-		\State $\ms_1 \gets \rmqSizeBlock(S_{B(i_1)}, g, \prefix(i_1, i_2))$
+	\If{$e[B(i) - 1] + \rmqBlock(S_{B(i)}, g, \prefix(i, j)) = m$} \Comment{In prefix?}
+		\State $\ms_1 \gets \rmqSizeBlock(S_{B(i)}, g, \prefix(i, j))$
 	\EndIf
 	
-	\If{$e[B(i_2) - 1] + \rmqBlock(S_{B(i_2)}, g, \suffix(i_1, i_2)) = m$} \Comment{In suffix?}
-		\State $\ms_2 \gets \rmqSizeBlock(S_{B(i_2)}, g, \suffix(i_1, i_2))$
+	\If{$e[B(j) - 1] + \rmqBlock(S_{B(j)}, g, \suffix(i, j)) = m$} \Comment{In suffix?}
+		\State $\ms_2 \gets \rmqSizeBlock(S_{B(j)}, g, \suffix(i, j))$
 	\EndIf
 
-	\State $(f, l) \gets \rmqiSpan(m, \spann(i_1, i_2))$
+	\State $(f, l) \gets \rmqiSpan(m, \spann(i, j))$
 	\If{$m[f] = m$} \Comment{In span?}
-		\State $k \gets \rank_1(\mr, m)$ \Comment{$k$-th smallest minimum}
-		\State $x \gets \runFirst(\mpp, k, \rank_1(\mi_k, f))$ \Comment{Elements before the run of block $f$}
+		\State $k \gets \rank_1(\mr, m + N)$ \Comment{$k$-th smallest minimum}
+		\State $x \gets \runFirst(\mpp, k, \rank_1(\mi_k, f))$ \Comment{Before the run of $f$}
 		\State $y \gets \runFirst(\mpp, k, \rank_1(\mi_k, l))$ \Comment{The block $l$ is not accounted}
 		\State $\ms_3 \gets y - x + \ms[l]$
 	\EndIf
@@ -661,22 +663,22 @@ The operation \rmqSelect{} first looks for the minimum in prefix, then in span, 
 The idea of the search in span is to use the property of $\mpp$.
 
 \begin{algorithmic}
-\Function{\rmqSelect}{$S, g, i_1, i_2, r$}
-	\State $m \gets \rmq(S, g, i_1, i_2)$
-	\If{$e[B(i_1) - 1] + \rmqBlock(S_{B(i_1)}, g, \prefix(i_1, i_2)) = m$} \Comment{In prefix?}
-		\State $\ms_1 \gets \rmqSizeBlock(S_{B(i_1)}, g, \prefix(i_1, i_2))$ \Comment{Prefix size}
+\Function{\rmqSelect}{$S, g, i, j, r$}
+	\State $m \gets \rmq(S, g, i, j)$
+	\If{$e[B(i) - 1] + \rmqBlock(S_{B(i)}, g, \prefix(i, j)) = m$} \Comment{In prefix?}
+		\State $\ms_1 \gets \rmqSizeBlock(S_{B(i)}, g, \prefix(i, j))$ \Comment{Prefix size}
 		\If{$\ms_1 \ge r$}
-			\State \Return{$B(i_1) B + \rmqSelectBlock(S_{B(i_1)}, g, \prefix(i_1, i_2), r)$}
+			\State \Return{$B(i) B + \rmqSelectBlock(S_{B(i)}, g, \prefix(i, j), r)$}
 		\Else
 			\State $r \gets r - \ms_1$
 		\EndIf
 	\EndIf
 	
-	\State $(f, l) \gets \rmqiSpan(m, \spann(i_1, i_2))$
+	\State $(f, l) \gets \rmqiSpan(m, \spann(i, j))$
 	\If{$m[f] = m$} \Comment{In span?}
-		\State $\ms_3 \gets \rmqSize(S, g, \spann(i_1, i_2))$
+		\State $\ms_3 \gets \rmqSize(S, g, \spann(i, j))$
 		\If{$\ms_3 \ge r$}
-			\State $k \gets \rank_1(\mr, m)$ \Comment{$k$-th smallest minimum}
+			\State $k \gets \rank_1(\mr, m + N)$ \Comment{$k$-th smallest minimum}
 			\State $x \gets \runFirst(\mpp, k, \rank_1(\mi_k, f))$ \Comment{Before the run of $f$}
 			\State $t' \gets \mpp[k, r + x]$
 			\State $t \gets \select_1(\mi_k, t')$ \Comment{Block containing the desired occurrence}
@@ -687,10 +689,10 @@ The idea of the search in span is to use the property of $\mpp$.
 		\EndIf
 	\EndIf
 
-	\If{$e[B(i_2) - 1] + \rmqBlock(S_{B(i_2)}, g, \suffix(i_1, i_2)) = m$} \Comment{In suffix?}
-		\State $\ms_2 \gets \rmqSizeBlock(S_{B(i_2)}, g, \suffix(i_1, i_2))$ \Comment{Prefix size}
+	\If{$e[B(j) - 1] + \rmqBlock(S_{B(j)}, g, \suffix(i, j)) = m$} \Comment{In suffix?}
+		\State $\ms_2 \gets \rmqSizeBlock(S_{B(j)}, g, \suffix(i, j))$ \Comment{Prefix size}
 		\If{$\ms_2 \ge r$}
-			\State \Return{$B(i_2) B + \rmqSelectBlock(S_{B(i_2)}, g, \suffix(i_1, i_2), r)$}
+			\State \Return{$B(j) B + \rmqSelectBlock(S_{B(j)}, g, \suffix(i, j), r)$}
 		\Else
 			\State \Comment{This cannot happen as the bounds of $r$ has been checked}
 		\EndIf
@@ -700,128 +702,189 @@ The idea of the search in span is to use the property of $\mpp$.
 
 \subsection{$\pm 1$ Functions Revisited}
 
-Although there are 9 functions $g$ mapping ${0, 1} \to {-1, 0, 1}$, we only use 3 ($\pi, \phi, \psi$).
-Answers to all operations except for searches with parameters $\phi$ and $\psi$ can be answered using the structure for $\pi$.
+We follow in discussion of $\pm 1$ functions which we began in \ref{ss:rmq-def}.
 
-For the operation $sum$, the following identities hold:
+Although there are 9 functions $g$ mapping $\{0, 1\} \to \{-1, 0, 1\}$, we only use 3 of them in our index: $\pi, \phi, \psi$.
+Answers to all operations except for searches with parameters $\\part{phi}$ and $\psi$ can be answered using the structure for $\pi$.
+
+For the operation $\summ$, the following identities hold:
 \begin{gather*}
-	sum(S, \pi, i, j) = sum(S, \phi, i, j) - sum(S, \psi, i, j) \\
-	sum(S, \phi, i, j) + sum(S, \psi, i, j) = j - i + 1
+	\summ(S, \pi, i, j) = \summ(S, \phi, i, j) - \summ(S, \psi, i, j) \\
+	\summ(S, \phi, i, j) + \summ(S, \psi, i, j) = j - i + 1
 \end{gather*}
 
-We can find the explicit formula for either of them:
+We can find the explicit formula for \summ{}s:
 \begin{align*}
-	sum(S, \phi, i, j) &= \frac{(j - i + 1) + sum(S, \pi, i, j)}{2} \\
-	sum(S, \psi, i, j) &= \frac{(j - i + 1) - sum(S, \pi, i, j)}{2}
+	\summ(S, \phi, i, j) &= \frac{(j - i + 1) + \summ(S, \pi, i, j)}{2} \\
+	\summ(S, \psi, i, j) &= \frac{(j - i + 1) - \summ(S, \pi, i, j)}{2}
 \end{align*}
 
-Because the sums of $g \in \{\phi, \psi \}$ are monotonous, we can reduce all range queries to sums, searches and arithmetics.
-In the range $i, j$, the minimum occurs for the first time at $i$ and maximum occurs the last time at $j$.
+Because the sums of $g \in \{\phi, \psi \}$ are monotonic, we can reduce all range operations to sums and searches.
+In the range $i, j$, the minimum occurs for the first time at $i$ and maximum occurs for the last time at $j$.
 All occurrences are continuous.
 \begin{align*}
-	rmq(S, g, i, j) &= sum(S, g, 0, i) \\
-	RMQ(S, g, i, j) &= sum(S, g, 0, j) \\
-	rmq\_size(S, g, i, j) &= \min(j + 1, fwd\_search(S, g, i, 1)) - i \\
-	RMQ\_size(S, g, i, j) &= j - \max(i - 1, bwd\_search(S, g, j, 1)) \\
-	rmq\_select(S, g, i, j, k) &= i + k - 1 \\ 
-	RMQ\_select(S, g, i, j, k) &= j - k + 1
+	\rmq(S, g, i, j) &= \summ(S, g, 0, i) \\
+	\RMQ(S, g, i, j) &= \summ(S, g, 0, j) \\
+	\rmqSize(S, g, i, j) &= \min(j + 1, \fwdSearch(S, g, i, 1)) - i \\
+	\RMQSize(S, g, i, j) &= j - \max(i - 1, \bwdSearch(S, g, j, 1)) \\
+	\rmqSelect(S, g, i, j, r) &= i + r - 1 \\ 
+	\RMQSelect(S, g, i, j, r) &= j - \RMQSize(S, g, i, j) + r
 \end{align*}
 
 \subsubsection{Search Operations}
 
-The only non-trivial operations are $fwd\_search$ and $bwd\_search$.
-They cannot be reduced and must be supported extra.
+The operation \bwdSearch{} can be the reduced to \fwdSearch{} and \summ{}.
 
-\todo{phi and psi search operations}
+\begin{algorithmic}
+\Function{\bwdSearch}{$S, g, i, d$}
+	\If{$d > 0$}
+		\State $v \gets \summ(S, g, 0, i) - d + 1$
+		\If{$v \ge 2 \boolor v = 1 \booland g(S[0]) \ne 1$}
+			\State \Return{$\fwdSearch(S, g, 0, v)$}
+		\ElsIf{$v = 1$}
+			\State \Return{$0$}
+		\Else
+			\State \Return{$-1$}
+		\EndIf
+	\ElsIf{$d = 0 \booland g(S[i]) = 0 \booland g(S[i-1]) = 0$}
+		\State \Return{$i - 1$}
+	\Else
+		\State \Return{$-1$}
+	\EndIf
+\EndFunction
+\end{algorithmic}
+
+The only non-trivial operation is \fwdSearch{}.
+We review the structures which are used in its index and note places which can be simplified.
+
+No simplification is possible for small block (the look-up tables) and block (min-max tree) levels.
+In the macro structure, only the tree $T_{\LRM}$ is necessary ($T_{\lrm}$ is not because of the monotonicity of $g$).
+The tree is also degenerated into a path.
+The tiny compressed array of jumps are not necessary as the whole path forms a ladder; the search in the ladder stays the same.
+
+The operation \fwdSearch{} can be used to implement \select{}, which makes the index for \fwdSearch{} an alternative to the index which we showed in the section \ref{ss:select}.
+
+\begin{algorithmic}
+\Function{\select$_1$}{$S, i$}
+	\If{$i \ge 2 \boolor i = 1 \booland S[0] \ne 1$} \Comment{In case of \select$_0$: $\ne 0$}
+		\State \Return{$\fwdSearch(S, \phi, 0, i)$} \Comment{In case of \select$_0$: $\psi$}
+	\ElsIf{$i = 1$}
+		\State \Return{$0$}
+	\Else
+		\State \Return{$-1$}
+	\EndIf
+\EndFunction
+\end{algorithmic}
 
 \subsection{Extension of BP}
 
-We focus on encoding the tree as balanced parenthesis, however instead of the traditional indices for rank and select, we use the new data structure.
-We have already shown how to reduce all old primitive operations to the new one, which implies that everything shown in the section \todo{ref} is support here too.
-Because sum, search, and range operations are more general, we can support more operations.
+The index which we developed in the previous section can be used for any representation, however only the BP representation benefits from it as many operations can be immediately supported.
 
-Child operations -- $degree$, $child_rank$ and $child_select$, which are important for basic navigation in the tree, were only available with a specialized index.
-They were also the reason for using DFUDS representation.
-Using the generalized $rmq$, we present their simple implementation.
-The key observation is that in a representation of a subtree of vertex $i$ with omitted terminal parenthesis, the occurrences of minimum correspond to the terminal parenthesis of the children of $i$.
+Child operations, mainly \degree{}, \childRank{}, and \childSelect{}, which are important for basic navigation in the tree, were only available with a specialized index.
+They were also the reason for developing the DFUDS representation, which supports them natively.
+Using the generalized \rmq{} operations, we present an alternative implementation to the one described by \cite{sadakane2010fully}.
+The key observation is that in a representation of a subtree of a vertex $i$ with omitted boundary parentheses, the occurrences of minimum correspond with the terminal parentheses of the children of $i$.
 
 \begin{algorithmic}
-\Function{degree}{$i$}
-	\State \Return{$rmq\_size(S, \pi, i, find\_close(i) - 1)$}
+\Function{\degree}{$i$}
+	\State \Return{$\rmqSize(S, \pi, i + 1, \findClose(S, i) - 1)$}
 \EndFunction
 \end{algorithmic}
 
 \begin{algorithmic}
-\Function{child\_rank}{$i$}
-	\State $p \gets parent(i)$
-	\State \Return{$rmq\_rank(S, \pi, p, find\_close(p), find_close(i))$}
+\Function{\childRank}{$i$}
+	\State $p \gets \parent(i)$
+	\State \Return{$\rmqRank(S, \pi, p + 1, \findClose(S, p) - 1, \findClose(S, i))$}
 \EndFunction
 \end{algorithmic}
 
 \begin{algorithmic}
-\Function{child\_select}{$i, n$}
-	\State \Return{$find\_open(rmq\_select(S, \pi, i, find\_close(i), n))$}
+\Function{\childSelect}{$i, k$}
+	\State \Return{$\findOpen(S, \rmqSelect(S, \pi, i + 1, \findClose(i) - 1, k))$}
 \EndFunction
 \end{algorithmic}
 
-Level ancestor operation is a straightforward generalization of enclose.
+The operation \levelAncestor{} is now a straightforward generalization of \enclose{}.
 
 \begin{algorithmic}
-\Function{level\_ancestor}{$i, d$}
-	\State \Return{$bwd\_search(S, \pi, i, d + 1)$}
+\Function{\levelAncestor}{$i, d$}
+	\If{$d = 0$}
+		\State \Return{$i$}
+	\Else
+		\State \Return{$\bwdSearch(S, \pi, i, d + 1)$}
+	\EndIf
 \EndFunction
 \end{algorithmic}
 
-We can also support local navigation on vertices on the same level $l$ within a restricted subtree rooted in a vertex $r$.
+It is also possible to realize some of the \levelAny{} operations with the restriction to a subtree of a vertex $a$.
+The most general ones: \levelSize{}, \levelRank{}, and \levelSelect{} are however not supported.
 
 \begin{algorithmic}
-\Function{level\_first}{$r, l$}
-	\State \Return{$fwd\_search(S, \pi, r, l - depth(r))$}
-\EndFunction
-\end{algorithmic}
-
-\begin{algorithmic}
-\Function{level\_last}{$r, l$}
-	\State \Return{$find\_open(bwd\_search(S, \pi, find_close(i), l - depth(r))$}
-\EndFunction
-\end{algorithmic}
-
-\begin{algorithmic}
-\Function{level\_next}{$r, i$}
-	\State \Return{$fwd\_search(S, \pi, find\_close(i), 0)$}
+\Function{\levelFirst}{$a, l$}
+	\If{$\dep(S, a) = l$}
+		\State \Return{$a$}
+	\Else
+		\State \Return{$\fwdSearch(S, \pi, a, l - \dep(S, a))$}
+	\EndIf
 \EndFunction
 \end{algorithmic}
 
 \begin{algorithmic}
-\Function{level\_prev}{$r, i$}
-	\State \Return{$find\_open(bwd\_search(S, \pi, i, 0))$}
+\Function{\levelLast}{$a, l$}
+	\If{$\dep(S, a) = l$}
+		\State \Return{$a$}
+	\Else
+		\State \Return{$\findOpen(S, \bwdSearch(S, \pi, \findClose(S, a), \dep(S, a) - l)$}
+	\EndIf
 \EndFunction
 \end{algorithmic}
 
-\bigskip
+\begin{algorithmic}
+\Function{\levelNext}{$a, i$}
+	\State \Return{$\fwdSearch(S, \pi, \findClose(S, i), 0)$}
+\EndFunction
+\end{algorithmic}
 
-The only operations which are not supported by this structure are: $level\_size$, $level\_rank$, $level\_select$, $lo\_rank$, and $lo\_select$.
-All of them would require a better handling of the level structure, something like $fwd\_search$ with parametrized occurrence.
-If these operations are crucial, LOUDS representation supports them.
+\begin{algorithmic}
+\Function{\levelPrev}{$a, i$}
+	\State \Return{$\findOpen(S, \bwdSearch(S, \pi, i, 0))$}
+\EndFunction
+\end{algorithmic}
+
+\subsection{Final Thoughts}
+
+The single index which we presented is more general than all the indices which used the BP representation.
+As a consequence more operations are supported, in fact more than any of the previous representations.
+
+The only unsupported operations by this index are
+\begin{enuminline}
+	\item the \rank{} and \select{} in respect to lo-order and dfuds-order numberings of vertices;
+	\item arbitrary access for level queries through \levelSize{}, \levelRank{}, and \levelSelect{} operations.
+\end{enuminline}
+
+All of the listed operations would benefit from a better handling of the level structure of the tree, an operation like \fwdSearch{} which is parametrized by the number of the occurrence.
+If these operations are crucial, the only data structure which supports them is the LOUDS.
 
 \section{TC}
 
-All structures which we have seen have several things in common; they are combined from two or three levels of different representations:
-\begin{itemize}
-	\item On the lowest level they have small blocks of size less than $\log n$ bits.
-	With such size, it is possible to precompute results to all possible queries which are contained in the small block.
-	\item Then an intermediate level follows which connects several blocks together to blocks of size $\log^c n$ bits.
-	It often uses the property that the pointers withing such block require only $O(\log \log n)$ bits.
+All tree data structures which we have shown so far have one thing in common; they solve their operations on two or three different levels:
+\begin{enumerate}
+	\item On the lowest level, they are decomposed into small blocks of size $b$ which is less than $\log n$ bits.
+	This size makes it possible to precompute results to all possible queries which are contained in a small block.
+	
+	\item Then on an intermediate level, several small blocks are grouped together to form blocks of size $B = O(\log^c n)$ bits.
+	The purpose of this level is to lower the number of blocks for the next level.
+	
 	\item Finally, the macro level which spans the whole structure connects individual blocks.
-	It usually uses a classical non-succinct structure provided that it requires only $O(n \log^{c'} n)$ bits where $c' < c$.
-\end{itemize}
+	It usually uses data structures which are inspired by the traditional ones which are allowed to use $O(\frac{n}{B} \log^{c'} n)$ bits where $c' < c$.
+\end{enumerate}
 
-So far the small blocks and blocks were chunks of a bit string representation of the tree.
-They were designed with the regular size and offset in one's mind instead of being connected to the structure of the tree.
-The representation of a single vertex, let alone the sequence of its children, was covered by multiple different (small) blocks.
+So far, the small blocks and blocks were chunks of a bit string representation of the tree.
+They did not have any connection to the structure of the tree; all operations were implemented in their most generality for an arbitrary (balanced) bit string.
+The representation of a single vertex, let alone the sequence of its children or the whole subtree, could have been covered by multiple (small) blocks.
 
-The tree covering approach respects the structure of the tree by its decomposition into components of a bounded size.
-Not dissimilar to the other representations, it also uses three levels and with bit strings on the lowest one and a pointer structure on the top one.
+The tree covering approach respects the structure of the tree by its decomposition into components of bounded sizes.
+Not dissimilar to the other representations, it also uses three levels of scale with look-up tables being utilized on the lowest one.
 
 \subsection{Decomposition Algorithm}
 

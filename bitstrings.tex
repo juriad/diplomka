@@ -118,7 +118,7 @@ We find out which block $k$ and which small block $l$ inside the block contains 
 The look-up table could be substituted by an instruction \verb|POPCNT| which is provided by certain CPU architectures.
 Alternatively an algorithm with a theoretic running time $O(\log \log N)$ can be used, which leads in practice to a negligible slowdown, as the implementation still uses a fixed number of instructions.
 
-\subsection{\select}
+\subsection{\select}\label{ss:select}
 
 \todo{retell history based on kim2005efficient}
 
@@ -568,7 +568,7 @@ Range Minimum Query $\rmqi(G, i_1, i_2)$ returns $j$ such that $G[j] \le G[k] \:
 Similarly we define Range Maximum Query $\RMQi(G, i_1, i_2)$ returning the left-most position of the maximum value of $G$ in range $[i_1, i_2]$.
 We also define function $\rmq(G, i_1, i_2)$ and $\RMQ(G, i_1, i_2)$ returning the value rather than the position.
 
-We can see that only the function $\pi$ is useful as the others are monotonous and therefore the range minimum is at the position $i_1$ and maximum at the position $i_2$.
+We can see that only the function $\pi$ is useful as the others are monotonic and therefore the range minimum is at the position $i_1$ and maximum at the position $i_2$.
 An alternative definition of the array $G_\pi = E$ uses the excess function:
 $$ E[i] = \sum_{k=0}^i \pi(S[i]) = rank_1(i) - rank_0(i) = excess(i) $$
 
