@@ -30,8 +30,9 @@ RAM has access to two types of memory:
 \end{itemize}
 
 The instructions supported by the word-RAM are:
-\begin{enumerate}
-	\item Program flow control used for determining what instruction to process next.
+\begin{description}
+	\item[Flow control]
+	Instructions which are used for determining which instruction to process next.
 	\begin{description}
 		\item[Termination: \textnormal{$\textrm{halt}$}]
 		Stops the program immediately.
@@ -44,14 +45,18 @@ The instructions supported by the word-RAM are:
 		Each function ends with a return instruction followed by a value.
 		After a return, the program continues with an instruction which follows the one which initiated the call.
 	\end{description}
-	\item Instructions for accessing and modifying the main memory.
+	
+	\item[Memory access]
+	Instructions for accessing and modifying the main memory.
 	\begin{description}
 		\item[Read: $\mathit{register} \gets \mathit{Memory}[\mathit{position}\char93$]
 		Reads a word from the main memory and stores it in a named $\mathit{register}$.
 		\item[Write: $\mathit{Memory}[\mathit{position}\char93 \gets a$]
 		Overwrites the word stored in the main memory at the given $position$ with the value $a$.
 	\end{description}
-	\item Instructions on registers; the resulting value is always stored to a register: $\mathit{register} \gets \mathit{operation}$.
+	
+	\item[Value manipulation]
+	Instructions on values which are stored registers; the resulting value is always stored to a register: $\mathit{register} \gets \mathit{operation}$.
 	\begin{description}
 		\item[Arithmetic: $a + b, a - b, a \cdot b, a \mathbin{/} b, a \% b$]
 		All overflows are silently discarded; the division is integral.
@@ -65,7 +70,7 @@ The instructions supported by the word-RAM are:
 		Calls a function $\mathit{fn}$, provides it required number of arguments.
 		The result is the value returned by the function.
 	\end{description}
-\end{enumerate}
+\end{description}
 All single letter arguments can be either names of the registers or constants of size $w$ bits.
 
 \subsection{RAM for Bit Strings}
@@ -105,8 +110,9 @@ Many operations cannot be supported unless the object is fully decoded into a mo
 The goal of space-efficient data structures is to allow some additional space in exchange for more and faster operations.
 There are three major representatives depending on the space complexity.
 
-\begin{itemize}
-	\item An \emph{implicit data structure} for a universe $U$ is a data structure which has space complexity $ \log |U| + O(\log |U|) $ bits of space; sometimes only $O(1)$ extra bits is allowed.
+\begin{description}
+	\item[Implicit data structure]
+	An \emph{implicit data structure} for a universe $U$ is a data structure which has space complexity $ \log |U| + O(\log |U|) $ bits of space; sometimes only $O(1)$ extra bits is allowed.
 	The encoding of the input is important in case of the tighter definition as it does not allow storing the size of the input itself.
 	An example of an implicit structure is a C string of characters which is terminated by zero.
 	
@@ -115,7 +121,8 @@ There are three major representatives depending on the space complexity.
 	
 	A few implicit structures are known since the restriction posed by the definition of an implicit data structure is often too strict.
 
-	\item A \emph{succinct data structures} is a data structure whose space complexity is $ \log |U| + o(\log |U|) $ bits.
+	\item[Succinct data structures]
+	A \emph{succinct data structures} is a data structure whose space complexity is $ \log |U| + o(\log |U|) $ bits.
 	There exist succinct data structures for encoding some restricted classes of graphs, such as planar graphs, and trees.
 	The rest of this thesis is about succinct structures.
 	
@@ -124,12 +131,13 @@ There are three major representatives depending on the space complexity.
 	
 	Moreover, there is a succinct structure which supports adjacency testing and iteration over the list of neighbors and more in constant time. \cite[Theorem~6.1]{raman2007succinct}
 	
-	\item A \emph{compact data structure} is a data structure which uses $ O(\log |U|) $ bits of space.
+	\item[Compact data structure]
+	A \emph{compact data structure} is a data structure which uses $ O(\log |U|) $ bits of space.
 	
 	A compact structure is often a byproduct of a succinct structure when the constants in space or time complexity prove to be too big for a real use. \cite{gonzalez2005practical}
 	
 	We can easily extend the succinct structure for directed graphs into a compact structure for undirected graphs by simply using it twice: for the original graph and the graph with reversed edges.
-\end{itemize}
+\end{description}
 
 \bigbreak
 

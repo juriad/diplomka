@@ -73,15 +73,17 @@ We follow on \ref{ss:rmq-def} and define operations on the bit string $S$ parame
 		\item[\rmqRank{}]
 		Returns how many occurrences of minimum there are in the given range up to position $r$.
 		This can be directly implemented using \rmq{} and \rmqSize{}:
+		\begin{algorithm}
 		\begin{algorithmic}
-			\Function{\rmqRank}{$S, g, i, j, r$}
-				\If{$\rmq(S, g, i, j) \ne \rmq(S, g, i, r)$}
-					\State \Return{$0$}
-				\Else
-					\State \Return{$\rmqSize(S, g, i, r)$}
-				\EndIf
-			\EndFunction
+		\Function{\rmqRank}{$S, g, i, j, r$}
+			\If{$\rmq(S, g, i, j) \ne \rmq(S, g, i, r)$}
+				\State \Return{$0$}
+			\Else
+				\State \Return{$\rmqSize(S, g, i, r)$}
+			\EndIf
+		\EndFunction
 		\end{algorithmic}
+		\end{algorithm}
 		
 		\item[\rmqSelect{}]
 		Returns the position $p$ of the $r$-th minimum in the range $i, j$.
@@ -162,7 +164,8 @@ We also use the look-up tables to handle the prefix and suffix of a range query,
 
 \subsection{Min-Max Tree}
 
-Each block contains $k^c$ small blocks for $k = \frac{\log N}{\log \log N}$ and an arbitrary constant $c \le 1$.
+Each block contains $k^c$ small blocks for $k = \frac{\log N}{\log \log N}$ and an arbitrary constant $c \ge 1$.
+The value of the constant $c$ will be discussed at the end.
 The purpose of the min-max tree is to lift the operations from $b$ bits to $b k^c$ while retaining their constant running time.
 
 The $l$-th block covers an interval of $B = b k^c$ bits spanning from the position $l B$ to $(l + 1) B - 1$.
@@ -213,6 +216,7 @@ By $b(i)$ we denote the index of the small block which contains the position $i$
 Contrary to the defined numbering of nodes, in order to simplify the notation, we assume in the algorithms that the node numbers of leaves are the same as indices of the small blocks with which they are associated.
 We will use subscripts to refer to bits of $S$ represented by a small block $n$: $S_n = S[n b : (n + 1) b]$
 
+\begin{algorithm}
 \begin{algorithmic}
 \Function{\sumBlock}{$S, g, i, j$}
 	\State $x \gets e[b(i - 1) - 1] + \summ[S_{b(i - 1)}, g, 0, (i - 1) \% b]$
@@ -220,6 +224,7 @@ We will use subscripts to refer to bits of $S$ represented by a small block $n$:
 	\State \Return{$y - x$}
 \EndFunction
 \end{algorithmic}
+\end{algorithm}
 
 \subsubsection{Search Operations}
 
@@ -262,6 +267,7 @@ As the height of the tree is $c$, the whole operation takes at most $O(2 c c') =
 We show the pseudocode for the operation \fwdSearch{}.
 By an asterisk superscript we denote a repeated application of a look-up table on the list of consecutive nodes in the tree.
 
+\begin{algorithm}
 \begin{algorithmic}
 \Function{\fwdSearchBlock}{$S, g, i, d$}
 	\State $p \gets \fwdSearch[S_{b(i)}, g, i \% b, d]$
@@ -284,6 +290,7 @@ By an asterisk superscript we denote a repeated application of a look-up table o
 	\EndIf
 \EndFunction
 \end{algorithmic}
+\end{algorithm}
 
 Note that the final \fwdSearch' is the standard \fwdSearch{} altered to allow the answer $0$, which is prohibited by the original definition.
 This can be handled with a simple check for $\summ[S_j, g, 0, 0] = d'$.
@@ -308,6 +315,7 @@ In the last iteration the left siblings and the right siblings overlap; therefor
 Each list contains at most $c$ values as the table look-ups aggregate the answers.
 We combine the lists into a single list and find the answer to the queries in it.
 
+\begin{algorithm}
 \begin{algorithmic}
 \Function{\rmqList}{$S, g, i, j$} \Comment{$b(i) \ne b(j)$}
 	\State $L \gets []; R \gets []$ \Comment{Initialization of the empty lists}
@@ -320,14 +328,17 @@ We combine the lists into a single list and find the answer to the queries in it
 		\State $\prepend(R, \rmqInfo(S, g, v, \str{l}))$
 	\EndWhile
 	\State $\append(L, \rmqInfo(S, g, u, v))$ \Comment{Between $u$ and $v$}
-	\State \Return{$\concatenate(L, R)$}
+	\State $\concatenate(L, R)$
+	\State \Return{$L$}
 \EndFunction
 \end{algorithmic}
+\end{algorithm}
 
 \bigbreak
 
 For \rmq{} we return the minimum of the list obtained from \rmqList{}.
 
+\begin{algorithm}
 \begin{algorithmic}
 \Function{\rmqBlock}{$S, g, i, j$}
 	\If{$b(i) = b(j)$}
@@ -342,9 +353,11 @@ For \rmq{} we return the minimum of the list obtained from \rmqList{}.
 	\EndIf
 \EndFunction
 \end{algorithmic}
+\end{algorithm}
 
 For \rmqSizeBlock{} we sum $\ms$ for those info-nodes whose minimum is equal to the global one calculated by \rmq{}.
 
+\begin{algorithm}
 \begin{algorithmic}
 \Function{\rmqSizeBlock}{$S, g, i, j$}
 	\If{$b(i) = b(j)$}
@@ -362,11 +375,13 @@ For \rmqSizeBlock{} we sum $\ms$ for those info-nodes whose minimum is equal to 
 	\EndIf
 \EndFunction
 \end{algorithmic}
+\end{algorithm}
 
 In case of \rmqSelect{}, we find the first node $n$ in the list such that the prefix sum of $\ms$ is greater than or equal to $r$.
 We descend in such node into the first child whose left siblings including itself sum up to $r$, and repeat until we get to a leaf.
 Once we are in a leaf, we use a look-up table to solve the select there.
 
+\begin{algorithm}
 \begin{algorithmic}
 \Function{\rmqSelectBlock}{$S, g, i, j, r$} \Comment{Assuming $n$-th min exists}
 	\If{$b(i) = b(j)$}
@@ -386,6 +401,7 @@ Once we are in a leaf, we use a look-up table to solve the select there.
 		\EndFor
 \algstore{rmqselect}
 \end{algorithmic}
+\end{algorithm}
 
 When the loop is broken, $I$ contains the information about list of siblings node with one of them containing the desired minimum.
 Using look-up tables which are similar to \nodeSearch{}, we descend into the right child.
@@ -393,6 +409,7 @@ The table also returns the new remaining number of occurrences by subtracting th
 
 We first search the restricted range of nodes provided by $I$ keeping track of the number of the occurrences which we are interested in.
 
+\begin{algorithm}
 \begin{algorithmic}
 \algrestore{rmqselect}
 		\State $(p, r) \gets \minSearch^*[\nodeRange(I.f, I.l), r - I.ms]$
@@ -404,6 +421,7 @@ We first search the restricted range of nodes provided by $I$ keeping track of t
 	\EndIf
 \EndFunction
 \end{algorithmic}
+\end{algorithm}
 
 There are 7 look-up tables necessary for traversal and processing the tree.
 The tables have an additional (not mentioned) parameter which restricts the size of the block to be processed.
@@ -445,6 +463,7 @@ We denote $B(i)$ to the index of the block containing the position $i$.
 
 The algorithm for \summ is very similar to \sumBlock.
 
+\begin{algorithm}
 \begin{algorithmic}
 \Function{\summ}{$S, g, i, j$}
 	\State $x \gets e[B(i - 1) - 1] + \sumBlock(S_{B(i - 1)}, g, 0, (i - 1) \% B)$
@@ -452,6 +471,7 @@ The algorithm for \summ is very similar to \sumBlock.
 	\State \Return{$y - x$}
 \EndFunction
 \end{algorithmic}
+\end{algorithm}
 
 \subsubsection{Search Operations}
 
@@ -475,6 +495,7 @@ There are three possibilities of how to find the block $j$:
 \end{enumerate}
 It can happen that the value $v$ is not covered by any block $j$, in which case we report a failure.
 
+\begin{algorithm}
 \begin{algorithmic}
 \Function{\fwdSearch}{$S, g, i, d$}
 	\State $p \gets \fwdSearchBlock(S + B(i) B, g, i \% B, d)$ \Comment{Block operations are offsetted}
@@ -499,6 +520,7 @@ It can happen that the value $v$ is not covered by any block $j$, in which case 
 	\EndIf
 \EndFunction
 \end{algorithmic}
+\end{algorithm}
 
 Note that the final call of \fwdSearchBlock{}' is the standard block operation \fwdSearchBlock{} altered to allow the answer $0$.
 The same was necessary for the search on the block level.
@@ -520,7 +542,7 @@ We observe that the arrays $\lrm_i$ are alike.
 	$$ \lrm_i[x_i + k] = \lrm_j[x_j + k] \:\forall k \ge 0 $$
 \end{lemma}
 
-\label{Tlrm} We define a tree $T_{\lrm}$ which is built as a trie for reversed $\lrm$ arrays; it has an artificial root with assigned minimum $m[\root] = -\infty$.
+\label{Tlrm} We define a tree $T_{\lrm}$ which is built as a trie for reversed $\lrm$ arrays; it has an artificial root with assigned minimum $m[\roott] = -\infty$.
 The properties of the tree are:
 \begin{enumerate}
 	\item $m[i] > m[\parent(i)]$;
@@ -552,7 +574,7 @@ Note that if we tried to be more clever and represent nodes $j$ which cover valu
 
 \bigbreak
 
-The tree gets decomposed iteratively to paths; in each step the longest path $p$ from an inner node $\start(p)$ to a leaf $\endd(p)$ is removed.
+The tree gets decomposed iteratively to paths; in each step the longest path $p$ from an inner node $\start(p)$ to a leaf $\en(p)$ is removed.
 If the path contains $l = \length(p)$ nodes, we prepend it with $l$ more ancestors (or less if the root is reached) and call it a \emph{ladder}.
 There are as many ladders as leaves of the tree $T_{\lrm}$, and all ladders together contain $\le 2 \frac{N}{B}$ nodes.
 Note that the root of the tree $T_{\lrm}$ is not represented in the ladders.
@@ -565,15 +587,17 @@ The space complexity of the compressed array $L$ is $O(\frac{N}{B} \log N) + o(N
 For each block $i$, we also store the index $l$ of the ladder, which is also the index of the part in the compressed dictionary $L$, in an array $\ladder$.
 The size of the array is $O(\frac{N}{B} \log N) = o(N)$ bits.
 
+\begin{algorithm}
 \begin{algorithmic}
 \Function{\lrmSearch}{$i, v$}
 	\State $j' \gets J_i[M[i] - v]$ \Comment{Jump by power of two}
 	\State $l \gets \ladder[j']$ \Comment{The ladder containing $j'$}
-	\State $\endd \gets L[l, 0]$
-	\State $j \gets L[l, M[\endd] - v]$ \Comment{If the index is out of the range, $-1$ is returned}
+	\State $\en \gets L[l, 0]$
+	\State $j \gets L[l, M[\en] - v]$ \Comment{If the index is out of the range, $-1$ is returned}
 	\State \Return{$j$}
 \EndFunction
 \end{algorithmic}
+\end{algorithm}
 
 \subsubsection{Range Operations}
 
@@ -587,6 +611,7 @@ We define a helper function \rmqiSpan{} which was defined in lemma \ref{lemma:rm
 	\item contrary to \rmqi{} shown in \ref{sss:rmq-index}, it is sufficient to use only one level provided that we set $c > 2$.
 \end{enumerate}
 
+\begin{algorithm}
 \begin{algorithmic}
 \Function{\rmq}{$S, g, i, j$}
 	\State $m_1 \gets e[B(i) - 1] + \rmqBlock(S_{B(i)}, g, \prefix(i, j))$
@@ -596,6 +621,7 @@ We define a helper function \rmqiSpan{} which was defined in lemma \ref{lemma:rm
 	\State \Return{$\min(m_1, m_2, m_3)$}
 \EndFunction
 \end{algorithmic}
+\end{algorithm}
 
 The structure for \rmqiSpan{} cannot be extended for querying the number of occurrences of the minimum nor selecting the $r$-th one.
 If we augmented each precomputed interval of size $2^k$ with the number of occurrences, we would still fit in the same space.
@@ -635,6 +661,7 @@ All the structures require only $o(N)$ bits of memory.
 
 As we restricted our queries to their spans, and from \rmqiSpan{} we know the indices of the first and last block containing the minimum, it is easy to find how many occurrences there were before the any block.
 
+\begin{algorithm}
 \begin{algorithmic}
 \Function{\rmqSize}{$S, g, i, j$}
 	\State $\ms_1 \gets 0; \ms_2 \gets 0; \ms_3 \gets 0$
@@ -658,10 +685,12 @@ As we restricted our queries to their spans, and from \rmqiSpan{} we know the in
 	\State \Return{$m_1 + m_2 + m_3$}
 \EndFunction
 \end{algorithmic}
+\end{algorithm}
 
 The operation \rmqSelect{} first looks for the minimum in prefix, then in span, and finally in suffix.
 The idea of the search in span is to use the property of $\mpp$.
 
+\begin{algorithm}
 \begin{algorithmic}
 \Function{\rmqSelect}{$S, g, i, j, r$}
 	\State $m \gets \rmq(S, g, i, j)$
@@ -699,6 +728,7 @@ The idea of the search in span is to use the property of $\mpp$.
 	\EndIf
 \EndFunction
 \end{algorithmic}
+\end{algorithm}
 
 \subsection{$\pm 1$ Functions Revisited}
 
@@ -735,6 +765,7 @@ All occurrences are continuous.
 
 The operation \bwdSearch{} can be the reduced to \fwdSearch{} and \summ{}.
 
+\begin{algorithm}
 \begin{algorithmic}
 \Function{\bwdSearch}{$S, g, i, d$}
 	\If{$d > 0$}
@@ -753,6 +784,7 @@ The operation \bwdSearch{} can be the reduced to \fwdSearch{} and \summ{}.
 	\EndIf
 \EndFunction
 \end{algorithmic}
+\end{algorithm}
 
 The only non-trivial operation is \fwdSearch{}.
 We review the structures which are used in its index and note places which can be simplified.
@@ -764,6 +796,7 @@ The tiny compressed array of jumps are not necessary as the whole path forms a l
 
 The operation \fwdSearch{} can be used to implement \select{}, which makes the index for \fwdSearch{} an alternative to the index which we showed in the section \ref{ss:select}.
 
+\begin{algorithm}
 \begin{algorithmic}
 \Function{\select$_1$}{$S, i$}
 	\If{$i \ge 2 \boolor i = 1 \booland S[0] \ne 1$} \Comment{In case of \select$_0$: $\ne 0$}
@@ -775,6 +808,7 @@ The operation \fwdSearch{} can be used to implement \select{}, which makes the i
 	\EndIf
 \EndFunction
 \end{algorithmic}
+\end{algorithm}
 
 \subsection{Extension of BP}
 
@@ -785,27 +819,34 @@ They were also the reason for developing the DFUDS representation, which support
 Using the generalized \rmq{} operations, we present an alternative implementation to the one described by \cite{sadakane2010fully}.
 The key observation is that in a representation of a subtree of a vertex $i$ with omitted boundary parentheses, the occurrences of minimum correspond with the terminal parentheses of the children of $i$.
 
+\begin{algorithm}
 \begin{algorithmic}
 \Function{\degree}{$i$}
 	\State \Return{$\rmqSize(S, \pi, i + 1, \findClose(S, i) - 1)$}
 \EndFunction
 \end{algorithmic}
+\end{algorithm}
 
+\begin{algorithm}
 \begin{algorithmic}
 \Function{\childRank}{$i$}
 	\State $p \gets \parent(i)$
 	\State \Return{$\rmqRank(S, \pi, p + 1, \findClose(S, p) - 1, \findClose(S, i))$}
 \EndFunction
 \end{algorithmic}
+\end{algorithm}
 
+\begin{algorithm}
 \begin{algorithmic}
 \Function{\childSelect}{$i, k$}
 	\State \Return{$\findOpen(S, \rmqSelect(S, \pi, i + 1, \findClose(i) - 1, k))$}
 \EndFunction
 \end{algorithmic}
+\end{algorithm}
 
 The operation \levelAncestor{} is now a straightforward generalization of \enclose{}.
 
+\begin{algorithm}
 \begin{algorithmic}
 \Function{\levelAncestor}{$i, d$}
 	\If{$d = 0$}
@@ -815,10 +856,12 @@ The operation \levelAncestor{} is now a straightforward generalization of \enclo
 	\EndIf
 \EndFunction
 \end{algorithmic}
+\end{algorithm}
 
 It is also possible to realize some of the \levelAny{} operations with the restriction to a subtree of a vertex $a$.
 The most general ones: \levelSize{}, \levelRank{}, and \levelSelect{} are however not supported.
 
+\begin{algorithm}
 \begin{algorithmic}
 \Function{\levelFirst}{$a, l$}
 	\If{$\dep(S, a) = l$}
@@ -828,7 +871,9 @@ The most general ones: \levelSize{}, \levelRank{}, and \levelSelect{} are howeve
 	\EndIf
 \EndFunction
 \end{algorithmic}
+\end{algorithm}
 
+\begin{algorithm}
 \begin{algorithmic}
 \Function{\levelLast}{$a, l$}
 	\If{$\dep(S, a) = l$}
@@ -838,18 +883,23 @@ The most general ones: \levelSize{}, \levelRank{}, and \levelSelect{} are howeve
 	\EndIf
 \EndFunction
 \end{algorithmic}
+\end{algorithm}
 
+\begin{algorithm}
 \begin{algorithmic}
 \Function{\levelNext}{$a, i$}
 	\State \Return{$\fwdSearch(S, \pi, \findClose(S, i), 0)$}
 \EndFunction
 \end{algorithmic}
+\end{algorithm}
 
+\begin{algorithm}
 \begin{algorithmic}
 \Function{\levelPrev}{$a, i$}
 	\State \Return{$\findOpen(S, \bwdSearch(S, \pi, i, 0))$}
 \EndFunction
 \end{algorithmic}
+\end{algorithm}
 
 \subsection{Final Thoughts}
 
@@ -864,6 +914,8 @@ The only unsupported operations by this index are
 
 All of the listed operations would benefit from a better handling of the level structure of the tree, an operation like \fwdSearch{} which is parametrized by the number of the occurrence.
 If these operations are crucial, the only data structure which supports them is the LOUDS.
+
+\todo{clarify the value of $c$}
 
 \section{TC}
 
@@ -888,327 +940,410 @@ Not dissimilar to the other representations, it also uses three levels of scale 
 
 \subsection{Decomposition Algorithm}
 
-Several decomposition algorithms have been proposed; they are parametrized by a target number of vertices $B$ to be present in a component.
-The first algorithm \todo{ref} decomposed the tree into components of size $[B, 3 B - 2]$ with the exception of the component containing the root, which could have been undersized.
-Such decomposition cannot exist unless we allow the components to overlap; more specifically to overlap in their common root.
-From the bounds, it is clear that there exist $O(\log n)$ components.
+Instead of decomposing a bit string of the encoded tree, we decompose the tree and then encode it.
+Two decomposition algorithms have been proposed; they are parametrized by a target number of vertices $B$ to be present in a component.
+The first algorithm \cite{geary2006succinct} decomposes the tree into connected components of size $[B, 3 B - 2]$ with the exception of the component containing the root, which can be undersized.
+Such decomposition cannot exist unless the components are allowed to overlap; more specifically to overlap in their common root.
+It follows from the bounds that there exist $O(\log n)$ components.
 
-This decomposition was used and lead to a succinct data structure which at the time of its introduction supported more operations than BP (child operations) or DFUDS (depth).
+This decomposition was used and leads to a succinct data structure which at the time of its introduction supported more operations than BP (child operations) or DFUDS (depth).
 The problem of the decomposition was that the components were connected together in too many ways and the structure had to handle many cases.
 
-Later a different decomposition was proposed which removes the lower bound on the sizes of the components while retaining their asymptotic number in exchange for restriction on how components can be connected with each other.
-There can be at most one edge per component which connects it to a vertex in a different component.
+Later a different decomposition was proposed in \cite{farzan2008uniform} with more details published in \cite{farzan2014uniform}.
+It removes the lower bound on the sizes of the components while retaining their asymptotic number in exchange for restriction on the ways how the components can be connected with each other.
+At most one edge from a non-root vertex connecting a different component is allowed.
 Note that a stronger claim of no such edge existing does not provide a decomposition in a general case (e.g. a tree with depth greater than $2 B$).
 
-We call a vertex \emph{heavy} if its subtree contains at least $B$ vertices.
-All ancestors of a heavy vertex are heavy and therefore heavy vertices form a subtree $T_{heavy}$ of the tree $T$.
-We call a heavy vertex \emph{branching vertex} if it has at least two heavy children, and \emph{branching edges} are the edges from a branching vertex to its heavy children.
+\bigbreak
 
-\begin{lemma}
-	There are $O\left(\frac{n}{B}\right)$ branching vertices and branching edges in a tree $T$.
+We present the latter decomposition since it results in components satisfying stronger properties.
+A vertex is called \emph{heavy} if its subtree contains at least $B$ vertices.
+All ancestors of a heavy vertex are heavy and therefore heavy vertices form a subtree $T_{\heavy}$ of the tree $T$.
+A heavy vertex is called a \emph{branching vertex} if it has at least two heavy children, and \emph{branching edges} are called the edges connecting a branching vertex with its heavy children.
+
+\begin{lemma}\label{l:no-branching}
+	There are $O\left(\frac{n}{B}\right)$ branching vertices and branching edges in a tree $T$ with $n$ vertices.
 \end{lemma}
 \begin{proof}
-	The tree $T_{heavy}$ has at most $\frac{n}{B}$ leaves (we call them \emph{heavy leaves}) as each leaf is a root of a subtree of $T$ which contains at least $B$ vertices.
-	Each branching node connects at least two heavy subtrees containing each at least one heavy leaf; therefore their number must be less than the number of all heavy leaves.
-	The number of branching edges is the same as the number of heavy leaves plus number of branching vertices minus one which can be seen after contracting non-branching edges in the tree $T$.
+	The tree $T_{\heavy}$ has at most $\frac{n}{B}$ leaves (we call them \emph{heavy leaves}) as each leaf is a root of a subtree of $T$ which contains at least $B$ vertices.
+	Each branching vertex connects at least two heavy subtrees containing each at least one heavy leaf; therefore their number must be less than the number of all heavy leaves.
+	The number of branching edges is the same as the number of heavy leaves plus the number of branching vertices minus one which can be seen after contraction of non-branching edges in the tree $T$.
 \end{proof}
 
 The algorithm works in DFS post-order; it first recursively processes all children of a vertex $v$ before solving $v$ itself.
-A leaf starts its own temporary component.
-From the recursion a set of \emph{permanent} and up to one \emph{temporary} component is returned.
-The way how they are merged together depends on number of heavy children.
+A leaf starts its own \emph{temporary} component -- a component which has not been declared \emph{permanent}.
+A set of permanent and at most one temporary component is returned from the recursion.
+The way how the components are processed in $v$ depends on the number of its heavy children.
 
 We distinguish three cases:
 \begin{enumerate}
-	\item If a vertex $v$ does not have any heavy children, then all children are part of a temporary component.
-	Children are processed from left to right; their temporary components are merged with $v$ and potentially with components of their right siblings.
-	When the size of a component is at least $B$, we declare it permanent.
-	If at least one component was declared permanent, we declare all of them as permanent even though the last one can be undersized.
+	\item If a vertex $v$ does not have any heavy children, then all children are parts of temporary components.
+	Children are processed from left to right; their temporary components are merged with $v$ and potentially with the components of their right siblings.
+	When the size of the current component is at least $B$, we declare it permanent.
+	If at least one component was declared permanent, we declare all of them as permanent even though the last one can remain undersized.
 	\item If a vertex $v$ has exactly one heavy child $u$, then we process it in a similar way as the case (1).
 	If $u$ is part of a temporary component, nothing changes; otherwise we simply skip it.
-	\item If a vertex $v$ has two or more heavy children (it is a branching vertex), the temporary components containing the heavy children are declared permanent no matter what size they have.
-	All non-heavy children are split into intervals by the heavy children and processed as in case (1) while declaring all their components as permanent.
+	\item If a vertex $v$ has two or more heavy children ($v$ is a branching vertex), the temporary components containing the heavy children are declared permanent no matter what size they are.
+	All non-heavy children are split into intervals delimited by the heavy children.
+	Each interval is processed as in case (1) with the exception that all components are declared as permanent.
 	If the vertex $v$ does not have any non-heavy children, then it forms a permanent component of size one.
 \end{enumerate}
 
-Several invariants hold during the course of the algorithm:
+Several invariants hold during the course of the decomposition algorithm:
 \begin{itemize}
-	\item Size of a permanent component is less than $2 B - 2$; size of a temporary component is less than $B$.
-	A temporary component is only merged with other temporary components; it is declared permanent when its size is at least $B$.
-	Because we merge a temporary component with the parent first and then with its right siblings one by one, its size will never be greater than $(B - 2) + 1 + (B - 1)$, at which point it is declared permanent.
-	\item If a vertex is shared among multiple components, it is their root.
+	\item The size of a permanent component is less than $2 B - 2$; the size of a temporary component is less than $B$.
+	A temporary component is only merged with another temporary components; it is declared permanent when its size is at least $B$.
+	Because we merge a temporary component first with the parent and then with its right siblings one by one, its size will never be greater than $(B - 2) + 1 + (B - 1)$, at which point it is declared permanent.
+	\item If a vertex is shared among multiple components, it is their common root.
 	When such situation happens in the algorithm, all of them are declared as permanent and they are never dealt with again.
+	\item Whenever a vertex $v$ is being processed and a component containing $v$ is declared permanent, then $v$ is a heavy vertex.
+	In case (2) and (3) it is heavy from the fact that it is a parent of heavy children.
+	In case (1) the first component is declared permanent if the components of children plus $v$ exceed $B$.
+	If the first component is not declared permanent, none is.
 	\item There is at most one edge leaving a component from a non-root vertex.
-	The vertex $w$ connected with such an edge to a component with root $u$ is heavy.
-	By contradiction, let it be a non-heavy vertex which is a root of a permanent component.
-	In case (2) and (3) only permanent components involving a heavy vertex are created.
-	In case (1) an undersized permanent component can be created, however a regular permanent component is created as well.
-	The subtree size is therefore at least $B$, a contradiction.
-	As a consequence, $u$ is heavy as it is an ancestor of $w$.
-	
-	Let's assume that it holds for all children, then it holds after the merge at vertex $v$ too.
-	We are dealing with a temporary component of vertex $u$ and a permanent component of $w'$ which we want to connect to it.
-	Both $u$ and $w'$ are heavy, so case (3) applies; the temporary component is not changed and immediately declared permanent.
-	\item The number of component is $O\left(\frac{n}{B}\right)$.
-	An undersized component was declared permanent in (1) and (2) only when another component of a regular size was declared permanent; in (3) when it was connected with a branching edge, or once per interval of non-heavy children which was either separated by a branching edge on the left or it is the first interval of a branching vertex or it is the branching vertex itself.
-	From that the bound follows.
+	A root $u$ of a permanent component which is connected by such edge is heavy from the previous invariant.
+	Therefore, when the parent $v$ of $u$ is being processed, $u$ is its heavy child.
+	If a component of another child of $v$ already contained such edge, then $v$ has at least two heavy children and case (3) applies.
+	All components end with $v$ or its children, and so $u$ is connected to a root vertex instead of a non-root one.
+	\item The number of all component is $O\left(\frac{n}{B}\right)$.
+	We charge $O(1)$ undersized components to regular-sized components, branching edges, and branching vertices.
+	The bound then follows from the lemma \ref{l:no-branching}.
+	If an undersized component was declared permanent in (1) or (2), then another component of a regular size was declared too.
+	In (3), it was either connected with an branching edge, or it happened once per interval of non-heavy children, which is delimited by at least one branching edge, or it is the branching vertex itself.
 \end{itemize}
 
+\bigbreak
+
+We propose a modification of the algorithm which makes the resulting decomposition satisfy one more constraint.
+In case (2), it could happen that the component of the heavy child $u$ is permanent, and some permanent components containing $v$ are created.
+In such situation a left and a right sibling of $u$ could be in the same component, and thereby make the sequence of children of $v$ discontinuous in terms of component to which they belong.
+Moreover, a heavy temporary component is forcefully declared permanent in case (3), which would lead to the same result.
+
+We prevent this situation in case (2) to happen by splitting the children of $v$ into two intervals (one can be empty) and solving them separately similar to the case (3).
+In case (3) we revise the temporary heavy component and split it in the same way; for that we return from recursion the vertex just before $u$.
+This can result in at most two permanent undersized components which we charge to the permanent regular-sized component which was not created.
+
+The extra property which the components satisfy is: ``let $C$ be a sequence of components to which the children of a root of a component belong, then each component occurs in at most one run in $C$''.
+
+\begin{algorithm}[p]
 \begin{algorithmic}
-\Function{Decompose}{$v, B$}
-	\If{$is\_root(v)$}
-		\State \Return{$\O, \{v\}$} \Comment{No permanent components, itself as temporary}
+\Function{\decompose}{$v, B$}
+	\If{$\isLeaf(v)$}
+		\State \Return{$[], v, -1$} \Comment{No permanent, itself as temporary, heavy children}
 	\Else
-		\State $P \gets \O; T \gets []; h \gets 0$
-		\ForAll{$u \gets children(v)$}
-			\State $(p, t) = Decompose(u)$ \Comment{Process child}
-			\State $P \gets P \cup p; T.append(t)$ \Comment{Gather permanent and temporary}
-			\If{$size(u) \ge B$} \Comment{Count number of heavy children}
+		\State $P \gets []; T \gets []$ \Comment{All permanent and temporary from children}
+		\State $R \gets[]; h \gets 0$ \Comment{Split vertices in children; number of heavy comps}
+		\State $d \gets 0$ \Comment{Total size of temporary components}
+		\ForAll{$u \gets \children(v)$}
+			\State $(p, t, r') = \decompose(u, B)$ \Comment{Process child}
+			\State $\concatenate(P, p)$ \Comment{Gather permanent}
+			\State $\append(T, t); \append(R, r'); d \gets d + |t|$ \Comment{Store and count temp}
+			\If{$\subtreeSize(u) \ge B$} \Comment{Count number of heavy children}
 				\State $h \gets h + 1$
 			\EndIf
 		\EndFor
-		\State
+		\Statex
 		
-		\State $s \gets \{v\}; i \gets 0$ \Comment{Working component, }
-		\ForAll{$(u, t) \gets zip(children(v), T)$}
-			\If{$size(u) \ge B \booland t \ne \O \booland h > 1$} \Comment{Heavy, temporary, case 3}
-				\State $P \gets P \cup \{t\}; t \gets \O$ \Comment{Declare permanent}
-			\EndIf
-			\If{$t = \O \booland |s| > 1 \booland h > 1$} \Comment{Permanent, non-empty $s$, case 3}
-				\State $P \gets P \cup \{s\}; s \gets \{v\}$  \Comment{Declare permanent, reset}
-			\ElsIf{$t \ne \O$} \Comment{Temporary}
-				\If{$|s| + |t| \ge B$} \Comment{Regular sized}
-					\State $P \gets P \cup \{s \cup t\}; s \gets \{v\}; i \gets i + 1$ \Comment{Declare permanent}
+		\State $s \gets [v]; i \gets 0; r \gets -1$ \Comment{Working component}
+		\ForAll{$(u, t, r') \gets \zip(\children(v), T, R)$}
+			\If{$\subtreeSize(u) \ge B \booland |t| > 0 \booland h \ge 2$} \Comment{Heavy, temp, c. 3}
+				\If{$r' \ne -1$} \Comment{Needs to be split}
+					\State $s' \gets []$
+					\ForAll{$u' \gets t$} \Comment{Revise the component}
+						\State $\append(s', u')$
+						\If{$u' = r'$} \Comment{Split vertex found}
+							\State $\append(P, s'); s' = [u]$ \Comment{Declare permanent, reset}
+						\EndIf
+					\EndFor
+					\State $\append(P, s')$ \Comment{Declare permanent}
 				\Else
-					\State $s \gets s \cup t$ \Comment{Merge $t$ into $s$}
+					\State $\append(P, t)$ \Comment{Declare permanent}
+				\EndIf
+				\State $t \gets []$ \Comment{$t$ has been processed}
+			\ElsIf{$|t| = 0 \booland |s| > 1 \booland d > B$} \Comment{Heavy, perm, case 2, large}
+				\State $\append(P, s); s \gets [v]; i \gets i + 1$ \Comment{Declare permanent}
+			\ElsIf{$|t| = 0$} \Comment{Heavy, permanent, case 2, small}
+				\If{$\childFirst(v) \ne u \booland \childLast(v) \ne u$}
+					\State $r \gets \childPrev(u)$ \Comment{Mark prev for potential splitting}
+				\EndIf
+			\EndIf
+			\If{$|t| = 0 \booland |s| > 1 \booland h \ge 2$} \Comment{Permanent, non-empty $s$, case 3}
+				\State $\append(P, s); s \gets [v]$  \Comment{Declare permanent, reset}
+			\ElsIf{$|t| \ne 0$} \Comment{Temporary}
+				\State $\concatenate(s, t)$ \Comment{Merge $t$ into $s$}
+				\If{$|s| \ge B$} \Comment{Regular sized}
+					\State $\append(P, s); s \gets [v]; i \gets i + 1$ \Comment{Declare permanent}
 				\EndIf
 			\EndIf
 		\EndFor
-		\State
+		\Statex
 		
 		\If{$|s| = 1$}
-			\State $s \gets \O$ \Comment{Reset before returning}
-		\ElsIf{$i \ge 1 \boolor h > 1$} \Comment{At least one regular sized or case 3}
-			\State $P \gets P \cup \{s \cup t\}; s \gets \O$ \Comment{Declare permanent}
+			\State $s \gets []$ \Comment{Reset before returning}
+		\ElsIf{$i \ge 1 \boolor h \ge 2$} \Comment{At least one regular sized or case 3}
+			\State $\append(P, s); s \gets []$ \Comment{Declare permanent}
 		\EndIf
-		\If{$h = degree(v) \booland h > 1$} \Comment{All are heavy, case 3}
-			\State $P \gets P \cup \{v\}$ \Comment{Declare $v$ as permanent}
+		\If{$h = \degree(v) \booland h \ge 2$} \Comment{All are heavy, case 3}
+			\State $\append(P, [v])$ \Comment{Declare $v$ as permanent}
 		\EndIf
 		
-		\State \Return{$P, s$}
+		\State \Return{$P, s, r$}
 	\EndIf
 \EndFunction
 \end{algorithmic}
+\end{algorithm}
 
 \subsection{The Structure}
 
 We run the decomposition algorithm twice; the first time with $B = \log^c n$ for $c \ge 2$ which will be specified later.
-The second time we decompose the components into small components with parameter $b = \frac{n}{8}$.
+The second time we decompose the components into small components with parameter $b = \frac{\log n}{8}$.
 The components form connected subtrees in the tree, which we call mini-trees; similarly we call the subtrees in small components micro-trees.
 
 There are three different connections between mini-trees (and similarly between micro-trees):
 \begin{enumerate}
-	\item two mini-trees share their root vertex;
-	\item a parent of a root of a mini-tree is a root of a different mini-tree;
-	\item a parent of a root of a mini-tree (bottom) is a non-root vertex in a different mini-tree (top);
+	\item Two mini-trees $u, v$ share their root vertex.
+	The common root vertex can be shared among multiple mini-trees.
+	$$\roott(u) = \roott(v)$$
+
+	\item A parent of a root of a mini-tree $u$ is a root of a different mini-tree $v$.
+	Either of the roots can be shared with other mini-trees.
+	$$\parent(\roott(u)) = \roott(v)$$
+
+	\item a parent of a root of a mini-tree $u$ (bottom) is a non-root vertex in a different mini-tree $v$ (top).
+	If this type of connection appears more than once in a mini-tree, then all bottom components share a common root.
+	$$\parent(\roott(u)) \in v \booland \parent(\roott(u)) \ne \roott(v)$$
 \end{enumerate}
 
-We define a set of terms referring to root structures, which we use to refer to them concisely.
+We define a set of terms for root related structures, which we use to refer to them without ambiguities.
 A \emph{mini-tree root} is the root of a mini-tree.
 A \emph{root mini-tree} is any mini-tree which contains the mini-tree root.
-Similarly we define the terms for micro-trees.
+Similarly we define the terms for micro-trees where \emph{root micro-tree} refers to a micro-tree which contains a mini-tree root.
 We also use negations, for example ``a micro-tree root of a non-root mini-tree''.
 
+\subsubsection{Vertex Naming}
+
 We order the mini-trees based on their pre-order number in the original tree:
-$$p, q: root(p) \le root(q) \booland child(root(p)) < child(root(q))$$
+$$ p, q: \roott(p) \le \roott(q) \booland \childFirst(\roott(p)) < \childFirst(\roott(q))$$
 Each mini-tree is then assigned number $\tau_1$ based on this order.
-Similarly we assign a numbers $\tau_2$ to each micro-tree in a mini-tree $\tau_1$ and name it $(\tau_1, \tau_2)$.
-We continue in the same way with individual vertices; they are given a name $(\tau_1, \tau_2, \tau_3)$.
+The first mini-tree (it contains the tree root) is assigned the number $0$.
+Similarly we assign a numbers $\tau_2$ to each micro-tree in a mini-tree $\tau_1$ and name the micro-tree $(\tau_1, \tau_2)$.
+We continue with individual vertices in the same way; they are given a name $(\tau_1, \tau_2, \tau_3)$.
 
 The size of $\tau_1$ is $O(\log n)$; the sizes of $\tau_2$ and $\tau_3$ are $O(\log \log n)$.
-A vertex can get assigned multiple names when it is a common root of several micro-trees, which could be in different mini-trees.
-A \emph{canonical name} of a mini-tree, micro-tree, or a vertex is the lexicographically smallest one.
-All operations on the tree use (take and return) the canonical names of a vertices; non-canonical and non-full names are used only for internal purposes of the structure.
+A vertex can be assigned multiple names when it is a common root of several micro-trees, which could even be in different mini-trees.
+A \emph{canonical name} of a mini-tree, a micro-tree, or a vertex is the lexicographically smallest one.
+The interface of all operations on the tree assumes that all names of vertices are canonical; non-canonical and partial names are used only for internal purposes of the data structure.
 
-In order to handle the case (3), we alter the process of decomposition of the tree.
-After the mini-trees are identified by the decomposition algorithm, we subdivide the edge making the connection in the case (3) by introducing a \emph{dummy vertex}, to which we refer as mini-tree dummy vertex.
-This new vertex is then added to the top mini-tree, which changes its size.
-As we add at most one vertex per mini-tree, the upper bound increases only to $2 B - 1$.
-Then we follow with the second level decomposition and again introduce the dummy vertices, to which we refer as micro-tree dummy vertices.
+In order to handle the case (3) connection, we alter the process of decomposition of the tree.
+After the mini-trees are identified by the decomposition algorithm, we subdivide each edge realizing the connection of type (3) by introducing a \emph{dummy vertex}, to which we refer as mini-tree dummy vertex.
+This new vertex is then added to the top mini-tree, which increases its upper bound by one to $2 B - 1$.
+Then we follow with the second level of the decomposition (mini-trees into micro-trees) and again introduce dummy vertices, to which we refer as micro-tree dummy vertices.
 
 The total number of dummy vertices introduced is $O\left(\frac{n}{B} + \frac{n}{b}\right) = O\left(\frac{n}{\log n}\right)$.
 The dummy vertex gets its name as if it was a normal vertex in the top mini-tree or micro-tree.
-The canonical name of a dummy vertex is the canonical name of the root to which it connects the top mini-tree or micro-tree.
+The canonical name of a dummy vertex is the canonical name of the vertex to which it is connected in the bottom mini-tree or micro-tree, which is its root.
 The depth of a dummy vertex in a mini-tree or a micro-tree is at least $2$ because it has a parent which is not a root.
 
-We call \emph{primary} the mini-tree $\tau_1$ and the micro-tree $(\tau_1, \tau_2)$ which contain a root with a canonical name $(\tau_1, \tau_2, 0)$.
+\bigbreak
+
+We call \emph{primary} the mini-tree $\tau_1$ and the micro-tree $(\tau_1, \tau_2)$ which contains a root with a canonical name $(\tau_1, \tau_2, 0)$.
 We also call primary the micro-tree $(\tau_1, 0, 0)$ so that every micro-tree has its primary micro-tree within the same mini-tree.
 A root micro-tree can have two primary micro-trees: one within the same mini-tree, the other one in its primary mini-tree.
-In the latter case we add the phrase ``in the primary mini-tree''.
+In the latter case we use the phrase ``in the primary mini-tree''.
 
-Sometime it is crucial to account every vertex once; we do so by introducing a relation \emph{to belong to}.
+The same way we numbered mini-trees we number primary mini-trees; we assign them $\sigma_1$ names.
+We do the same for micro-trees with $\sigma_2$ names.
+These names are only a technicality which is used to index structures which are stored in the tree structure instead of each primary mini-tree.
+
+Sometime it is crucial to account every vertex of the original tree once; we do so by introducing a relation \emph{to belong to}.
 On a mini-tree level a non-root vertex belongs to its mini-tree; a mini-tree root belongs to the primary mini-tree.
 On a micro-tree level a non-root vertex belongs to its micro-tree; a root which belongs to this mini-tree belongs to the primary micro-tree.
-Each vertex of the tree belongs to exactly one mini-tree and one micro-tree.
+A dummy vertex belongs nowhere.
+Each vertex of the original tree belongs to exactly one mini-tree and one micro-tree.
 The canonical name encodes the mini-tree and micro-tree to which a vertex belongs.
 
-A vertex in a mini-tree or a micro-tree is called \emph{first} if is belongs to the mini-tree or micro-tree and has the smallest name.
+A vertex in a mini-tree or a micro-tree is called the \emph{first} if is belongs to the mini-tree or micro-tree and has the smallest name.
 We can find it by asking if the root belongs to the mini-tree or the micro-tree; if not, we set $\tau_3 = 1$.
-Note that although there can be a micro-tree having a single vertex, the vertex is never shared with other micro-trees and therefore it belongs to it.
-
-\subsubsection{Compressed Array}
-
-We will often define an array $A$ which consists of $\tau_1$ (or $\tau_2$) names of a set of vertices in some particular order.
-We call a consecutive subsequence of the same names a \emph{run}.
-We compress this array by introducing three structures:
-\begin{itemize}
-	\item $A\_names$ -- an array of names like the the original $A$; all runs are replaced by a single value;
-	\item $A\_prefix$ -- a prefix sum structure of numbers of occurrences of names in runs in the array $A$;
-	\item $A\_run$ -- an array of numbers of how many times there was a run with such name before;
-	\item $A\_before$ -- an array of numbers of how many time the same there was the names in previous runs.
-\end{itemize}
-
-Both arrays $A\_run$ and $A\_before$ contains the same number of elements as $A\_names$; size of their elements is also bounded by the size of element of $A\_names$.
-Storing the information takes asymptotically less or the same space.
-
-The composed operations available to this compressed array are:
-\begin{itemize}
-	\item querying a value of the array:
-		$$A[i] = A\_names[prefix\_geq(A\_prefix, i)]$$
-	\item finding the upper and lower borders of the run containing $i$: 
-	\begin{align*}
-		lower(i) &= prefix\_sum(A\_prefix, prefix\_geq(A\_prefix, i) - 1) \\
-		upper(i) &= prefix\_sum(A\_prefix, prefix\_geq(A\_prefix, i))
-	\end{align*} 
-	\item finding the current number of repetitions of the run containing $i$:
-	$$ run(i) = A\_run[prefix\_geq(A\_prefix, i)] $$
-	\item finding how many $A[i]$ there were in $A$ before the position $i$:
-	$$ before(i) = A\_before[prefix\_geq(A\_prefix, i)] + i - lower(i) $$
-	\item finding the length of the array if it is not stored explicitly:
-	$$ length() = prefix\_sum(A\_prefix, \infty)$$
-\end{itemize}
-
-We use this compressed array in two different settings:
-\begin{itemize}
-	\item A single array $A$ containing $a$ elements of size $s$ in $r$ runs.
-	Then the size of $A\_names$ is $r s$ bits.
-	The prefix structure can be stored using $\log {a \choose r} + o(r) + O(\log \log a) = O(r \log a)$ bits.
-	
-	Specifically, if we store $\tau_1$ names of all vertices of the tree requiring $O(1)$ runs per name, then the space is $O(\frac{n}{B} \log n) = o(n)$ bits.
-	Equivalently for $\tau_2$ names of vertices of a given mini-tree it is $O(\frac{B}{b} \log b) = o(B)$ bits.
-	\item A collection of $r$ arrays $A_i$, each containing up to $a$ elements of size $s$, with $r$ runs in total in all arrays of the collection.
-	Then the arrays $A\_names$ require space $r s$ bits.
-	The size of the $A\_prefix$ structures can be bounded using Jensen's inequality to $O(r \log a)$ bits.
-	
-	If each $\tau_1$ name occurs in at most one array in a single run, then partitioning all vertices of the tree requires $O(\frac{n}{B} \log n) = o(n)$ bits.
-	Storing $\tau_2$ names of vertices in a given mini-tree under the same conditions gives the space $O(\frac{B}{b} \log B) = o(B)$ bits.
-\end{itemize}
-If $A$ contains all vertices of the tree (or a mini-tree) with at most $O(1)$ runs per name, 
-
-The other use concerns multiple compressed arrays, with each vertex being present in $O(1)$ of them (it can even not appear at all), however every run of a name occurs at most once per compressed array.
-For the whole tree with a compressed array per mini-tree, the arrays $A\_name$ add up to $O(\frac{n}{B})$ elements.
-Jensen's inequality for the $A\_prefix$ gives us an upper bound of $O(\frac{n}{B} \log n) = o(n)$ bits in total.
-The additional terms of the index dictionary $\sum_i (o(r_i) + O(\log \log n)) = O(\frac{n}{B} + \frac{n}{B} \log \log n) = o(n)$ also cause no problem.
-
-Multiple compressed arrays on a micro-tree level, in the same settings provide the arrays $A\_name$ to have $O(\frac{B}{b})$ elements in total.
-The $A\_prefix$ structures are bounded together by $O(\frac{B}{b} \log B) = o(B)$ with the additional terms $O(\frac{B}{b} + \frac{B}{b} \log \log B) = o(B)$.
+Note that although there can exist a micro-tree having a single vertex, which is its root, it is never shared with other micro-trees and therefore it belongs to it.
+The term the \emph{first vertex} is therefore well defined.
 
 \subsubsection{Representation}
 
-For each micro-tree we store several pieces of information:
-\begin{enumerate}
-	\item Succinct representation of the micro-tree together with its size.
-	\begin{itemize}
-		\item $size$ -- size $k$ of the micro-tree;
-		\item $rep$ -- its succinct (or even implicit) representation of size $2k$ bits.
-	\end{itemize}
-	
-	\item Identity of the micro-tree:
-	\begin{itemize}
-		\item $\tau_2$ -- its $\tau_2$ name; if the name equals to $0$, it is a root micro-tree;
-		\item $offset$ -- the offset from the start of the representation of the mini-tree in bits.
-		While $\tau_1$ name is too big, the offset is at most $B + o(B)$, which results in $\log \log n$ bits.
-		We subtract the offset from the beginning of the micro-tree structure to get to the mini-tree structure.
-		\item $primary_2$ -- $\tau_2$ name of the primary micro-tree; it can be the micro-tree itself.
-	\end{itemize}
-
-	\item The parent and dummy vertex handling:
-	\begin{itemize}
-		\item $parent_2$ -- $\tau_2$ name of the micro-tree containing its parent.
-		The parent could in theory be stored only in the primary micro-tree, however, it is small enough to keep a copy in all micro-trees.
-		\item $type3$ -- a single bit denoting whether it is connected to its parent by a type (3) connection
-		\item $dummy_2$ -- $\tau_3$ name of the dummy node which represents connection to a different micro-tree.
-		The lack of it means that the micro-tree does not have a dummy vertex.
-		\item $bottom_2$ -- $\tau_2$ name of the micro-tree to which the dummy vertex leads.
-		The lack of the name is interpreted as that it leads to a different mini-tree, which is handled on the mini-tree level.
-		In such case it is the dummy vertex introduced after the first run of the decomposition algorithm.
-		$bottom$ is always the primary micro-tree.
-	\end{itemize}
-	
-	\item Handling children:
-	\begin{itemize}
-		\item $C_2$ -- a compressed array of $\tau_2$ names of children of the root restricted to the current mini-tree.
-		It is stored only in the primary micro-tree or micro-tree with $\tau_2 = 0$.
-		\item $C_2\_index$ -- the index of $\tau_2$ within the array $C_2\_names$ stored in the primary micro-tree;
-		\item $C_2\_parent$ -- the index of $\tau_2$ within the array $C_2\_names$ stored in the parent's micro-tree.
-		This index is null if $type3 = 1$ because in such case the micro-tree root is not a child of parent's micro-tree root.
-	\end{itemize}
-\end{enumerate}
-
-The size in (1) and all fields in (2) and (3) and the indices in (4) occupy only $O(\log \log n)$ bits per micro-tree.
-We have already analyzed the $C_2$ structures, which yields $o(B)$ bits per mini-tree.
-All succinct representations of micro-trees contain all $n$ vertices of the tree together with $o(n)$ dummy vertices and $o(n)$ shared root vertices.
-The representations requires $2n + o(n)$ bits and are the dominant part of the structure.
-
-Each micro-tree contains $k$ vertices, which has an upper bound of $ k \le 2b - 1 < \frac{\log n}{4}$ vertices.
-We can represent this subtree succinctly using $2k$ bits.
-The representation takes less than $\frac{n}{2}$ bits, which is small enough to use it as an index to a precomputed look-up table.
-All our look-up tables require space $o(n)$.
-
-\bigskip
-
-We represent each mini-tree with a structure containing the following information:
-\begin{enumerate}
-	\item Identity of the mini-tree:
-	\begin{itemize}
-		\item $\tau_1$ -- its $\tau_1$ name;
-		\item $micro\_trees$ -- an array of offsets of all its micro-trees.
-		\item $primary_1$ -- $\tau_1$ name of the primary mini-tree; it can be the mini-tree itself.
-	\end{itemize}
-
-	\item The parent and the dummy vertex handling:
-	\begin{itemize}
-		\item $parent_1$ -- $\tau_1$ name of the mini-tree which contains the parent of the root of this mini-tree.
-		\item $dummy_1$ -- $\tau_2$ name of the micro-tree which contains the dummy vertex which was introduced for edges between mini-trees.
-		It can be null, if no dummy vertex exist in the mini-tree.
-		\item $bottom_1$ -- $\tau_1$ name of the mini-tree where the dummy vertex leads.
-	\end{itemize}
-	
-	\item The children of the mini-tree root:
-	\begin{itemize}
-		\item $C_1$ -- a compressed array of $\tau_1$ names of children of the mini-tree root.
-		It is stored only in the primary mini-tree.
-		\item $C_1\_index$ -- the index of $\tau_1$ within the array $C_1\_names$ stored in the primary mini-tree;
-		\item $C_1\_parent$ -- the index of $\tau_1$ within the array $C_1\_names$ stored in the parent's mini-tree.
-		This index is null if $type3 = 1$ because in such case the mini-tree root is not a child of parent's mini-tree root.
-	\end{itemize}
-	
-	\item Micro-trees stored consecutively in memory.
-\end{enumerate}
-
-The names in (1) and (2) and the indices in (3) require $O(\log n)$ bits per mini-tree.
-We have already analyzed the $C_1$ structures, which yields $o(n)$ bits overall.
-The array of offsets in (1) has size $O\left(\frac{B}{b} \log (B + o(B))\right) = o(B)$ bits per mini-tree.
-
-\bigskip
-
-At the global level, we only need to a very simple structure:
+We use compressed arrays in two different settings throughout the whole data structure:
 \begin{itemize}
-	\item $mini\_trees$ -- an array of offsets of all its mini-trees.
-	\item Mini-trees stored consecutively in memory.
+	\item A single compressed array for all vertices in a mini-tree or a micro-tree with a bounded number of runs.
+	
+	Specifically, if we store $\tau_1$ names of all vertices of the tree requiring $O(1)$ runs per name, then the space is $O(\frac{n}{B} \log n) + o(n) = o(n)$ bits.
+	Similarly for $\tau_2$ names of vertices of a given mini-tree, the space complexity is $O(\frac{B}{b} \log B) + o(B) = o(B)$ bits.
+	
+	\item A collection of $O(r)$ compressed arrays $A_i$, containing $a$ elements of size $s$ in $r$ runs in total.
+	
+	If each $\tau_1$ name occurs in $O(1)$ arrays in $O(1)$ runs, and there is at most one record for each vertex of the tree, then the space complexity is the same as in the previous case.
+	The same applies for $\tau_2$ names within a given mini-tree.
 \end{itemize}
 
-The array of offsets has size of $O(\frac{n}{B} \log (n + o(n))) = o(n)$ bits.
+For each micro-tree we store several pieces of information:
+\begin{description}
+	\item[Identity of the micro-tree]
+	Information about the position of the micro-tree withing the mini-tree.
+	\begin{description}
+		\item[$\tau_2$]
+		Its $\tau_2$ name; if the name equals to $0$, it is a root micro-tree.
+		
+		\item[$\offset$]
+		The offset of this structure from the beginning of the structure of the mini-tree in bits.
+		While $\tau_1$ name is too big, the offset is at most $B + o(B)$, which results in $\log \log n$ bits.
+		In order to move to the mini-tree structure, we subtract the $\offset$ from the position where the micro-tree structure begins.
+		
+		\item[$\primaryII$]
+		The $\tau_2$ name of the primary micro-tree; it can be the micro-tree itself.
+		
+		\item[$\sigma_2$]
+		The $\sigma_2$ name of the primary micro-tree.
+	\end{description}
+
+	\item[Parent and the dummy vertex]
+	Each micro-tree can have a parent micro-tree and can contain a dummy vertex which leads to another mini-tree or micro-tree.
+	\begin{description}
+		\item[$\parentII$]
+		The $\tau_2$ name of the primary micro-tree which contains its parent.
+		The parent could in theory be stored only in the structure primary micro-tree, however, it is small enough to keep a copy in all of them.
+		
+		\item[$\typeIII$]
+		A boolean denoting whether it is connected to its parent micro-tree by a type (3) connection.
+		
+		\item[$\dummyII$]
+		The $\tau_3$ name of the dummy vertex which represents the type (3) connection to a different micro-tree.
+		The value $-1$ means that the micro-tree does not have a dummy vertex.
+		
+		\item[$\bottomII$]
+		The $\tau_2$ name of the primary micro-tree to which the dummy vertex leads.
+		If $\dummyII \ne -1 \booland \bottomII = -1$, then the dummy vertex leads to a different mini-tree, which is handled by the mini-tree structure.
+	\end{description}
+	
+	\item[Children]
+	Since the structure storing children is a collection of compressed arrays, it is stored on a mini-tree level.
+	Here we store only fields which are useful for determining \childRank.
+	\begin{description}
+		\item[$\childrenIndexII$]
+		The index of $\tau_2$ within the compressed array of the children for the primary micro-tree.
+		
+		\item[$\childrenParentII$]
+		The index of $\tau_2$ within the compressed array of the children for the parent's micro-tree.
+		This index is $-1$ if $\typeIII = \true$ because in such case the micro-tree root is not a child of parent's micro-tree root.
+	\end{description}
+	
+	\item[Representation]
+	All look-up tables will take the following two fields as their arguments.
+	\begin{description}
+		\item[$\size$]
+		The number of vertices $k$ of the micro-tree; this includes the possibly shared root and the dummy vertex.
+		
+		\item[$\rep$]
+		The succinct (or even implicit) representation of the micro-tree which uses $2k$ bits.
+	\end{description}
+\end{description}
+
+All fields except for $\rep$ require only $O(\log \log n)$ bits per micro-tree.
+The succinct representations $\rep$ of all micro-trees together contain all $n$ vertices of the tree together with $o(n)$ dummy vertices and $o(n)$ shared root vertices.
+The representations require $2n + o(n)$ bits in total and are the dominant part of the structure.
+
+Each micro-tree contains $k$ vertices, with an upper bound of $ k \le 2b - 1 < \frac{\log n}{4}$ vertices.
+We can represent this subtree succinctly using $2k < \frac{\log n}{2}$ bits, which is small enough to be used as an index to a look-up table.
+All our look-up tables will require space $o(n)$.
+
+\bigbreak
+
+We structure for a mini-tree is similar to the micro-tree structure.
+The only difference is that it contains the collection of compressed arrays for roots of micro-trees.
+\begin{description}
+	\item[Identity of the mini-tree]
+	\begin{description}
+		\item[]
+		
+		\item[$\tau_1$]
+		Its $\tau_1$ name.
+
+		\item[$\primaryI$]
+		The $\tau_1$ name of the primary mini-tree; it can be the mini-tree itself.
+		
+		\item[$\sigma_1$]
+		The $\sigma_1$ name of the primary mini-tree.
+	\end{description}
+
+	\item[Parent and the dummy vertex]
+	\begin{description}
+		\item[]
+
+		\item[$\parentI$]
+		The $\tau_1$ name of the mini-tree which contains the parent of the root of this mini-tree.
+		
+		\item[$\dummyI$]
+		The $\tau_2$ name of the micro-tree which contains the dummy vertex which was introduced for edges between mini-trees.
+		If there is no mini-tree dummy vertex, then it is $-1$.
+		
+		\item[$\bottomI$]
+		The $\tau_1$ name of the mini-tree to which the micro-tree dummy vertex leads, or $-1$.
+	\end{description}
+	
+	\item[Children]
+	\begin{description}
+		\item[]
+
+		\item[$\childrenII$]
+		A collection of compressed arrays containing one array per a primary micro-tree.
+		Each array contains $\tau_2$ names of children of the micro-tree root restricted to the current mini-tree.
+		Individual parts of the collection are accessed by $\sigma_2$ names of the micro-trees.
+		
+		\item[$\childrenIndexI$]
+		The index of $\tau_1$ within the compressed array of the children for the primary mini-tree.
+		
+		\item[$\childrenParentI$]
+		The index of $\tau_2$ within the compressed array of the children for the parent's mini-tree.
+		This index is $-1$ if $\typeIII = \true$.
+	\end{description}
+	
+	\item[Representation]
+	\begin{description}
+		\item[]
+	
+		\item[$\microTreeOffsets$]
+		A table of offsets of the micro-tree structures from lemma \ref{l:concat}
+		
+		\item[$\microTrees$]
+		The micro-tree structures stored consecutively.
+	\end{description}
+\end{description}
+
+All fields except for $\childrenII$ and the representation, require $O(\log n)$ bit of space.
+The collection of compressed arrays $\childrenII$ satisfies the property stated earlier since:
+\begin{enuminline}
+	\item each vertex (and each micro-tree) is a child of at most one root;
+	\item all occurrences of $\tau_2$ form a single run which follows from our modification of the decomposition algorithm.
+\end{enuminline}
+
+\bigbreak
+
+At the global level, we only need a very simple structure:
+\begin{description}
+	\item[Children]
+	\begin{description}
+		\item[]
+		\item[$\childrenI$]
+		The same structure as $\childrenII$ in mini-trees: each array contains $\tau_1$ names of children of a mini-tree root.
+	\end{description}
+
+	\item[Representation]
+	\begin{description}
+		\item[]
+	
+		\item[$\miniTreeOffsets$]
+		A table of offsets of the mini-tree structures from lemma \ref{l:concat}
+		
+		\item[$\microTrees$]
+		The mini-tree structures stored consecutively.
+	\end{description}
+\end{description}
 
 \subsection{Basic Navigation}
 
@@ -1220,6 +1355,7 @@ We also assume that the global fields and the fields of the mini-tree and immedi
 We define three helper functions which traverse the edge of type (3) and canonize the name of a vertex.
 As they are not part of the interface, the $i$ can be a non-canonical name.
 
+\begin{algorithm}
 \begin{algorithmic}
 \Function{dummy\_up}{$i$}
 	\If{$i.\tau_3 = 0 \booland i.type3$}
@@ -1233,7 +1369,9 @@ As they are not part of the interface, the $i$ can be a non-canonical name.
 	\EndIf
 \EndFunction
 \end{algorithmic}
+\end{algorithm}
 
+\begin{algorithm}
 \begin{algorithmic}
 \Function{dummy\_down}{$i$}
 	\If{$i.\tau_3 = i.dummy_2$}
@@ -1247,7 +1385,9 @@ As they are not part of the interface, the $i$ can be a non-canonical name.
 	\EndIf
 \EndFunction
 \end{algorithmic}
+\end{algorithm}
 
+\begin{algorithm}
 \begin{algorithmic}
 \Function{canonize}{$i$}
 	\If{$i.\tau_3 \ne 0$}
@@ -1262,32 +1402,41 @@ As they are not part of the interface, the $i$ can be a non-canonical name.
 	\EndIf
 \EndFunction
 \end{algorithmic}
+\end{algorithm}
 
 We add four more functions which navigate to special vertices in a micro-tree or a mini-tree.
 
+\begin{algorithm}
 \begin{algorithmic}
 \Function{root\_1}{$i$}
 	\State \Return{$canonize(i.\tau_1, 0, 0)$}
 \EndFunction
 \end{algorithmic}
+\end{algorithm}
 
+\begin{algorithm}
 \begin{algorithmic}
 \Function{root\_2}{$i$}
 	\State \Return{$canonize(i.\tau_1, i.\tau_2, 0)$}
 \EndFunction
 \end{algorithmic}
+\end{algorithm}
 
+\begin{algorithm}
 \begin{algorithmic}
 \Function{dummy\_1}{$i$} \Comment{Assuming that a mini-tree dummy vertex exists}
 	\State \Return{$(i.\tau_1, i.dummy_1, i.dummy_1.dummy_2)$}
 \EndFunction
 \end{algorithmic}
+\end{algorithm}
 
+\begin{algorithm}
 \begin{algorithmic}
 \Function{dummy\_2}{$i$} \Comment{Assuming that a micro-tree dummy vertex exists}
 	\State \Return{$(i.\tau_1, i.\tau_2, i.dummy_2)$}
 \EndFunction
 \end{algorithmic}
+\end{algorithm}
 
 For the function $is\_root$ and $is\_leaf$, $i$ is a canonical name, which we use a lot:
 If $i$ is a root of the tree, it is part of the primary root mini-tree, which in pre-order numbering has the number $0$.
@@ -1296,17 +1445,21 @@ We apply the same reasoning on micro-micro trees inside the mini-tree and to the
 Similarly, because of canonicity, $i$ cannot encode the name of a dummy vertex inside the top micro-tree.
 The $degree$ table use in $is\_leaf$ can therefore be oblivious of existence of dummy vertices.
 
+\begin{algorithm}
 \begin{algorithmic}
 \Function{is\_root}{$i$}
 	\State \Return{$i.\tau_1 = 0 \booland i.\tau_2 = 0 \booland i.\tau_3 = 0$}
 \EndFunction
 \end{algorithmic}
+\end{algorithm}
 
+\begin{algorithm}
 \begin{algorithmic}
 \Function{is\_leaf}{$i$}
 	\State \Return{$degree[i.size, i.rep, i.\tau_3] = 0$}
 \EndFunction
 \end{algorithmic}
+\end{algorithm}
 
 We assume that there is a field $first_2$ which contains $\tau_3$ name of the first vertex; this can either be stored using a single bit or computed:
 $$first_2(i) = (i.\tau_2 = i.primary_2 \booland (i.primary_2 \ne 0 \boolor i.\tau_1 = i.primary_1)$$
@@ -1322,6 +1475,7 @@ If it is the micro-tree root ($\tau_3 = 0$) but not a mini-tree root ($\tau_2 \n
 If the vertex is a mini-tree root, but not the root of the whole tree ($\tau_2 = 0, \tau_1 \ne 0$), the answer is the root of a parent mini-tree.
 The last case is a parent of the root vertex $(0, 0, 0)$ which simply does not exist.
 
+\begin{algorithm}
 \begin{algorithmic}
 \Function{parent}{$i$}
 	\State $i \gets dummy_up(i)$
@@ -1336,11 +1490,13 @@ The last case is a parent of the root vertex $(0, 0, 0)$ which simply does not e
 	\EndIf
 \EndFunction
 \end{algorithmic}
+\end{algorithm}
 
 \subsubsection{Children}
 
 We solve the operations on children (degree, rank and select) using the compressed arrays $C_1$ and $C_2$, while handling dummy vertices.
 
+\begin{algorithm}
 \begin{algorithmic}
 \Function{degree}{$i$}
 	\If{$i.\tau_3 \ne 0$}
@@ -1352,10 +1508,12 @@ We solve the operations on children (degree, rank and select) using the compress
 	\EndIf
 \EndFunction
 \end{algorithmic}
+\end{algorithm}
 
 If parent of $i$ is non-root, a look-up table solves that case.
 Otherwise we identify where the current micro-tree is located in parent's $C_2$ sequence (and $C_1$ for a mini-tree root) following by finding the $child_rank$ within the micro-tree.
 
+\begin{algorithm}
 \begin{algorithmic}
 \Function{child\_rank}{$i$}
 	\State $p \gets parent(i)$
@@ -1389,9 +1547,11 @@ Otherwise we identify where the current micro-tree is located in parent's $C_2$ 
 	\EndIf
 \EndFunction
 \end{algorithmic}
+\end{algorithm}
 
 For selecting the child, we start with the compressed arrays to find in which micro-tree is the child present and we finish the operation with a table look-up.
 
+\begin{algorithm}
 \begin{algorithmic}
 \Function{child\_select}{$i, n$}
 	\If{$i.\tau_3 \ne 0$}
@@ -1422,6 +1582,7 @@ For selecting the child, we start with the compressed arrays to find in which mi
 	\EndIf
 \EndFunction
 \end{algorithmic}
+\end{algorithm}
 
 \bigskip
 
@@ -1448,6 +1609,7 @@ In order to support more operations we need to augment the structure with more i
 
 The depth operation is straight forward; it adds the micro-tree-local depth of the vertex, mini-tree-local depth of a micro-tree root and global depth of a mini-tree root.
 
+\begin{algorithm}
 \begin{algorithmic}
 \Function{depth}{$i$}
 	\If{$i.\tau_3 \ne 0$}
@@ -1459,6 +1621,7 @@ The depth operation is straight forward; it adds the micro-tree-local depth of t
 	\EndIf
 \EndFunction
 \end{algorithmic}
+\end{algorithm}
 
 The operation returning the deepest vertex is used also for computing height of a vertex.
 If $i$ is not a root of a micro-tree, we find the deepest vertex using a look-up table.
@@ -1468,6 +1631,7 @@ We will never look for a deepest vertex for a non-root argument.
 If $i$ is a root of a micro-tree but not of a mini-tree, we answer with $deepest_2$ if it is not a dummy vertex, otherwise we follow the connection to a mini-tree root.
 If $i$ is a root of a mini-tree, we answer with immediately with $deepest_1$.
 
+\begin{algorithm}
 \begin{algorithmic}
 \Function{deepest\_vertex}{$i$}
 	\If{$i.\tau_3 \ne 0$}
@@ -1494,19 +1658,23 @@ If $i$ is a root of a mini-tree, we answer with immediately with $deepest_1$.
 	\EndIf
 \EndFunction
 \end{algorithmic}
+\end{algorithm}
 
+\begin{algorithm}
 \begin{algorithmic}
 \Function{height}{$i$}
 	\State $d \gets deepest\_vertex(i)$
 	\State \Return{$depth(d) - depth(i)$}
 \EndFunction
 \end{algorithmic}
+\end{algorithm}
 
 The operation $subtree\_size$ works similarly to the previous ones.
 The answer is known for a mini-tree root.
 In case of a micro-tree root we know the subtree size within the mini-tree; we must add the subtree size of the mini-tree which can be connected to a dummy vertex in the subtree, for which we use the flag $dummy\_ancestor$.
 Finally, in case of a non-root, we use the look-up table plus we add the size of anything connected by a dummy vertex, and we subtract $1$ for the dummy vertex.
 
+\begin{algorithm}
 \begin{algorithmic}
 \Function{subtree\_size}{$i$}
 	\If{$i.\tau_3 \ne 0$}
@@ -1527,6 +1695,7 @@ Finally, in case of a non-root, we use the look-up table plus we add the size of
 	\EndIf
 \EndFunction
 \end{algorithmic}
+\end{algorithm}
 
 \subsection{Vertex and Leaf Ranks and Selects}
 
@@ -1542,6 +1711,7 @@ In the rank algorithm, when we count the rank of a root of either mini-tree or a
 In case of a rank of a micro-tree root but not a mini-tree root, we need to add the count of type (3) connected mini-trees if it is before the current micro-tree.
 If we count the rank of a non-root vertex, we determine its offset from the first vertex and then add the offset of the vertex within the micro-tree compensating possibly for a non-root first vertex and a dummy vertex.
 
+\begin{algorithm}
 \begin{algorithmic}
 \Function{pre\_rank}{$i$}
 	\If{$i.\tau_3 \ne 0$}
@@ -1572,6 +1742,7 @@ If we count the rank of a non-root vertex, we determine its offset from the firs
 	\EndIf
 \EndFunction
 \end{algorithmic}
+\end{algorithm}
 
 We store a compressed array of $\tau_1$ names of all vertices in the tree in pre-order; this is $o(n)$ bits as we have shown before.
 Similarly we have a compressed array for each mini-tree containing $\tau_2$ names of vertices belonging to the mini-tree in pre-order.
@@ -1581,6 +1752,7 @@ We use similar technique as for $child\_select$, however this time we deal with 
 We find the correct mini-tree and correct micro-tree, we can ignore type (3) connections as they were taken care of implicitly by the compressed arrays.
 We use a look-up table in the micro-tree with correction for the non-root first vertex and the dummy vertex.
 
+\begin{algorithm}
 \begin{algorithmic}
 \Function{pre\_select}{$n$}
 	\State $d_1 \gets pre_1[n - 1]$ \Comment{Name of the mini-tree}
@@ -1594,16 +1766,19 @@ We use a look-up table in the micro-tree with correction for the non-root first 
 	\State \Return{$(d_1, d_2, pre\_select[d_2.size, d_2.rep, r'])$}
 \EndFunction
 \end{algorithmic}
+\end{algorithm}
 
 \paragraph{Ancestor Checking}
 
 We can use pre-order rank to check whether a vertex is an ancestor of another vertex.
 
+\begin{algorithm}
 \begin{algorithmic}
 \Function{is\_ancestor}{$i, j$}
 	\State \Return{$pre\_rank(i) \le pre\_rank(j) \le pre\_rank(i) + subtree\_size(i) - 1$}
 \EndFunction
 \end{algorithmic}
+\end{algorithm}
 
 \subsubsection{Post-Order Numbering}
 
@@ -1639,6 +1814,7 @@ In case of the first child, we already know its pre-order number and it leaves t
 In mini-tree roots we store the absolute sum $arss_1$; in micro-tree we store the sum $arss_2$ going up to mini-tree root except for it.
 The right siblings of mini-tree root and micro-tree root are calculated when needed instead of being part of the precomputed values.
 
+\begin{algorithm}
 \begin{algorithmic}
 \Function{DFUDS\_rank}{$i$}
 	\If{$is\_root(i)$}
@@ -1662,6 +1838,7 @@ The right siblings of mini-tree root and micro-tree root are calculated when nee
 	\EndIf
 \EndFunction
 \end{algorithmic}
+\end{algorithm}
 
 For the DFUDS\_select operation, we store a similar compressed array $DFUDS_1$ as in pre-order case: the $\tau_1$ names of the vertices of the tree in DFUDS-order.
 \begin{lemma}
@@ -1784,6 +1961,7 @@ Using the $in_1$ and $in_2$ compressed arrays, we can navigate to the correct mi
 The $n''$ then denotes in-order number of a vertex in the micro-tree, which can be easily found using a look-up table.
 No correction for the root nor dummy vertex is necessary.
 
+\begin{algorithm}
 \begin{algorithmic}
 \Function{in\_select}{$n$}
 	\State $d_1 \gets in_1[n - 1]$
@@ -1815,6 +1993,7 @@ No correction for the root nor dummy vertex is necessary.
 	\EndIf
 \EndFunction
 \end{algorithmic}
+\end{algorithm}
 
 Note that in the condition at ``Right (2) or right (1)'' the look-up table $in\_size$ comes from the implementation of the $in\_size$ operation and in this case it returns the number of in-order names assigned to all vertices of the micro-tree when it is considered independently.
 In order to check the bounds of $in\_select$ before it is processed, we store a global field $in\_size\_0$ which contains the number of in-order names used in total.
@@ -1826,17 +2005,21 @@ We support the operation $leaf\_first(i)$ which returns the first leaf in a subt
 We than support $leaf\_rank(i)$ and $leaf\_select(n)$ the same way we did with $pre\_rank(i)$ and $pre\_select(n)$.
 
 We can then restrict the leaf operations to a subtree:
+\begin{algorithm}
 \begin{algorithmic}
 \Function{leaf\_rank}{$i, j$}
 	\State \Return{$leaf\_rank(j) - leaf\_rank(leaf\_first(i)) + 1$}
 \EndFunction
 \end{algorithmic}
+\end{algorithm}
 
+\begin{algorithm}
 \begin{algorithmic}
 \Function{leaf\_select}{$i, n$}
 	\State \Return{$leaf\_select(n + leaf\_rank(leaf\_first(i)) - 1)$}
 \EndFunction
 \end{algorithmic}
+\end{algorithm}
 
 \subsection{Ancestral Operations}
 
@@ -1876,6 +2059,7 @@ If the vertices are in unaffiliated mini-trees or micro-trees, the reduction to 
 We need to check if the path between them uses type (3) connection in a subtree of either of them, which we can do by another LCA query on the root of the type (3) connected mini-tree or micro-tree.
 Note that in case of micro-trees, we are only interested in type (3) connection to a micro-tree within the same mini-tree.
 
+\begin{algorithm}
 \begin{algorithmic}
 \Function{LCA}{$i_1, i_2$}
 	\If{$i_1.\tau_1 = i_2.\tau_1$} \Comment{The same mini-tree}
@@ -1927,6 +2111,7 @@ Note that in case of micro-trees, we are only interested in type (3) connection 
 	\EndIf
 \EndFunction
 \end{algorithmic}
+\end{algorithm}
 
 \subsubsection{Level Ancestor}
 
@@ -1945,6 +2130,7 @@ We also add an identifier to distinguish which tree we are searching through.
 
 We first identify the correct mini-tree by using $anc\_search$ on $T_1$, then we identify the correct micro-tree by using $anc\_search$ on $T_2$, and finish the operation with a look-up table in a micro-tree.
 
+\begin{algorithm}
 \begin{algorithmic}
 \Function{level\_ancestor}{$i, d$}
 	\State $v \gets depth(i) - d$
@@ -1960,6 +2146,7 @@ We first identify the correct mini-tree by using $anc\_search$ on $T_1$, then we
 	\State \Return{$canonize(i.\tau_1, i.\tau_2, level\_ancestor[i.size, i.rep, i.\tau_3, depth(i) - v])$}
 \EndFunction
 \end{algorithmic}
+\end{algorithm}
 
 \subsection{Level Operations}
 
@@ -2025,6 +2212,7 @@ For that we also need to store $height_1$ of the mini-tree root, and we do the s
 We use it to find the correct micro-tree containing the level-first descendant.
 Finally, we use a look-up table to find the answer within the correct micro-tree.
 
+\begin{algorithm}
 \begin{algorithmic}
 \Function{level\_first}{$i, d$}
 	\If{$d < depth(i) \booland d > depth(i) + height(i)$}
@@ -2080,6 +2268,7 @@ Finally, we use a look-up table to find the answer within the correct micro-tree
 	\Return{$first$}
 \EndFunction
 \end{algorithmic}
+\end{algorithm}
 
 \paragraph{Level Last}
 
@@ -2142,6 +2331,7 @@ The collection of compressed arrays requires $O(\frac{n}{B} \log n) = o(n)$ bits
 We construct a similar structure $lnext_2$ for all micro-trees, storing the $\tau_2$ name of the right micro-trees.
 This requires $O(\frac{B}{b} \log B) = o(B)$ bits of memory.
 
+\begin{algorithm}
 \begin{algorithmic}
 \Function{level\_next}{$i, j$}
 	\If{$j = level\_last(i, depth(j))$}
@@ -2180,6 +2370,7 @@ This requires $O(\frac{B}{b} \log B) = o(B)$ bits of memory.
 	\EndIf
 \EndFunction
 \end{algorithmic}
+\end{algorithm}
 
 \subsection{Final Thoughts}
 
@@ -2317,6 +2508,7 @@ Each opening parenthesis in $P_D$ and $P_U$ can be paired with the one missing i
 Vertices belonging to the path are represented by closing parentheses in $P_D$ and $P_U$, one in each.
 
 We can restore the original mini-tree from this representation:
+\begin{algorithm}
 \begin{algorithmic}
 \Function{restore}{}
 	\State $v \gets null$
@@ -2334,6 +2526,7 @@ We can restore the original mini-tree from this representation:
 	\EndWhile
 \EndFunction
 \end{algorithmic}
+\end{algorithm}
 
 \subsubsection{Generation of BP and DFUDS Representations}
 
@@ -2344,6 +2537,7 @@ We can restore the original mini-tree from this representation:
 	We first formulate an algorithm which outputs the BP representation of the whole mini-tree.
 	The algorithm is based on $restore$:
 	
+	\begin{algorithm}
 	\begin{algorithmic}
 	\Function{BP\_rep\_skinny}{}
 		\State $p_D \gets 0; p_U \gets 0; t_D \gets 0; t_U \gets 0$
@@ -2367,6 +2561,7 @@ We can restore the original mini-tree from this representation:
 		\EndWhile
 	\EndFunction
 	\end{algorithmic}
+	\end{algorithm}
 	
 	For each $j$ we store the state of the algorithm: the instruction pointer and value of all local variables, which is $O(\log \log n)$ bits.
 	Using this index we can restart the course of the algorithm from any position which related to the output is either a parenthesis of a vertex in $P$ or beginning of a dangling tree.
@@ -2390,6 +2585,7 @@ We can restore the original mini-tree from this representation:
 	In case of $p'_U$ we provide $b$ bits before the offset as the algorithm only decrements it.
 	The key key of the look-up table has size $6b + 4 \frac{\log n}{8} + 9 \log \log n + c < \log n$.
 	
+	\begin{algorithm}
 	\begin{algorithmic}
 	\Function{DFUDS\_rep\_skinny}{}
 		\State $p_D \gets 0; p_U \gets 0; p'_U \gets |P_U| - 2; t_D \gets 0; t_U \gets 0$
@@ -2426,6 +2622,7 @@ We can restore the original mini-tree from this representation:
 		\EndWhile
 	\EndFunction
 	\end{algorithmic}
+	\end{algorithm}
 \end{proof}
 
 It is possible to split the algorithms into several parts which touch only some bit strings, not all 4 of them at 6 different places.
@@ -2507,6 +2704,7 @@ The algorithms also return more information:
 
 The algorithms returning a block $j$ of a BP and DFUDS representation of a mini-tree are the same:
 
+\begin{algorithm}
 \begin{algorithmic}
 \Function{substring}{j, rep}
 	\State $(path, state=(p_d, p_u, \ldots), offset) \gets index_{rep}[j]$
@@ -2530,6 +2728,7 @@ The algorithms returning a block $j$ of a BP and DFUDS representation of a mini-
 	\State \Return{$block, bits$}
 \EndFunction
 \end{algorithmic}
+\end{algorithm}
 
 It only remains to show that the number of iterations of the while loop is constant.
 We inspect the graph of transitions between paths.

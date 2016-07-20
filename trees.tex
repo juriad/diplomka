@@ -143,6 +143,7 @@ The encoding of the tree is based on BFS traversal.
 The vertices report their degrees in unary system; we call it the \emph{degree sequence}
 The representation is prefixed by \str{10}.
 
+\begin{algorithm}
 \begin{algorithmic}
 \Function{\LOUDSRepresentation}{$R$}
 	\State $Q \gets []; \enqueue(Q, R)$ \Comment{The queue is initialized with the root of the tree}
@@ -156,6 +157,7 @@ The representation is prefixed by \str{10}.
 	\EndWhile
 \EndFunction
 \end{algorithmic}
+\end{algorithm}
 
 \begin{lemma}
 	There are $n$ ones and $n+1$ zeros in the LOUDS representation of a tree with $n$ vertices.
@@ -181,23 +183,29 @@ We equip the bit string $S$ storing the representation of the tree with \rank{} 
 Because of the correspondence between ones and zeros, we can easily change between them using the following two functions.
 The extra function \toBeginning{} returns the position where the degree sequence starts.
 
+\begin{algorithm}
 \begin{algorithmic}
 \Function{\toOnes}{$S, i$}
 	\State \Return{$\select_1(S, \rank_0(S, i) - 1)$}
 \EndFunction
 \end{algorithmic}
+\end{algorithm}
 
+\begin{algorithm}
 \begin{algorithmic}
 \Function{\toZeros}{$S, i$}
 	\State \Return{$\select_0(S, \rank_1(S, i) + 1)$}
 \EndFunction
 \end{algorithmic}
+\end{algorithm}
 
+\begin{algorithm}
 \begin{algorithmic}
 \Function{\toBeginning}{$S, i$}
 	\State \Return{$\select_0(S, \rank_1(S, i)) + 1$}
 \EndFunction
 \end{algorithmic}
+\end{algorithm}
 
 The vertex \inRank{} and \inSelect{} are simply $\rank_1(S, i)$ and $\select_1(S, r)$.
 No other vertex orderings are supported.
@@ -205,47 +213,61 @@ No other vertex orderings are supported.
 The navigation operations are relatively easy.
 We also define an optimized version of the operation \childLast since we will need it later.
 
+\begin{algorithm}
 \begin{algorithmic}
 \Function{\isRoot}{$S, i$}
 	\State \Return{$i = 0$}
 \EndFunction
 \end{algorithmic}
+\end{algorithm}
 
+\begin{algorithm}
 \begin{algorithmic}
 \Function{\isLeaf}{$S, i$}
 	\State \Return{$\toZeros(S, i) = \toBeginning(S, i)$} \Comment{Degree sequence is empty}
 \EndFunction
 \end{algorithmic}
+\end{algorithm}
 
+\begin{algorithm}
 \begin{algorithmic}
 \Function{\parent}{$S, i$}
 	\State \Return{$\toOnes(S, \succ_0(S, i))$} \Comment{Conversion from zeros to ones}
 \EndFunction
 \end{algorithmic}
+\end{algorithm}
 
+\begin{algorithm}
 \begin{algorithmic}
 \Function{\degree}{$S, i$}
 	\State \Return{$\toZeros(S, i) - \toBeginning(S, i)$} \Comment{Length of its degree sequence}
 \EndFunction
 \end{algorithmic}
+\end{algorithm}
 
+\begin{algorithm}
 \begin{algorithmic}
 \Function{\childRank}{$S, i$}
 	\State \Return{$i - \pred_0(S, i)$} \Comment{Distance from the previous zero}
 \EndFunction
 \end{algorithmic}
+\end{algorithm}
 
+\begin{algorithm}
 \begin{algorithmic}
 \Function{\childSelect}{$S, i, k$}
 	\State \Return{$\toBeginning(S, i) + k - 1$}
 \EndFunction
 \end{algorithmic}
+\end{algorithm}
 
+\begin{algorithm}
 \begin{algorithmic}
 \Function{\childLast}{$S, i$} \Comment{\childFirst{} is merrily $\childSelect(S, i, 1)$}
 	\State \Return{$\toZeros(S, i) - 1$}
 \EndFunction
 \end{algorithmic}
+\end{algorithm}
 
 \bigbreak
 
@@ -260,20 +282,25 @@ We define a bit string $D$ which contains $1$ at the position of level boundarie
 We also add the succinct \rank{} a \select{} indices for the bit string $D$; note that only \select$_1$ is required.
 Using $D$ we can support \levelRank{}, \levelSelect{} (and thereby all \levelAny{} operations), and the operation \dep{}.
 
+\begin{algorithm}
 \begin{algorithmic}
 \Function{\levelRank}{$S, i$}
 	\State $z \gets \prev_1(D, i)$ \Comment{Terminal zero of the previous level}
 	\State \Return{$\rank_1(S, i) - \rank_1(S, z)$}
 \EndFunction
 \end{algorithmic}
+\end{algorithm}
 
+\begin{algorithm}
 \begin{algorithmic}
 \Function{\levelSelect}{$S, i, l$}
 	\State $z \gets \select_1(D, l)$ \Comment{Terminal zero of the previous level}
 	\State \Return{$\select_1(S, \rank_1(S, z) + i)$}
 \EndFunction
 \end{algorithmic}
+\end{algorithm}
 
+\begin{algorithm}
 \begin{algorithmic}
 \Function{\levelSize}{$S, l$}
 	\State $z \gets \select_1(D, l)$ \Comment{Terminal zero of the previous level}
@@ -281,12 +308,15 @@ Using $D$ we can support \levelRank{}, \levelSelect{} (and thereby all \levelAny
 	\State \Return{$\rank_1(S, z) - \rank_1(S, z')$}
 \EndFunction
 \end{algorithmic}
+\end{algorithm}
 
+\begin{algorithm}
 \begin{algorithmic}
 \Function{\dep}{$S, i$}
 	\State \Return{$\rank_1(D, i)$}
 \EndFunction
 \end{algorithmic}
+\end{algorithm}
 
 \subsubsection{Succinct Index for Depth}\label{ss:louds-depth}
 
@@ -314,6 +344,7 @@ This table $D'$ requires $\frac{N}{b} \log b = O(\frac{N \log\log N}{\log N}) = 
 	Given the boundaries of a single level, the boundaries of the next level can be determined by counting the same number of zeros as there were ones in the previous level.
 \end{proof}
 
+\begin{algorithm}
 \begin{algorithmic}
 \Function{\blockOfD}{$S, i$} \Comment{$i$ is a block number}
 	\State $p' \gets D'[i]$
@@ -334,6 +365,7 @@ This table $D'$ requires $\frac{N}{b} \log b = O(\frac{N \log\log N}{\log N}) = 
 	\EndIf
 \EndFunction
 \end{algorithmic}
+\end{algorithm}
 
 \subsection{\label{ss:leaf-queries}Leaf Operation}
 
@@ -358,6 +390,7 @@ $$L = \bitnot S \bitand \bitnot (S \bitrsh 1)$$
 
 All the functions require a correction by one if the first vertex of the level $l$ is a leaf.
 
+\begin{algorithm}
 \begin{algorithmic}
 \Function{\leafSize}{$S, l, u$}
 	\State $f \gets \levelFirst(S, l)$ \Comment{First vertex in the range}
@@ -366,7 +399,9 @@ All the functions require a correction by one if the first vertex of the level $
 	\State \Return $\rank_1(L, z_0) - \rank_1(L, f_0) + \isLeaf(S, f)$
 \EndFunction
 \end{algorithmic}
+\end{algorithm}
 
+\begin{algorithm}
 \begin{algorithmic}	
 \Function{\leafRank}{$S, l, i$} \Comment{We assume $i$ is a leaf at the admissible level}
 	\State $f \gets \levelFirst(S, l)$ \Comment{First vertex in the range}
@@ -374,7 +409,9 @@ All the functions require a correction by one if the first vertex of the level $
 	\State \Return{$\rank_1(L, \toZeros(i)) - \rank_1(L, f_0) + \isLeaf(S, f)$}
 \EndFunction
 \end{algorithmic}
+\end{algorithm}
 
+\begin{algorithm}
 \begin{algorithmic}
 \Function{\leafSelect}{$S, l, i$}
 	\State $f \gets \levelFirst(S, l)$ \Comment{First vertex in the range}
@@ -383,6 +420,7 @@ All the functions require a correction by one if the first vertex of the level $
 	\State \Return{$\toOnes(S, \select_1(L, o + i))$}
 \EndFunction
 \end{algorithmic}
+\end{algorithm}
 
 \bigbreak
 
@@ -416,6 +454,7 @@ The representation is based on Depth-First Search and follows two rules:
 \end{enumerate}
 Although the root vertex does not have a parent, it is opened and closed as if it had one.
 
+\begin{algorithm}
 \begin{algorithmic}
 \Function{\BPRepresentation}{$R$}
 	\State $S \gets []; \push(S, R)$ \Comment{The stack is initialized with the root of the tree}
@@ -434,6 +473,7 @@ Although the root vertex does not have a parent, it is opened and closed as if i
 	\EndWhile
 \EndFunction
 \end{algorithmic}
+\end{algorithm}
 
 An alternative definition of this schema can be expressed recursively:
 \begin{enumerate}
@@ -450,76 +490,97 @@ By using the operation \match{} we can easily switch between these two.
 The operations \preRank{}, \preSelect{}, \postRank{}, and \postSelect{} are immediately supported by opening-based and closing-based \rank{}s and \select{}s on the underlying bit string $S$.
 We first show implementation of the operations which do not need any auxiliary index and can be expressed using only the primitives provided by $S$.
 
+\begin{algorithm}
 \begin{algorithmic}
 \Function{\isRoot}{$S, i$}
 	\State \Return{$i = 0$}
 \EndFunction
 \end{algorithmic}
+\end{algorithm}
 
+\begin{algorithm}
 \begin{algorithmic}
 \Function{\isLeaf}{$S, i$}
 	\State \Return{$S[i + 1] = \closingParen$} \Comment{Is the parenthesis immediately closed?}
 \EndFunction
 \end{algorithmic}
+\end{algorithm}
 
 \subsection{Navigation Operations}
 
+\begin{algorithm}
 \begin{algorithmic}
 \Function{\parent}{$S, i$}
 	\State \Return{$\enclose(S, i)$}
 \EndFunction
 \end{algorithmic}
+\end{algorithm}
 
 Neither \degree{} nor \childRank{} nor \childSelect{} are available without an additional index; we therefore resort to the direct implementation of the rest of the \childAny{} operations:
 
+\begin{algorithm}
 \begin{algorithmic}
 \Function{\childFirst}{$S, i$}
 	\State \Return{$i + 1$}
 \EndFunction
 \end{algorithmic}
+\end{algorithm}
 
+\begin{algorithm}
 \begin{algorithmic}
 \Function{\childLast}{$S, i$}
 	\State \Return{$\findClose(S, i) - 1$}
 \EndFunction
 \end{algorithmic}
+\end{algorithm}
 
+\begin{algorithm}
 \begin{algorithmic}
 \Function{\childNext}{$S, i$}
 	\State \Return{$\findClose(S, i) + 1$}
 \EndFunction
 \end{algorithmic}
+\end{algorithm}
 
+\begin{algorithm}
 \begin{algorithmic}
 \Function{\childPrev}{$S, i$}
 	\State \Return{$\findOpen(S, i - 1)$}
 \EndFunction
 \end{algorithmic}
+\end{algorithm}
 
 \subsection{Other Native Operation}\label{ss:bp-other}
 
 The following natively supported operations use the property that a subtree of $v$ is fully contained in the representation of $v$.
 
+\begin{algorithm}
 \begin{algorithmic}
 \Function{\dep}{$i$}
 	\State \Return{$\parenDepth(i)$}
 \EndFunction
 \end{algorithmic}
+\end{algorithm}
 
+\begin{algorithm}
 \begin{algorithmic}
 \Function{\isAncestor}{$i_1, i_2$}
 	\State \Return{$i_1 \le i_2 \booland \findClose(i_1) \ge i_2$}
 \EndFunction
 \end{algorithmic}
+\end{algorithm}
 
+\begin{algorithm}
 \begin{algorithmic}
 \Function{\subtreeSize}{$i$}
 	\State \Return{$\rank_1(\findClose(i)) - \rank_1(i) + 1$}
 \EndFunction
 \end{algorithmic}
+\end{algorithm}
 
-The group of operations consisting of \lca, \distance, \deepestVertex, and \hei can be solved by minimum or maximum range queries.
+The group of operations consisting of \lca{}, \distance{}, \deepestVertex{}, and \hei{} can be solved by minimum or maximum range queries.
 
+\begin{algorithm}
 \begin{algorithmic}
 \Function{\lca}{$i_1, i_2$}
 	\If{$\isAncestor(i_1, i_2)$}
@@ -531,25 +592,32 @@ The group of operations consisting of \lca, \distance, \deepestVertex, and \hei 
 	\EndIf
 \EndFunction
 \end{algorithmic}
+\end{algorithm}
 
+\begin{algorithm}
 \begin{algorithmic}
 \Function{\distance}{$i_1, i_2$}
 	\State $a \gets \lca(i_1, i_2)$
 	\State \Return{$\dep(i_1) + \dep(i_2) - 2 \dep(a)$}
 \EndFunction
 \end{algorithmic}
+\end{algorithm}
 
+\begin{algorithm}
 \begin{algorithmic}
 \Function{\deepestVertex}{$i$}
 	\State \Return{$\RMQi(i, \match(i))$}
 \EndFunction
 \end{algorithmic}
+\end{algorithm}
 
+\begin{algorithm}
 \begin{algorithmic}
 \Function{\hei}{$i$}
 	\State \Return{$\dep(\deepestVertex(i)) - \dep(i)$}
 \EndFunction
 \end{algorithmic}
+\end{algorithm}
 
 \subsection{In-Order Rank and Select and Leaf Operations}
 
@@ -561,6 +629,7 @@ We derive a bit string $I$ as (assuming that \openingParen = 1, \closingParen = 
 $$ I = \bitnot S \bitand (S \bitrsh 1) $$
 The operations \inRank{} and \inSelect{} are then defined on this derived bit string:
 
+\begin{algorithm}
 \begin{algorithmic}
 \Function{\inRank}{$S, i$}
 	\If{$\isLeaf(S, i) \boolor \childFirst(S, i) = \childLast(S, i)$} \Comment{\degree{} is undefined}
@@ -570,7 +639,9 @@ The operations \inRank{} and \inSelect{} are then defined on this derived bit st
 	\EndIf
 \EndFunction
 \end{algorithmic}
+\end{algorithm}
 
+\begin{algorithm}
 \begin{algorithmic}
 \Function{\inSelect}{$S, r$}
 	\State $s \gets \select_1(I, r)$
@@ -581,6 +652,7 @@ The operations \inRank{} and \inSelect{} are then defined on this derived bit st
 	\EndIf
 \EndFunction
 \end{algorithmic}
+\end{algorithm}
 
 \bigbreak
 
@@ -589,6 +661,7 @@ A vertex is a leaf if its opening parenthesis is immediately closed.
 We are looking for a pattern \str{()}, for which derive a bit string $L$:
 $$L = S \bitand (\bitnot S \bitrsh 1)$$
 
+\begin{algorithm}
 \begin{algorithmic}
 \Function{\leafSize}{$S, a$}
 	\If{$\isLeaf(a)$}
@@ -598,7 +671,9 @@ $$L = S \bitand (\bitnot S \bitrsh 1)$$
 	\EndIf
 \EndFunction
 \end{algorithmic}
+\end{algorithm}
 
+\begin{algorithm}
 \begin{algorithmic}	
 \Function{\leafRank}{$S, a, i$} \Comment{We assume $i$ is in the subtree of $a$}
 	\If{$\isLeaf(a)$}
@@ -608,7 +683,9 @@ $$L = S \bitand (\bitnot S \bitrsh 1)$$
 	\EndIf
 \EndFunction
 \end{algorithmic}
+\end{algorithm}
 
+\begin{algorithm}
 \begin{algorithmic}
 \Function{\leafSelect}{$S, a, i$}
 	\If{$\isLeaf(a)$}
@@ -618,6 +695,7 @@ $$L = S \bitand (\bitnot S \bitrsh 1)$$
 	\EndIf
 \EndFunction
 \end{algorithmic}
+\end{algorithm}
 
 \bigbreak
 
@@ -667,6 +745,7 @@ The encoding is defined recursively:
 \end{enumerate}
 For convenience, one opening parenthesis is prepended to make the sequence of parentheses balanced.
 
+\begin{algorithm}
 \begin{algorithmic}
 \Function{\DFUDSRepresentation}{$R$}
 	\State $S \gets []; \push(S, R)$ \Comment{The stack is initialized with the root of the tree}
@@ -680,6 +759,7 @@ For convenience, one opening parenthesis is prepended to make the sequence of pa
 	\EndWhile
 \EndFunction
 \end{algorithmic}
+\end{algorithm}
 
 \begin{lemma}\label{l:dfuds}
 	The DFUDS encoding gives indeed a balanced bit string.
@@ -706,17 +786,21 @@ The association which an opening parenthesis in the degree sequence of its paren
 
 It is easy to test whether a vertex is the root or a leaf.
 
+\begin{algorithm}
 \begin{algorithmic}
 \Function{\isRoot}{$S, i$}
 	\State \Return{$i = 1$} \Comment{Mind the artificially prepended parenthesis}
 \EndFunction
 \end{algorithmic}
+\end{algorithm}
 
+\begin{algorithm}
 \begin{algorithmic}
 \Function{\isLeaf}{$S, i$}
 	\State \Return{$S[i] = \closingParen$} \Comment{Is the parenthesis a closing one?}
 \EndFunction
 \end{algorithmic}
+\end{algorithm}
 
 The crucial observations for the following operations are:
 \begin{enumerate}
@@ -728,6 +812,7 @@ The crucial observations for the following operations are:
 We first define two helper functions which navigate from any position in a vertex degree sequence to its beginning (which is the symbol associated with the vertex) and to its end (which is always a closing parenthesis).
 We also define a function which navigates to the last parenthesis of the vertex representation.
 
+\begin{algorithm}
 \begin{algorithmic}
 \Function{\toBeginning}{$S, p$}
 	\If{$p = 0$}
@@ -739,7 +824,9 @@ We also define a function which navigates to the last parenthesis of the vertex 
 	\EndIf
 \EndFunction
 \end{algorithmic}
+\end{algorithm}
 
+\begin{algorithm}
 \begin{algorithmic}
 \Function{\toEnd}{$S, p$}
 	\If{$p = 0$}
@@ -749,7 +836,9 @@ We also define a function which navigates to the last parenthesis of the vertex 
 	\EndIf
 \EndFunction
 \end{algorithmic}
+\end{algorithm}
 
+\begin{algorithm}
 \begin{algorithmic}
 \Function{\toLast}{$S, p$}
 	\If{$\isLeaf(S, p)$}
@@ -759,59 +848,75 @@ We also define a function which navigates to the last parenthesis of the vertex 
 	\EndIf
 \EndFunction
 \end{algorithmic}
+\end{algorithm}
 
 The navigation operations can be immediately defined.
 
+\begin{algorithm}
 \begin{algorithmic}
 \Function{\parent}{$S, i$}
 	\State $p \gets \findOpen(S, i - 1)$ \Comment{Inside parent's degree sequence}
 	\State \Return{$\toBeginning(S, p)$}
 \EndFunction
 \end{algorithmic}
+\end{algorithm}
 
+\begin{algorithm}
 \begin{algorithmic}
 \Function{\degree}{$S, i$}
 	\State \Return{$\toEnd(S, i) - i$}
 \EndFunction
 \end{algorithmic}
+\end{algorithm}
 
+\begin{algorithm}
 \begin{algorithmic}
 \Function{\childRank}{$S, i$}
 	\State $p \gets \findOpen(S, i - 1)$
 	\State \Return{$\toEnd(S, p) - p$}
 \EndFunction
 \end{algorithmic}
+\end{algorithm}
 
+\begin{algorithm}
 \begin{algorithmic}
 \Function{\childSelect}{$S, i, k$}
 	\State $p \gets \toEnd(S, i) - k$
 	\State \Return{$\findClose(S, p) + 1$}
 \EndFunction
 \end{algorithmic}
+\end{algorithm}
 
 \subsection{Other Native Operations}
 
+\begin{algorithm}
 \begin{algorithmic}
 \Function{\preRank}{$S, i$}
 	\State \Return{$\rank_)(S, \toEnd(S, i))$}
 \EndFunction
 \end{algorithmic}
+\end{algorithm}
 
+\begin{algorithm}
 \begin{algorithmic}
 \Function{\preSelect}{$S, r$}
 	\State \Return{$\toBeginning(S, \select_)(S, i))$}
 \EndFunction
 \end{algorithmic}
+\end{algorithm}
 
 In order to support \dfudsRank{} and \dfudsSelect{}, we will need another helper function \toSymetric{} which navigates from $k$-th opening parenthesis in the degree sequence of vertex $v$ to $(\degree(v) - k - 1)$-st one.
 
+\begin{algorithm}
 \begin{algorithmic}
 \Function{\toSymetric}{$S, p$}
 	\State $b \gets \toBeginning(S, p)$
 	\State \Return{$b + \degree(S, b) - (p - b) - 1$}
 \EndFunction
 \end{algorithmic}
+\end{algorithm}
 
+\begin{algorithm}
 \begin{algorithmic}
 \Function{\dfudsRank}{$S, i$}
 	\If{$\isRoot(S, i)$}
@@ -822,7 +927,9 @@ In order to support \dfudsRank{} and \dfudsSelect{}, we will need another helper
 	\EndIf
 \EndFunction
 \end{algorithmic}
+\end{algorithm}
 
+\begin{algorithm}
 \begin{algorithmic}
 \Function{\dfudsSelect}{$S, r$}
 	\If{$r = 1$}
@@ -833,9 +940,11 @@ In order to support \dfudsRank{} and \dfudsSelect{}, we will need another helper
 	\EndIf
 \EndFunction
 \end{algorithmic}
+\end{algorithm}
 
 And finally there are two simple subtree-oriented operations which use the helper function \toLast{}.
 
+\begin{algorithm}
 \begin{algorithmic}
 \Function{\isAncestor}{$i_1, i_2$}
 	\If{$\isLeaf(i_1)$}
@@ -845,7 +954,9 @@ And finally there are two simple subtree-oriented operations which use the helpe
 	\EndIf
 \EndFunction
 \end{algorithmic}
+\end{algorithm}
 
+\begin{algorithm}
 \begin{algorithmic}
 \Function{\subtreeSize}{$i$}
 	\If{$\isLeaf(S, i)$}
@@ -855,6 +966,7 @@ And finally there are two simple subtree-oriented operations which use the helpe
 	\EndIf
 \EndFunction
 \end{algorithmic}
+\end{algorithm}
 
 \subsection{Lowest Common Ancestor}
 
@@ -882,6 +994,7 @@ In case of an equality, the \rmqi returns the left-most occurrence.
 The $\rmqi(S, i_1, i_2 - 1)$ returns position of the last parenthesis of the previous sibling of $p_2$ and therefore $p_2 = \rmqi(S, i_1, i_2 - 1) + 1$.
 The result is then $\lca(S, i_1, i_2) = j = \parent(S, p_2)$.
 
+\begin{algorithm}
 \begin{algorithmic}
 \Function{\lca}{$i_1, i_2$}
 	\If{$\isAncestor(i_1, i_2)$}
@@ -894,6 +1007,7 @@ The result is then $\lca(S, i_1, i_2) = j = \parent(S, p_2)$.
 	\EndIf
 \EndFunction
 \end{algorithmic}
+\end{algorithm}
 
 \subsection{Leaf operations}
 

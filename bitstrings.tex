@@ -49,7 +49,7 @@ Using these two operations we are able to derive more operations related to a gi
 	Returns the left-most position $j$ of the symbol \ph{}: $\min(j), j \ge i$.
 	$$ \succ_{\ph}(S, i) = \textrm{if}\ S[i] = \ph\ \textrm{then}\ i \ \textrm{else}\ \select_{\ph}(S, \rank_{\ph}(S, i) + 1) $$
 
-	\item[$\next_{\ph}(S, i) \rightarrow j$]
+	\item[$\nextt_{\ph}(S, i) \rightarrow j$]
 	Returns the left-most position $j$ of the symbol \ph{}: $\min(j), j \ge i$.
 	$$ \succ_{\ph}(S, i) = \select_{\ph}(S, \rank_{\ph}(S, i) + 1) $$
 \end{description}
@@ -106,12 +106,14 @@ The array $\glob$ has $\frac{N}{B}$ elements each of size $\log (N+1)$ bits resu
 \subsubsection{Algorithm}
 
 We find out which block $k$ and which small block $l$ inside the block contains the position $i$, then we simply sum the precomputed values in arrays $global$, $block_k$ and the result of the look-up table for the small block:
+\begin{algorithm}
 \begin{algorithmic}
 \Function{\rank}{$S, i$}
 	\State $k \gets \frac{i}{B}; l \gets \frac{i \% B}{b}; s \gets b \frac{i}{b}$
 	\State\Return{$\glob[k] + \block_k[l] + \rank[S[s : s + b], i \% b]$}
 \EndFunction
 \end{algorithmic}
+\end{algorithm}
 
 \subsubsection{Implementation Details}
 
@@ -214,6 +216,7 @@ In practice, when we are interested in all values $N$ and not only those big eno
 The look-up table is extended to return $-1$ when the desired symbol does not lay in the current chunk.
 Note that the loop of stated algorithm terminates because we are guarantied that the small block contains the desired symbol.
 
+\begin{algorithm}
 \begin{algorithmic}
 \Function{\select}{$S, r$}
 	\State $a \gets \frac{r}{B}; r' \gets r \% B$
@@ -238,6 +241,7 @@ Note that the loop of stated algorithm terminates because we are guarantied that
 	\EndIf
 \EndFunction
 \end{algorithmic}
+\end{algorithm}
 
 \subsubsection{Implementation Details}
 
@@ -435,6 +439,7 @@ Otherwise, we know that $B(k) = B(\findClose(S, i')) = B(\findClose(S, i))$; els
 To find the answer within the block $B(k)$, we use a look-up table \bwdSearch{} to find the far parenthesis $j$ with the right excess difference $d = \excess(i) - \excess(i')$.
 The parenthesis $j$ is guarantied to exist.
 
+\begin{algorithm}
 \begin{algorithmic}
 \Function{\findClose}{$S, i$}
 	\If{$S[i] = \closingParen$}
@@ -454,6 +459,7 @@ The parenthesis $j$ is guarantied to exist.
 	\EndIf
 \EndFunction
 \end{algorithmic}
+\end{algorithm}
 
 The operation \findOpen{} is reduced similarly; together they provide the operation \match{}.
 
@@ -480,6 +486,7 @@ We find the parenthesis $f$ depending on the nearest pioneer $i' = \succ_1(P', i
 \end{enumerate}
 Once we have $f$, we continue in the similar way as in case of $\findClose$ -- we use a look-up table to find the parenthesis with the right excess in the block $B(f)$.
 
+\begin{algorithm}
 \begin{algorithmic}
 \Function{\enclose}{$S, i$}
 	\If{$S[i] = \closingParen$}
@@ -511,6 +518,7 @@ Once we have $f$, we continue in the similar way as in case of $\findClose$ -- w
 	\State \Return{$B(k) B + j'$}
 \EndFunction
 \end{algorithmic}
+\end{algorithm}
 
 \subsubsection{Recursion}
 
@@ -641,6 +649,7 @@ Although it has a large space complexity depending on the number of block, event
 		The two queries overlap, however it does not cause any issue since we are only looking for a minimum of their answers.
 		We gather both candidates and return the one which has the smaller value, while preferring the left one.
 		
+		\begin{algorithm}
 		\begin{algorithmic}
 		\Function{\rmqiSpan}{$E, P, i_1, i_2$} \Comment{$i_1, i_2$ are block numbers}
 			\State $k \gets \lfloor \log (i_2 - i_1 + 1) \rfloor$
@@ -653,6 +662,7 @@ Although it has a large space complexity depending on the number of block, event
 			\EndIf
 		\EndFunction
 		\end{algorithmic}
+		\end{algorithm}
 	\end{enumerate}
 \end{proof}
 
@@ -741,7 +751,7 @@ We define structures supporting various operations, which we already know from t
 		i - \rank(\overline{A}, i) + 1 & \textotherwise
 	\end{cases}$$
 	
-	Moreover, all operations \pred{}, \succ{}, \prev{}, \next{} are well defined for FID.
+	Moreover, all operations \pred{}, \succ{}, \prev{}, \nextt{} are well defined for FID.
 	FID is equivalent to a general bit string.
 \end{description}
 
@@ -792,6 +802,7 @@ We group $\log N$ blocks into macro-blocks and store where each macro-block star
 And for each macro-block we store the macro-block-local positions of beginning of blocks which it contains in an array $\block_i$ using $O(\log N \log \log N)$ bits per macro-block.
 This is essentially the same as the partitioning which we used for \rank{} \ref{ss:rank}.
 
+\begin{algorithm}
 \begin{algorithmic}
 \Function{\characteristicBlock}{$S', b$} \Comment{$b$ is the block number}
 	\State $m = \frac{b}{\log N}$
@@ -799,6 +810,7 @@ This is essentially the same as the partitioning which we used for \rank{} \ref{
 	\State \Return{$\characteristicBlock[S'[p : p + C[b] + 1], L[b]]$}
 \EndFunction
 \end{algorithmic}
+\end{algorithm}
 
 The implementation of the operations \rank{}, \select{}, and \inspect{}, which are required by the definition of FID, is straightforward.
 The total size of the structure is ${N \choose K} + O(\frac{N \log \log N}{\log N}) = {N \choose K} + o(N)$.
@@ -859,7 +871,8 @@ We define several operation for this compressed array:
 \subsubsection{Extending Compressed Array}
 
 A compressed array can be built on top of several arrays $A_0, A_2, \ldots, A_{t-1}$ with sizes $a_i$ containing $r_i$ runs.
-The space complexity the follows from a simple summation: $a = \sum_i a_i$ and $r = \sum_i r_i$.
+We refer to the structure as a collection of compressed arrays.
+The total space complexity follows a simple summation: $a = \sum_i a_i$ and $r = \sum_i r_i$.
 
 We extend the structure of the compressed array by the following field:
 \begin{description}
@@ -884,7 +897,7 @@ Note that we also can check the bounds before an operation is commenced.
 
 \bigbreak
 
-We define a way how to turn a partially filled array $A'$ with a characteristic vector $C$, which is usually obvious from the context and definition of $A'$, into a compressed array $A$ for a given operation \op{} which is one of \pred{}, \succ{}, \prev{}, \next{}.
+We define a way how to turn a partially filled array $A'$ with a characteristic vector $C$, which is usually obvious from the context and definition of $A'$, into a compressed array $A$ for a given operation \op{} which is one of \pred{}, \succ{}, \prev{}, \nextt{}.
 $$A[i] = A'[\op(C, i)] \:\forall i$$
 
 \subsection{Tiny Compressed Array}

@@ -45,6 +45,7 @@
 \usepackage{booktabs}       % improved horizontal lines in tables
 %\usepackage[defblank]{paralist}       % improved enumerate and itemize
 \usepackage[inline]{enumitem}
+\usepackage{linegoal}
 
 \usepackage[usenames]{xcolor}  % typesetting in color
 
@@ -115,14 +116,16 @@ Cílem práce je prozkoumat existující stručné datové struktury pro repreze
 \begin{document}
 \setlist[enumerate,1]{label=(\arabic*)}
 \setlist[enumerate,2]{label=(\alph*)}
-\setlist[description]{labelindent=\parindent}
 \setlist[description]{style=nextline}
 \setlist*{listparindent=\parindent, parsep=0pt}
+%\setlist*[itemize,enumerate,description]{partopsep=0pt,before=\leavevmode}
 
 \newlist{iteminline}{itemize*}{1}
 \setlist[iteminline,1]{label={}, afterlabel={}}
 \newlist{enuminline}{enumerate*}{1}
 \setlist[enuminline,1]{label=(\arabic*)}
+
+% \setlist*{beginpenalty=-100, midpenalty=-50, endpenalty=-100}
 
 \include{title}
 

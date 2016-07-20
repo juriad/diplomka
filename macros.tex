@@ -104,6 +104,12 @@
 \newcolumntype{R}[1]{>{\hsize=#1\hsize\raggedleft\arraybackslash}X}%
 \newcolumntype{C}[2]{>{\hsize=#1\hsize\columncolor{#2}\centering\arraybackslash}X}%
 
+\usepackage{float}
+\usepackage[plain]{algorithm}
+\makeatletter
+\renewcommand{\fps@algorithm}{H}
+\makeatother
+
 \usepackage[noend]{algpseudocode}
 \algrenewtext{Function}[2]{\algorithmicfunction\ \textsc{#1}(#2)\textbf{:}}
 \algrenewtext{ForAll}[1]{\algorithmicforall\ #1\textbf{:}}
@@ -115,27 +121,15 @@
 
 \algnewcommand\Break{\textbf{Break}}
 
-\usepackage{mdframed}
-\newmdenv[topline=false,bottomline=false,leftline=false,linewidth=1pt]{programborder}
-% takes too much space :-(
-
-\let\oldAlgorithmic\algorithmic
-\let\oldEndAlgorithmic\endalgorithmic
-
-\usepackage{float}
-%\floatstyle{boxed}
-\newfloat{program}{H}{lop}
-\floatname{program}{Program}
-
 \setlength{\floatsep}{5pt plus 2pt minus 2pt}
 \setlength{\textfloatsep}{5pt plus 2pt minus 2pt}
 \setlength{\intextsep}{5pt plus 2pt minus 2pt}
-
-\def\algorithmic{\begin{program}\oldAlgorithmic}
-\def\endalgorithmic{\oldEndAlgorithmic\end{program}}
+%\renewcommand\textfraction{0.0}
+%\setcounter{totalnumber}{100}
+%\renewcommand\floatpagefraction{0.1}
 
 \usepackage{environ}
-% \RenewEnviron{algorithmic}[2][\relax]{}
+%\RenewEnviron{algorithmic}[2][\relax]{}
 
 \let\percent\%
 \def\%{\ifmmode\mathbin{\percent}\else\percent\fi}
@@ -165,7 +159,7 @@
 
 \usepackage{xifthen}
 \newcommand{\defineName}[2][]{%
-	\expandafter\def\csname \if\relax\detokenize{#1}\relax#2\else#1\fi\endcsname{\hyphenpenalty=500\relax\ifmmode\mathit{#2}\else\textsc{#2}\fi}%
+	\expandafter\newcommand\csname \if\relax\detokenize{#1}\relax#2\else#1\fi\endcsname{\hyphenpenalty=500\relax\ifmmode\mathit{#2}\else\textsc{#2}\fi}%
 }
 
 % deque operations
@@ -187,9 +181,10 @@
 \defineName{inspect}
 \defineName{pred}
 \let\origSucc\succ
+\let\succ\relax
 \defineName{succ}
 \defineName{prev}
-\defineName{next}
+\defineName[nextt]{next}
 
 % in Bit Strings, rank
 \defineName{block}
@@ -349,10 +344,10 @@
 \defineName{RLM}
 \defineName[lrmSearch]{lrm\_search}
 \defineName[LRMSearch]{LRM\_search}
-\defineName{root}
+\defineName[roott]{root}
 \defineName{length}
 \defineName{start}
-\defineName[endd]{end}
+\defineName[en]{end}
 \defineName{ladder}
 
 % in structures, FF macro range
@@ -362,8 +357,35 @@
 \defineName{mr}
 \defineName{mi}
 \defineName[mpp]{mp}
-\defineName{first}
-\defineName{last}
+
+% in structures, TC decomposition
+\defineName{heavy}
+\defineName{decompose}
+\defineName{zip}
+
+% in structures, TC representation
+\defineName{size}
+\defineName{rep}
+\defineName{offset}
+\defineName[primaryI]{primary_1}
+\defineName[primaryII]{primary_2}
+\defineName[parentI]{parent_1}
+\defineName[parentII]{parent_2}
+\defineName[bottomI]{bottom_1}
+\defineName[bottomII]{bottom_2}
+\defineName[dummyI]{dummy_1}
+\defineName[dummyII]{dummy_2}
+\defineName[childrenI]{children_1}
+\defineName[childrenII]{children_2}
+\defineName[typeIII]{type3}
+\defineName[childrenIndexI]{children\_index_1}
+\defineName[childrenIndexII]{children\_index_2}
+\defineName[childrenParentI]{children\_parent_1}
+\defineName[childrenParentII]{children\_parent_2}
+\defineName[microTreeOffsets]{micro\_tree\_offsets}
+\defineName[microTrees]{micro\_trees}
+\defineName[miniTreeOffsets]{mini\_tree\_offsets}
+\defineName[miniTrees]{mini\_trees}
 
 \def\struct#1#2{#1{:}\ #2}
 
