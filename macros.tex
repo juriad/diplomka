@@ -111,19 +111,21 @@
 \makeatother
 
 \usepackage[noend]{algpseudocode}
-\algrenewtext{Function}[2]{\algorithmicfunction\ \textsc{#1}(#2)\textbf{:}}
-\algrenewtext{ForAll}[1]{\algorithmicforall\ #1\textbf{:}}
-\algrenewtext{For}[1]{\algorithmicfor\ #1\textbf{:}}
-\algrenewtext{While}[1]{\algorithmicwhile\ #1\textbf{:}}
-\algrenewtext{If}[1]{\algorithmicif\ #1\textbf{:}}
-\algrenewtext{ElsIf}[1]{\algorithmicelse\ \algorithmicif\ #1\textbf{:}}
-\algrenewtext{Else}{\algorithmicelse\textbf{:}}
+\def\algcolon{\textbf{:}}
+\algrenewtext{Function}[2]{\algorithmicfunction\ \textsc{#1}(#2)\algcolon}
+\algrenewtext{ForAll}[1]{\algorithmicforall\ #1\algcolon}
+\algrenewtext{For}[1]{\algorithmicfor\ #1\algcolon}
+\algrenewtext{While}[1]{\algorithmicwhile\ #1\algcolon}
+\algrenewtext{If}[1]{\algorithmicif\ #1\algcolon}
+\algrenewtext{ElsIf}[1]{\algorithmicelse\ \algorithmicif\ #1\algcolon}
+\algrenewtext{Else}{\algorithmicelse\algcolon}
 
 \algnewcommand\Break{\textbf{Break}}
 
 \setlength{\floatsep}{5pt plus 2pt minus 2pt}
 \setlength{\textfloatsep}{5pt plus 2pt minus 2pt}
 \setlength{\intextsep}{5pt plus 2pt minus 2pt}
+%\setlength{\abovecaptionskip}{0pt}
 %\renewcommand\textfraction{0.0}
 %\setcounter{totalnumber}{100}
 %\renewcommand\floatpagefraction{0.1}
@@ -378,14 +380,61 @@
 \defineName[childrenI]{children_1}
 \defineName[childrenII]{children_2}
 \defineName[typeIII]{type3}
+\defineName[childrenIndexBoth]{children\_index_{\{1,2\}}}
 \defineName[childrenIndexI]{children\_index_1}
 \defineName[childrenIndexII]{children\_index_2}
+\defineName[childrenParentBoth]{children\_parent_{\{1,2\}}}
 \defineName[childrenParentI]{children\_parent_1}
 \defineName[childrenParentII]{children\_parent_2}
 \defineName[microTreeOffsets]{micro\_tree\_offsets}
 \defineName[microTrees]{micro\_trees}
 \defineName[miniTreeOffsets]{mini\_tree\_offsets}
 \defineName[miniTrees]{mini\_trees}
+
+% in structures, TC navigation
+\defineName[dummyUp]{dummy\_up}
+\defineName[dummyDown]{dummy\_down}
+\defineName{canonize}
+
+% in strutures, TC depth
+\defineName[depthI]{depth_1}
+\defineName[depthII]{depth_2}
+\defineName[subtreeSizeI]{subtree\_size_1}
+\defineName[subtreeSizeII]{subtree\_size_2}
+\defineName[deepestVertexI]{deepest\_vertex_1}
+\defineName[deepestVertexII]{deepest\_vertex_2}
+\defineName[dummyAncestor]{dummy\_ancestor}
+
+% in structures, TC ranking, pre
+\defineName[preFirstI]{pre\_first_1}
+\defineName[preFirstII]{pre\_first_2}
+\defineName[preVerticesI]{pre\_vertices_1}
+\defineName[preVerticesII]{pre\_vertices_2}
+\defineName{first}
+
+% in structures, TC ranking, post
+\defineName[terminaryI]{terminary_1}
+\defineName[terminaryII]{terminary_2}
+\defineName[postLastI]{post\_last_1}
+\defineName[postLastII]{post\_last_2}
+\defineName[postVerticesI]{post\_vertices_1}
+\defineName[postVerticesII]{post\_vertices_2}
+\defineName{last}
+
+% in sructures, TC ranking, dfuds
+\defineName[dfudsAnc]{dfuds\_anc}
+\defineName{ancestors}
+\defineName[dfudsVerticesI]{dfuds\_vertices_1}
+\defineName[dfudsVerticesII]{dfuds\_vertices_2}
+
+% in structures, TC ranking, in
+\defineName[inAnc]{in\_anc}
+\defineName[inSize]{in\_size}
+\defineName[leftSiblings]{left\_siblings}
+\defineName[inVerticesI]{in\_vertices_1}
+\defineName[inVerticesII]{in\_vertices_2}
+\defineName[leftTypeIIi]{left\_type2_1}
+\defineName[leftTypeIIii]{left\_type2_2}
 
 \def\struct#1#2{#1{:}\ #2}
 

@@ -866,6 +866,9 @@ We define several operation for this compressed array:
 	\item[\rank{}]
 	Returns how many elements same as $A[i]$ there has been until the position $i$:
 	$$ \rank(A, i) = \before(A, i) + (i - \runFirst(A, i) + 1) $$
+	
+	\item[\size{}]
+	Returns the total number of elements $a$.
 \end{description}
 
 \subsubsection{Extending Compressed Array}
@@ -891,9 +894,9 @@ with the exception that the first element of an array $A_i$ always starts a new 
 This makes sure that runs do not extend over several parts, which would make it harder, yet not impossible, to handle.
 This is already incorporated in the total number of runs: $r = \sum_i r_i$.
 
-Using this extra array, which has same size as \ABefore{}, we can support the operations on part $p \in [0, t)$ which differs by an initial offsetting of $i$:
+Using this extra array, which has same space complexity as \ABefore{}, we can support the operations on part $p \in [0, t)$ which differs by an initial offsetting of $i$:
 $$i' = \AParts[p] + i$$
-Note that we also can check the bounds before an operation is commenced.
+Note that we can also answer \size{} of each part, and check the bounds before an operation is commenced.
 
 \bigbreak
 
