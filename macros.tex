@@ -163,6 +163,7 @@
 \newcommand{\defineName}[2][]{%
 	\expandafter\newcommand\csname \if\relax\detokenize{#1}\relax#2\else#1\fi\endcsname{\hyphenpenalty=500\relax\ifmmode\mathit{#2}\else\textsc{#2}\fi}%
 }
+\def\m#1{\relax\ifmmode#1\else$#1$\fi}
 
 % deque operations
 \defineName{push}
@@ -375,8 +376,8 @@
 \defineName[parentII]{parent_2}
 \defineName[bottomI]{bottom_1}
 \defineName[bottomII]{bottom_2}
-\defineName[dummyI]{dummy_1}
-\defineName[dummyII]{dummy_2}
+\defineName[dummyI]{dummy\m{_1}}
+\defineName[dummyII]{dummy\m{_2}}
 \defineName[childrenI]{children_1}
 \defineName[childrenII]{children_2}
 \defineName[typeIII]{type3}
@@ -395,6 +396,8 @@
 \defineName[dummyUp]{dummy\_up}
 \defineName[dummyDown]{dummy\_down}
 \defineName{canonize}
+\defineName[rootI]{root\m{_1}}
+\defineName[rootII]{root\m{_2}}
 
 % in strutures, TC depth
 \defineName[depthI]{depth_1}
@@ -435,6 +438,28 @@
 \defineName[inVerticesII]{in\_vertices_2}
 \defineName[leftTypeIIi]{left\_type2_1}
 \defineName[leftTypeIIii]{left\_type2_2}
+
+% in structures, TC ancestral
+\defineName[lcaI]{anc\_search\m{_1}}
+\defineName[lcaII]{anc\_search\m{_2}}
+\defineName[ancSearchI]{anc\_search\m{_1}}
+\defineName[ancSearchII]{anc\_search\m{_2}}
+
+% in structures, TC level
+\defineName[lfirstI]{lfirst_1}
+\defineName[lfirstII]{lfirst_2}
+\defineName[lfirstKI]{lfirst\_k_1}
+\defineName[lfirstKII]{lfirst\_k_2}
+\defineName[ldSearchI]{ld\_search\m{_1}}
+\defineName[ldSearchII]{ld\_search\m{_2}}
+\defineName[llastI]{llast_1}
+\defineName[llastII]{llast_2}
+\defineName[llastKI]{llast\_k_1}
+\defineName[llastKII]{llast\_k_2}
+
+\defineName[dummyNext]{dummy\_next}
+\defineName[lnextI]{lnext_1}
+\defineName[lnextII]{lnext_2}
 
 \def\struct#1#2{#1{:}\ #2}
 

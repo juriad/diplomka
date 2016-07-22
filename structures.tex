@@ -473,7 +473,7 @@ The algorithm for \summ is very similar to \sumBlock.
 \end{algorithmic}
 \end{algorithm}
 
-\subsubsection{Search Operations}
+\subsubsection{Search Operations}\label{ff-search}
 
 For each block $i$ we define an array of \emph{left-to-right minima} $\lrm_i$ such that
 \begin{align*}
@@ -1403,6 +1403,20 @@ As they are not part of the interface of the data structure, the argument $i$ is
 \end{algorithmic}
 \end{algorithm}
 
+We add four more functions which navigate to special vertices in a given micro-tree or a mini-tree.
+Their names alias with the fields in the representation, however they can always be distinguished by the parentheses.
+The function can also be called with mini-tree name or a micro-tree name.
+The lat four functions assume that such dummy vertex exists.
+
+\begin{align*}
+	\rootI(i) &= \canonize(i.\tau_1, 0, 0) \\
+	\rootII(i) &= \canonize(i.\tau_1, i.\tau_2, 0) \\
+	\dummyI(i) &= (i.\tau_1, i.\dummyI, i.\dummyI.\dummyII) \\
+	\dummyII(i) &= (i.\tau_1, i.\tau_2, i.\dummyII) \\
+	\bottomI(i) &= \dummyDown(\dummyI(i)) \\
+	\bottomII(i) &= \dummyDown(\dummyII(i))
+\end{align*}
+
 \bigbreak
 
 The operations \isRoot{} and \isLeaf{} use the property that $i$ is a canonical name.
@@ -1603,9 +1617,9 @@ The operation \dep{} is straightforward; it sums
 \begin{algorithmic}
 \Function{\dep}{$i$}
 	\If{$i.\tau_3 \ne 0$}
-		\State \Return{$\dep(i.\tau_1, i.\tau_2, 0) + \dep[i.\size, i.\rep, i.\tau_3]$}
+		\State \Return{$\dep(\rootII(i)) + \dep[i.\size, i.\rep, i.\tau_3]$}
 	\ElsIf{$i.\tau_2 \ne 0$}
-		\State \Return{$\dep(i.\tau_1, 0, 0) + i.\depthII$}
+		\State \Return{$\dep(\rootI(i)) + i.\depthII$}
 	\Else
 		\State \Return{$i.\depthI$}
 	\EndIf
@@ -1628,7 +1642,7 @@ If $i$ is a mini-tree root, we answer immediately with the stored vertex $\deepe
 	\If{$i.\tau_3 \ne 0$}
 		\State $d \gets (i.\tau_1, i.\tau_2, \deepestVertex[i.\size, i.\rep, i.\tau_3])$ \Comment{Within micro-tree}
 		\If{$\isAncestor[i.\size, i.\rep, i.\tau_3, i.\dummyII]$} \Comment{Type (3) connection?}
-			\State $d' \gets \deepestVertex(\dummyDown(i.\tau_1, i.\tau_2, i.\dummyII))$ \Comment{Outside}
+			\State $d' \gets \deepestVertex(\bottomII(i))$ \Comment{Outside}
 			\If{$d.\tau_3 = i.\dummyII$}
 				\State \Return{$d'$}
 			\Else
@@ -1673,7 +1687,7 @@ Finally, in case of a non-root, we use a look-up table, plus we add the size of 
 	\If{$i.\tau_3 \ne 0$}
 		\State $ss \gets \subtreeSize[i.\size, i.\rep, i.\tau_3]$
 		\If{$\isAncestor[i.\size, i.\rep, i.\tau_3, i.\dummyII]$}
-			\State \Return{$ss - 1 + \subtreeSize(\dummyDown(i.\tau_1, i.\tau_2, i.\dummyII))$}
+			\State \Return{$ss - 1 + \subtreeSize(\bottomII(i))$}
 		\Else
 			\State \Return{$ss$}
 		\EndIf
@@ -1697,16 +1711,6 @@ We consider four distinct vertex numbering schemas and later use the same techni
 
 It is crucial to account every vertex of the original tree once; we do so by introducing a relation \emph{to belong to}.
 We define the relation differently for each numbering schema.
-
-%On a mini-tree level a non-root vertex belongs to its mini-tree; a mini-tree root belongs to the primary mini-tree.
-%On a micro-tree level a non-root vertex belongs to its micro-tree; a root which belongs to this mini-tree belongs to the primary micro-tree.
-%A dummy vertex belongs nowhere.
-%Each vertex of the original tree belongs to exactly one mini-tree and one micro-tree.
-%The canonical name encodes the mini-tree and micro-tree to which a vertex belongs.
-
-%A vertex in a mini-tree or a micro-tree is called the \emph{first} if is belongs to the mini-tree or micro-tree and has the smallest name.
-%We can find it by asking if the root belongs to the mini-tree or the micro-tree; if not, we set $\tau_3 = 1$.
-%Note that there can exist a micro-tree consisting of a single vertex, which is its root, that is shared with another micro-trees; in such case, the first vertex is undefined.
 
 \subsubsection{Pre-Order Numbering}
 
@@ -1741,14 +1745,14 @@ The look-up table \preRank{} has one additional argument which makes sure that t
 	\ElsIf{$i = \first_2$} \Comment{First in micro-tree}
 		\State $r \gets i.\first_2$
 		\If{$i.\dummyI \ne -1 \booland i.\dummyI.\preFirstII < r$}
-			\State $d \gets \dummyDown(i.\tau_1, i.\dummyI, i.\dummyI.\dummyII)$
+			\State $d \gets \bottomI(i)$
 			\State $r \gets r + \subtreeSize(d)$ \Comment{Type (3) connected mini-tree}
 		\EndIf
 		\State $r \gets r + \preRank(\first_1)$
 	\Else \Comment{Non-first}
 		\State $r \gets \preRank[i.\size, i.\rep, i.\tau_3, \first_2.\tau_3]$
 		\If{$i.\dummyII \ne -1 \booland \preRank[i.\size, i.\rep, i.\dummyII, \first_2.\tau_3] < r$}
-			\State $d \gets \dummyDown(i.\tau_1, i.\tau_2, i.\dummyII)$
+			\State $d \gets \bottomII(i)$
 			\State $r \gets r + \subtreeSize(d)$ \Comment{Type (3) connection}
 		\EndIf
 		\State $r \gets r + \preRank(\first_2)$
@@ -1851,8 +1855,8 @@ In case of the first child, we already know its \preRank{} so the only thing lef
 
 Let $v_1$ and $v_2$ be ancestors of $i$:
 \begin{align*}
-	v_1 \in \ancestors(i) &\booland \parent(v_1) = (i.\tau_1, 0, 0) \\
-	v_2 \in \ancestors(i) &\booland \parent(v_2) = (i.\tau_1, i.\tau_2, 0)
+	v_1 \in \ancestors(i) &\booland \parent(v_1) = \rootI(i) \\
+	v_2 \in \ancestors(i) &\booland \parent(v_2) = \rootII(i)
 \end{align*}
 
 We split the precomputed $\dfudsAnc(i)$ into several parts, which are in the most general case:
@@ -1914,7 +1918,7 @@ The algorithm for \dfudsRank{} consists them mostly of the computation of \dfuds
 		\If{$i.\tau_3 \ne 0$}
 			\State $p \gets \parent(i)$
 			\If{$p.\tau_3 \ne 0$}
-				\State $r \gets \canonize(i.\tau_1, i.\tau_2, 0)$
+				\State $r \gets \rootII(i)$
 				\If{$r.\tau_2 \ne 0$} \Comment{Descendant of a micro-tree root}
 					\State $e \gets i.E_2 + E_3[i.\size, i.\rep, i.\tau_3]$
 					\State \Return{$s +i.A + i.B + i.C_1 + i.C_2 + i.D + e$}
@@ -1989,8 +1993,8 @@ We focus on the function \inAnc{} which we again split into several parts for wh
 
 Let $v_1$ and $v_2$ be ancestors of $i$:
 \begin{align*}
-	v_1 \in \ancestors(i) &\booland \parent(v_1) = (i.\tau_1, 0, 0) \\
-	v_2 \in \ancestors(i) &\booland \parent(v_2) = (i.\tau_1, i.\tau_2, 0)
+	v_1 \in \ancestors(i) &\booland \parent(v_1) = \rootI(i) \\
+	v_2 \in \ancestors(i) &\booland \parent(v_2) = \rootII(i)
 \end{align*}
 
 \begin{alignat}{2}
@@ -2036,9 +2040,8 @@ When we refer to the mini-tree structure, it is $i.\tau_1$; the micro-tree struc
 	Stored in a look-up table.
 \end{description}
 
-None of $B_2, C, D_2$ accounts for a mini-tree connected via dummy vertex because the stored fields would be too big for a micro-tree structure.
-It is added later; we can detect such case: $\preRank(i.\dummyI) < \preRank(i)$.
-$D_2$ and $E$ do not contain any type (3) connection; it can added later if $\preRank(i.\dummyII) < \preRank(i)$.
+Note that the \inSize{} of any type (3) connected mini-tree is not accounted in the fields stored in micro-trees, and any type (3) connected micro-tree is not accounted by the look-up table.
+They can easily be detected by checking the pre-order number of the dummy vertices, and added later.
 
 \begin{algorithm}
 \begin{algorithmic}
@@ -2047,28 +2050,39 @@ $D_2$ and $E$ do not contain any type (3) connection; it can added later if $\pr
 		\State \Return{$-1$}
 	\Else
 		\State $s \gets \inSize(\childFirst(i)) + 1$
-		
 		\If{$i.\tau_3 \ne 0$}
 			\State $p \gets \parent(i)$
 			\If{$p.\tau_3 \ne 0$}
-				\State $r \gets \canonize(i.\tau_1, i.\tau_2, 0)$
+				\State $r \gets \rootII(i)$
 				\If{$r.\tau_2 \ne 0$} \Comment{Descendant of a micro-tree root}
 					\State $d \gets i.D_2 + D_3[i.\size, i.\rep, i.\tau_3]; e \gets E[i.\size, i.\rep, i.\tau_3]$
-					\State \Return{$s + i.A + i.B_1 + i.B_2 + i.B_3 + i.C + d + e$}
+					\State $s \gets s + i.A + i.B_1 + i.B_2 + i.B_3 + i.C + d + e$
 				\Else \Comment{Descendant of a mini-tree root}
 					\State $e \gets E[i.\size, i.\rep, i.\tau_3]$
-					\State \Return{$s + i.A + i.B_1 + i.B_2 + B_3[i.\size, i.\rep, i.\tau_3] + e$}
+					\State $s \gets s + i.A + i.B_1 + i.B_2 + B_3[i.\size, i.\rep, i.\tau_3] + e$
 				\EndIf
 			\ElsIf{$p.\tau_2 \ne 0$} \Comment{Child of a micro-tree root}
 				\State $d \gets i.D_2 + D_3[i.\size, i.\rep, i.\tau_3]$
-				\State \Return{$s + i.A + i.B_1 + i.B_2 + i.B_3 + i.C + d$}
+				\State $s \gets s + i.A + i.B_1 + i.B_2 + i.B_3 + i.C + d$
 			\Else \Comment{Child of a mini-tree root}
-				\State \Return{$s + i.A + i.B_1 + i.B_2 + B_3[i.\size, i.\rep, i.\tau_3]$}
+				\State $s \gets s + i.A + i.B_1 + i.B_2 + B_3[i.\size, i.\rep, i.\tau_3]$
+			\EndIf
+			
+			\If{$i.\dummyII \ne -1 \booland i.\dummyI \ne i.\tau_2$}
+				\If{$\preRank(\bottomII(i)) < \preRank(i)$}
+					\State $s \gets s + \inSize(\bottomII(i))$ \Comment{Add it back}
+				\EndIf
 			\EndIf
 		\ElsIf{$i.\tau_2 \ne 0$} \Comment{Micro-tree root}
-			\State \Return{$s + i.A + i.B_1 + i.B_2 + i.B_3 + i.C$}
+			\State $s \gets s + i.A + i.B_1 + i.B_2 + i.B_3 + i.C$
 		\Else \Comment{Mini-tree root}
-			\State \Return{$s + i.A$}
+			\State $s \gets s + i.A$
+		\EndIf
+		
+		\If{$i.\dummyI \ne -1$}
+			\If{$\preRank(\bottomI(i)) < \preRank(i)$}
+				\State $s \gets s + \inSize(\bottomI(i))$ \Comment{Add it back}
+			\EndIf
 		\EndIf
 	\EndIf
 \EndFunction
@@ -2159,25 +2173,25 @@ In order to check the bounds of \inSelect{} before it is processed, we use the f
 \Function{\inSelect}{$r$}
 	\State $d_1 \gets \inVerticesI[r - 1]$
 	\State $r' \gets \rank(\inVerticesI, r - 1)$
-	\If{$d_1[0].\size = 1$} \Comment{A single vertex mini-tree (and micro-tree)}
-		\State \Return{$(d_1, 0, 0)$}
+	\If{$|d_1.\microTreeOffsets| = 1 \booland d_1[0].\size = 1 $} \Comment{A single vertex}
+		\State \Return{$\rootI(d_1)$}
 	\ElsIf{$r' \le d_1.\leftTypeIIi$} \Comment{Left type (2) connections}
-		\State \Return{$(d_1, 0, 0)$}
+		\State \Return{$\rootI(d_1)$}
 	\Else
 		\State $r' \gets r' - d_1.\leftTypeIIi$
 		\If{$r' \ge \size(d_1.\leftTypeIIi)$} \Comment{Right type (2) or type (1) connection}
-			\State \Return{$\canonize(d_1, 0, 0)$}
+			\State \Return{$\rootI(d_1)$}
 		\Else \Comment{The same for micro-trees}
 			\State $d_2 \gets d_1.\inVerticesII[r' - 1]$
 			\State $r'' \gets \rank(d_1.\inVerticesI, r' - 1)$
 			\If{$d_2.\size = 1$} \Comment{A single vertex micro-tree}
-				\State \Return{$\canonize(d_1, d_2, 0)$}
+				\State \Return{$\rootII(d_1, d_2)$}
 			\ElsIf{$r'' \le d_2.\leftTypeIIii$} \Comment{Left type (2) connections}
-				\State \Return{$\canonize(d_1, d_2, 0)$}
+				\State \Return{$\rootII(d_1, d_2)$}
 			\Else
 				\State $r'' \gets r'' - d_2.\leftTypeIIii$
 				\If{$r'' \ge \inSize[d_2.\size, d_2.\rep, 0]$} \Comment{Right (2) or right (1)}
-					\State \Return{$\canonize(d_1, d_2, 0)$}
+					\State \Return{$\rootII(d_1, d_2)$}
 				\Else
 					\State \Return{$\canonize(d_1, d_2, \inSelect[d_2.\size, d_2.\rep, r''])$}
 				\EndIf
@@ -2253,7 +2267,7 @@ Otherwise we use an LCA structure which uses the techniques from \ref{lemma:rmq2
 	The tree $T_2$ has $O(\frac{B}{b})$ nodes, which results in space $O(\frac{B}{b} \log^2 B) = o(B)$ bits.
 \end{proof}
 
-If the vertices are in the same mini-tree, we solve it by querying $T_2$ for the lowest common ancestor using the lemma \ref{l:ff-lca} (function \lca$_1$); in case when they are in different mini-trees, we query the tree $T_1$ (function \lca$_2$).
+If the vertices are in the same mini-tree, we solve it by querying $T_2$ for the lowest common ancestor using the lemma \ref{l:ff-lca} (function \lcaI); in case when they are in different mini-trees, we query the tree $T_1$ (function \lcaII).
 
 There are two special cases which need to be addressed in the algorithm.
 \begin{enumerate}
@@ -2267,45 +2281,41 @@ There are two special cases which need to be addressed in the algorithm.
 	However, we are only interested in micro-tree dummy vertices.
 \end{enumerate}
 
-\begin{algorithm}[tp]
+\begin{algorithm}
 \begin{algorithmic}
 \Function{\lca}{$i_1, i_2$}
 	\If{$i_1.\tau_1 = i_2.\tau_1$} \Comment{The same mini-tree}
 		\If{$i_1.\tau_2 = i_2.\tau_2$} \Comment{The same micro-tree}
 			\State \Return{$\canonize(i_1.\tau_1, i_1.\tau_2, \lca[i_1.\size, i_1.\rep, i_1.\tau_3, i_2.\tau_3])$}
 		\ElsIf{$i_1.\primaryII = i_2.\primaryII$} \Comment{Type (1) connected micro-trees}
-			\State \Return{$\canonize(i_1.\tau_1, i_1.\primaryII, 0)$} \Comment{Micro-tree root}
+			\State \Return{$\rootII(i_1)$} \Comment{Micro-tree root}
 		\Else \Comment{Unaffiliated micro-trees}
 			\If{$i_1.\dummyII \ne -1 \booland i_1.\tau_2 \ne i_1.\dummyI$}
-				\State $d \gets \dummyDown(i_1.\tau_1, i_1.\tau_2, i_1.\dummyII)$
-				\If{$\isAncestor(d, i_2)$} \Comment{Test type (3) connection}
-					\State \Return{$\lca(i_1, \dummyUp(d))$} \Comment{Use $d$ instead of $i_2$}
+				\If{$\isAncestor(\bottomII(i_1), i_2)$} \Comment{Test type (3) connection}
+					\State \Return{$\lca(i_1, \dummyII(i_1))$} \Comment{Use $d$ instead of $i_2$}
 				\EndIf
 			\EndIf
 			\If{$i_2.\dummyII \ne -1 \booland i_2.\tau_2 \ne i_2.\dummyI$}  \Comment{Symmetrical}
-				\State $d \gets \dummyDown(i_2.\tau_1, i_2.\tau_2, i_2.\dummyII)$
-				\If{$\isAncestor(d, i_1)$}
-					\State \Return{$\lca(i_2, \dummyUp(d))$}
+				\If{$\isAncestor(\bottomII(i_2), i_1)$}
+					\State \Return{$\lca(i_2, \dummyII(i_2))$}
 				\EndIf
 			\EndIf
-			\State \Return{$\canonize(i_1.\tau_1, \lca_2(i_1.\tau_1, i_1.\primaryII, i_2.\primaryII), 0)$}
+			\State \Return{$\rootII(i_1.\tau_1, \lca_2(i_1.\tau_1, i_1.\primaryII, i_2.\primaryII))$}
 		\EndIf
 	\ElsIf{$i_1.\primaryI = i_2.\primaryI$} \Comment{Type (1) connected micro-trees}
-		\State \Return{$(i_1.\primaryI, 0, 0)$} \Comment{Mini-tree root}
+		\State \Return{$\rootI(i_1)$} \Comment{Mini-tree root}
 	\Else \Comment{Unaffiliated mini-trees}
 		\If{$i_1.\dummyI \ne -1$}
-			\State $d \gets \dummyDown(i_1.\tau_1, i_1.\dummyI, i_1.\dummyI.\dummyII)$
-			\If{$\isAncestor(d, i_2)$} \Comment{Test type (3) connection}
-				\State \Return{$\lca(i_1, \dummyUp(d))$} \Comment{Use $d$ instead of $i_2$}
+			\If{$\isAncestor(\bottomI(i_1), i_2)$} \Comment{Test type (3) connection}
+				\State \Return{$\lca(i_1, \dummyI(i_1))$} \Comment{Use $d$ instead of $i_2$}
 			\EndIf
 		\EndIf
 		\If{$i_2.\dummyII \ne -1$} \Comment{Symmetrical}
-			\State $d \gets \dummyDown(i_2.\tau_1, i_2.\dummyI, i_2.\dummyI.\dummyII)$
-			\If{$\isAncestor(d, i_1)$}
-				\State \Return{$\lca(i_2, \dummyUp(d))$}
+			\If{$\isAncestor(\bottomI(i_2), i_1)$}
+				\State \Return{$\lca(i_2, \dummyI(i_2))$}
 			\EndIf
 		\EndIf
-		\State \Return{$\canonize(\lca_1(i_1.\primaryI, i_2.\primaryI), 0, 0)$}
+		\State \Return{$\rootI(\lca_1(i_1.\primaryI, i_2.\primaryI))$}
 	\EndIf
 \EndFunction
 \end{algorithmic}
@@ -2313,202 +2323,225 @@ There are two special cases which need to be addressed in the algorithm.
 
 \subsubsection{Level Ancestor}
 
-We again use the trees $T_1$ and $T_2$, and solve the $level\_ancestor(i, d)$ operation for it.
-We in fact need a more general operation \emph{weighted level ancestor}, which works on a graph with edges having assigned weight, which is a natural number.
-We are looking for the first node $j$ such that the sum of weights on the path from $i$ to $j$ is maximum possible but less than $d$.
-There is a structure $T\_{lrm}$ which can be used to solve this problem, and which we have used before to implement $fwd_search$ in FF structure \ref{Tlrm},
+If the desired vertex $j \in \ancestors(i) \booland \dep(j) = \dep(i) - d$ is not contained in the current mini-tree, we use the tree $T_1$ to find the correct mini-tree.
+We follow the same way for micro-trees, and finally find the vertex $j$ using a look-up table in the correct micro-tree.
 
-The nodes are assigned depths -- in case of $T_1$ it will be absolute depths $depth_1$, in case of $T_2$ it will be relative depths inside the mini-tree $depth_2$.
-There will not be any artificial root, as $T_1$ and $T_2$ are trees with an existing root.
-The root is assigned the depth equal to $0$.
-We can use the algorithm $lrm\_search(n, v)$ with a minor modifications: we are looking for a node which is in the maximum depth less than $v$ instead of at least $v$.
-This is necessary because we want to get to the root of a tree which is just below the correct tree; then we use parent function to get to the deepest ancestor in the correct tree.
-This difference be addressed by changing the function $succ_1$ into $prev_1$.
-We also add an identifier to distinguish which tree we are searching through.
+When we search the tree $T_1$, we not only want to know the name of the mini-tree $t$ which contains $j$, but also the the lowest ancestor $j'$ in it.
+The lowest ancestor $j'$ in a mini-tree $t$ can be:
+\begin{enuminline}
+	\item its root if $i$ is in a subtree of a type (2) connected mini-tree;
+	\item parent of its dummy vertex if $i$ is a subtree of a type (3) connected mini-tree.
+\end{enuminline}
+Since each mini-tree has at most one mini-tree dummy vertex, it is easy to check which option occurs in constant time.
 
-We first identify the correct mini-tree by using $anc\_search$ on $T_1$, then we identify the correct micro-tree by using $anc\_search$ on $T_2$, and finish the operation with a look-up table in a micro-tree.
+We use the same technique as for \lrmSearch{} in section \ref{ff-search} to find the correct mini-tree.
+Each node $i$ has already been assigned its minimum depth in field $\depthI$.
+We first use a tiny compressed array $J_i$ and then a collection of compressed arrays $L$.
+
+The same structure is built for the tree $T_2$ where the depths are $\depthII$.
+We call the search functions \ancSearchI and \ancSearchII.
 
 \begin{algorithm}
 \begin{algorithmic}
-\Function{level\_ancestor}{$i, d$}
-	\State $v \gets depth(i) - d$
+\Function{\levelAncestor}{$i, d$}
+	\State $v \gets \dep(i) - d$
 	\If{$v < 0$}
 		\State \Return{$-1$}
 	\EndIf
-	\If{$v < depth(root_1(i))$} \Comment{Wrong mini-tree}
-		\State $i \gets parent(anc\_search_1(root_1(i), v))$
+	\If{$v < \dep(\rootI(i))$} \Comment{Wrong mini-tree}
+		\State $t \gets \ancSearchI(\rootI(i), v)$
+		\If{$\isAncestor(\bottomI(t), i)$} \Comment{Type (3) connection}
+			\State $i \gets \parent(\dummyI(t))$
+		\Else \Comment{Type (2) connection}
+			\State $i \gets \rootI(t)$
+		\EndIf
 	\EndIf
-	\If{$v < depth(root_2(i))$} \Comment{Wrong micro-tree}
-		\State $i \gets parent(anc\_search_2(i.\tau_1, root_2(i), v))$
+	\If{$v < \dep(\rootII(i))$} \Comment{Wrong micro-tree}
+		\State $t \gets \ancSearchII(i.\tau_1, \rootII(i), v)$
+		\If{$\isAncestor(\bottomII(t), i)$} \Comment{Type (3) connection}
+			\State $i \gets \parent(\dummyII(t))$
+		\Else \Comment{Type (2) connection}
+			\State $i \gets \rootII(t)$
+		\EndIf
 	\EndIf
-	\State \Return{$canonize(i.\tau_1, i.\tau_2, level\_ancestor[i.size, i.rep, i.\tau_3, depth(i) - v])$}
+	\State \Return{$\canonize(i.\tau_1, i.\tau_2, \levelAncestor[i.\size, i.\rep, i.\tau_3, \dep(i) - v])$}
 \EndFunction
 \end{algorithmic}
 \end{algorithm}
 
 \subsection{Level Operations}
 
-\subsubsection{Level First and Level Last}
+\subsubsection{Level First}
 
-We first show how to support the operation $level\_first(i, d)$ restricted to a subtree of a vertex $i$.
-The operation $leve\_last$ is analogous and we address the differences at the end.
+We first show how to support the operation \levelFirst{} which is restricted to the subtree of a vertex $i$.
+The operation \levelLast{} is analogous, and we address the differences at the end.
 
-The operation $level\_first$ is closely related to other select operations which we have already shown.
-For each mini-tree root $i$ we have an array $lfirst_1$:
-$$ i.lfirst_1[j] = \argmin_{\substack{pre\_rank(v) \ge pre\_rank(i) \\ depth(v) = depth(i) + j}} pre\_rank(v) $$
-This array contains level-first descendants of $i$ for $j \le height(i)$ as it has the correct depth and it is the first one such.
+For each mini-tree root $i$ we define an array $\lfirstI$:
+$$ i.\lfirstI[j] = \argmin_{\substack{\preRank(v) \ge \preRank(i) \\ \dep(v) = \dep(i) + j}} \preRank(v) $$
+This array contains \emph{level-first descendants} of $i$ for $j \le \hei(i)$ as it has the correct depth and it is the first one such.
 
-We cannot afford to store the arrays $lfirst_1$, however we observe the following fact:
-If for two mini-tree roots $i$, $j$ and level $d$, $i.lfirst_1[d - depth(i)] = j.lfirst_1[d - depth(j)]$, then $i.lfirst_1[d - depth(i) + k] = j.lfirst_1[d - depth(j) + k]$ for $k \ge 0$.
+We cannot afford to store the arrays $\lfirstI$, however we observe the following fact:
+If for two mini-tree roots $i$, $j$ and level $d$ holds:
+$$i.\lfirstI[d - \dep(i)] = j.\lfirstI[d - \dep(j)]$$
+then for $k \ge 0$:
+$$i.\lfirstI[d - \dep(i) + k] = j.\lfirstI[d - \dep(j) + k]$$
+This is basically the same property which holds for the arrays $\lrm_i$ in section \ref{ff-search}.
+Before we use it, we formulate and prove the following lemma.
 
 \begin{lemma}\label{l:level-first-3}
-	There are at most three runs of a $\tau_1$ name in the array $lfirst_1$.
+	There are at most three runs for each $\tau_1$ name in the array $\lfirstI$.
 \end{lemma}
 \begin{proof}
-	Let's assume that a root $v$ of a mini-tree $t$ is a level-first descendant of $i$, then $v.\tau_1$ is in the array.
+	Let's assume that the root $v$ of a mini-tree $t$ is a level-first descendant of $i$, then $v.\tau_1$ is in the array.
+	We also assume that $v$ has children in the same mini-tree.
 	There are two possibilities how a run of level-first descendants can be interrupted:
 	\begin{enumerate}
-		\item We look at the first child of $v$: if it is not in the same mini-tree, then $v$ must have some type (2) connections to the left $L$.
-		If $h = \max_{l \in L} height(l)$ is greater than the height of $t$ (restricted to $t$), then $v.\tau_1$ will never occur in the array again.
-		Otherwise, the level-first descendants of $v$ will occur starting with $d = depth(v) + h + 1$.
-		\item If a level-first descendant of $v$ is a dummy vertex, then level-first descendants of its mini-tree will be in the array.
-		If the height of the type (3) connected mini-tree is less than the height of the mini-tree $t$ (restricted to $t$), then level-first descendants of $v$ will again be in the array.
+		\item We look at the first child of $v$.
+		If it is not in the same mini-tree, then $v$ must have some type (2) connected mini-trees $L$ to the left.
+		If $h = \max_{l \in L} \hei(l)$ is less than the height of $t$ (restricted to $t$), then the $v.\tau_1$ will appear in the array once all subtrees of $L$ end.
+		
+		\item If a level-first descendant of $v$ is a mini-tree dummy vertex, then the level-first descendants of its mini-tree $s$ will be in the array.
+		If the $h = \dep(s) - dep(v) + \hei(s)$ is less than the height of the mini-tree $t$ (restricted to $t$), then the $v.\tau_1$ will appear in the array once the subtree of $s$ ends.
 	\end{enumerate}
 	These two causes of interruption can overlap, however they can cause at most three runs of $v.\tau_1$.
 	
-	If the root was not the level-first descendant, however another vertex of the mini-tree $t$ occurs in the array, we can apply the same reasoning about the second type of interruption.
+	If the root was not the level-first descendant but another vertex of the mini-tree $t$ occurs in the array, we can apply the same reasoning about the second type of interruption.
 	That proves that such $\tau_1$ can appear in at most two runs.
 \end{proof}
 
-We build a tree $T_1$ as a trie from the reversed arrays $lfirst_1$ with an additional artificial root.
+\bigbreak
+
+We build a tree $T_1$ as a trie from the reversed arrays $\lfirstI$ with an additional artificial root.
 We compress the tree by contracting paths between nodes which are either:
 \begin{enumerate}
 	\item the artificial root node;
 	\item nodes corresponding to mini-tree roots.
 	All leaves of $T_1$ are mini-tree roots, however not all mini-tree roots are leaves in $T_1$.
 	\item branching nodes in the tree $T_1$.
-	Their number is bounded by number of leaves of $T_1$.
-	\item nodes corresponding to vertices in arrays $lfirst_1$ such that their predecessor has a different $\tau_1$ name.
+	Their number is bounded by the number of leaves of $T_1$.
+	\item nodes corresponding to vertices in the arrays $\lfirstI$ such that their predecessor has a different $\tau_1$ name.
 \end{enumerate}
-Not counting branching nodes, there are at most three vertices from each mini-tree which follows from the previous lemma.
-The result is that the compressed tree contains $O(\frac{n}{B})$ nodes.
+Not counting branching nodes, there are at most three vertices for each mini-tree, which follows from the previous lemma.
+The number of nodes in the compressed tree is $O(\frac{n}{B})$.
 
-Let $h$ be the height of the original tree $h = height(0, 0, 0)$, then we associate each node $n$ with number $m = h - depth(n)$ where the depth in measured the original tree; the root is assigned $-\infty$.
-We store the information about the nodes in an array; each node knows its $\tau_1$ name, its number $m$ and its pre-order number $k$ in $T_1$.
-As the tree $T_1$ contains $O(\frac{n}{B})$ nodes, the structure requires $O(\frac{n}{B} \log^2 n)$ bits.
-We also store the number $k$ corresponding to the mini-tree root as $lfirst\_k_1$ in the mini-tree structure.
+We associate each node $n$ with the depth of the vertex which it represents in the original tree; the root of $T_1$ is assigned with $\infty$.
+We store the information about the nodes in an array; each node knows its $\tau_1$ name, its depth, and its pre-order number $k$ in $T_1$.
+We also store the pre-order number $k$ of the node which corresponds with the mini-tree root as a field $\lfirstKI$ in a mini-tree structure.
 
-We use the algorithm $lcm\_search$ which returns the first ancestor which has a greater or equal value than the one which we are searching for.
-In our case, the function returns a $\tau_1$ name.
-Note that in a general case, we should check whether the node which we found is a descendant of the queried node, which can be done by $is\_ancestor$.
-However, in the algorithm as we formulate it, it is not necessary.
+Since this tree has increasing values on paths from leaves to the root, we use the same structures as for $T_{\LRM}$ in section \ref{ff-search}.
+\begin{itemize}
+	\item A tiny compressed array $J_n$ for each node $n$.
+	The $J$ contains pre-order numbers $k$ of the nodes at distances which are powers of two.
+	Contrary to the definition in section \ref{ff-search}, we use the operation \pred{} for definition of the compressed array.
+	\item A collection of compressed arrays $L$ storing all ladders.
+	Similarly to $J$, the operation \pred{} is used.
+	\item An array $\ladder$ which contains information about to which ladder each node belongs.
+\end{itemize}
+These structures take $O(\frac{n}{B} \log^2 n) = o(n)$ bits for $c \ge 3$.
 
-We can now reduce finding the correct mini-tree containing the level-first descendant to querying weighted ancestor in the tree $T_1$.
+We use the algorithm \LRMSearch{} which returns the first ancestor node $j$ in the tree $T_1$ such that $\dep(j)$ less than or equal to the desired one.
+In our case, the function returns the $\tau_1$ name of the node.
+Note that in a general case, we should check whether the node which we found is a descendant of the queried node, which can be done by \isAncestor{}.
+However, in the algorithm as we formulate it, we check the bounds beforehand, so it is not necessary.
+This concludes the search for the correct mini-tree.
 
-We build a similar structure for querying weighted level ancestor for each mini-tree, restricted to its vertices.
-For that we also need to store $height_1$ of the mini-tree root, and we do the same for micro-tree roots.
-We use it to find the correct micro-tree containing the level-first descendant.
+We build a similar structure for querying level-first descendants of micro-tree roots for each mini-tree.
+The searches are processed by functions \ldSearchI{} and \ldSearchII{}.
 Finally, we use a look-up table to find the answer within the correct micro-tree.
+
+The algorithm tests two alternatives and chooses the one with smaller pre-order number.
+\begin{enumerate}
+	\item If the query starts with a mini-tree root, the correct mini-tree is found, then the correct micro-tree is found, and finally the correct vertex is found.
+	\item If the query starts with a micro-tree root, a micro-tree is found withing a potentially incorrect mini-tree, then a vertex is found.
+	The mini-tree dummy vertex is check, as it could contain the correct answer; a recursive call causes triggers the option (1).
+	\item If the query starts with a non-root, a vertex is found in a look-up table.
+	The dummy vertex in the micro-tree is checks; a recursive call leads to options (1) or (2).
+\end{enumerate}
+The algorithm uses recursion of a constant depth.
+
 
 \begin{algorithm}
 \begin{algorithmic}
-\Function{level\_first}{$i, d$}
-	\If{$d < depth(i) \booland d > depth(i) + height(i)$}
+\Function{\levelFirst}{$i, d$}
+	\If{$d < \dep(i) \booland d > \dep(i) + \hei(i)$}
 		\State \Return{$-1$} \Comment{Answer does not exist}
 	\EndIf
 	
-	\State $C = \O$ \Comment{Set of candidates}
-	\If{$i.\tau_2 = 0 \booland i.\tau_3 = 0$} \Comment{Find correct mini-tree}
-		\State $h_1 \gets height(0, 0, 0)$
-		\State $i \gets lcm\_search_1(i.lfirst\_k_1, h_1 - d)$
-		\State $correct_1 \gets 1$ \Comment{We are sure about the mini-tree}
-	\Else
-		\State $correct_1 \gets 0$ 
+	\State $c \gets -1$ \Comment{Alternative candidate}
+
+	\If{$i.\tau_2 = 0 \booland i.\tau_3 = 0$} \Comment{Mini-tree root}
+		\State $i \gets \rootI(\ldSearchI(i.\lfirstKI, d))$ \Comment{Find mini-tree (root)}
 	\EndIf
 	
-	\If{$i.\tau_3 = 0$} \Comment{Find correct micro-tree}
-		\If{$i.dummy\_ancestor \booland correct_1 = 0$}
-			\State $c \gets level\_first(dummy\_down(dummy_1(i)), d)$
-			\If{$c \ne -1$} \Comment{Level-first in type (3) connected mini-tree}
-				\State $C = C \cup \{c\}$
-			\EndIf
+	\If{$i.\tau_3 = 0$} \Comment{Micro-tree root}
+		\If{$i.\tau_2 \ne 0 \booland i.\tau_3 = 0 \booland i.\dummyAncestor$}
+			\State $c \gets \levelFirst(\bottomI(i))$ \Comment{Check mini-tree dummy vertex}
 		\EndIf
-		\If{$d \le depth(root_1(i)) + height_1$}
-			\State $i \gets lcm\_search_2(i.\tau_1, i.lfirst\_k_2, height_1 - (d - depth(root_1(i))))$
-			\State $correct_2 \gets 1$ \Comment{We are sure about the micro-tree}
-		\Else
-			\State $correct_2 \gets 2$ \Comment{The solution is not in this mini-tree}
-		\EndIf
-	\Else
-		\State $correct_2 \gets 0$
+		\State $i \gets \rootII(i.\tau_1, \ldSearchII(i.\tau_1, i.\lfirstKII, d))$ \Comment{Find micro-tree (root)}
 	\EndIf
 
-	\If{$is\_ancestor[i.size, i.rep, i.\tau_3, i.dummy_2] \booland correct_1 = 0 \booland correct_2 = 0$}
-		\State $c \gets level\_first(dummy\_down(dummy_2(i)), d)$
-		\If{$c \ne -1$} \Comment{Level-first in type (3) connected mini-tree or micro-tree}
-			\State $C = C \cup \{c\}$
-		\EndIf
+	\If{$i.\tau_3 \ne 0 \booland \isAncestor[i.\size, i.\rep, i.\tau_3, i.\dummyII]$}
+		\State $c \gets \levelFirst(\bottomII(i))$ \Comment{Check dummy vertex}
 	\EndIf
+	\State $i \gets \levelFirst[i.\size, i.\rep, i.\tau_3, d - \dep(i)]$ \Comment{Find vertex}
 	
-	\If{$correct_2 \ne 2 \booland d \le depth(root_2(i)) + height_2$}
-		\State $c \gets level\_first[i.size, i.rep, i.\tau_3, d - depth(i)]$
-		\If{$c \ne -1 \booland c \ne i.dummy_2$} \Comment{Level-first in the micro-tree}
-			\State $C = C \cup \{c\}$
-		\EndIf
-	\EndIf
-	
-	\State $first \gets -1$
-	\ForAll{$c \gets C$} \Comment{Selecting the left-most candidate}
-		\If{$first = -1 \boolor pre\_rank(c) < pre\_rank(first)$}
-			\State $first \gets c$
-		\EndIf
-	\EndFor
-	\Return{$first$}
+	\State \Return{$\textif c \ne -1 \booland \preRank(c) < \preRank(i) \textthen c \textelse i$}
 \EndFunction
 \end{algorithmic}
 \end{algorithm}
 
-\paragraph{Level Last}
+\subsubsection{Level Last}
 
-In case of level-last descendant operation, we define the arrays $llast_1$ as:
-$$ i.llast_1[j] = \argmax_{\substack{pre\_rank(v) \le pre\_rank(i) + subtree\_size(i) - 1  \\ depth(v) = depth(i) + j}} pre\_rank(v) $$
-
-The only change necessary in the algorithm is selecting the right-most candidate, which is the one with highest pre-order rank.
+The operation \levelLast{} differs from \levelFirst{} in minor details:
+\begin{itemize}
+	\item We define an arrays $\llastI$ (and $\llastII$):
+	$$ i.\llastI[j] = \argmax_{\substack{\preRank(v) \le \preRank(i) + \subtreeSize(i) - 1  \\ \dep(v) = \dep(i) + j}} \preRank(v) $$
+	\item There is one more cause of interruption in the \levelLast{} version of the lemma \ref{l:level-first-3}.
+	Type (1) connected mini-trees pose the same reason for interruption as the type (2) connections.
+	This is because the canonical names are reported.
+	\item We select the candidate with highest rank at the last line of the algorithm.
+\end{itemize}
 
 \subsubsection{Level Next and Level Previous}
 
-We focus on $level\_next(i, j)$; the operation $level\_prev(i, j)$ is symmetrical.
+We focus on \levelNext{}; the operation \levelPrev{} is symmetrical.
 
 We distinguish four cases:
-\begin{itemize}
-	\item the vertex $j$ is the level-last vertex in the subtree of $i$.
+\begin{enumerate}
+	\item the vertex $i$ is the level-last vertex in the subtree of $a$.
 	Then there is no next vertex on the level.
-	\item the vertex $j$ is not the level-last vertex in its micro-tree.
+	
+	\item the vertex $i$ is not the level-last vertex in its micro-tree.
 	We use a look-up table to handle this case.
 	We also need to check for type (3) connected subtree which could contain the answer.
-	This check can be easily done by comparing pre-order rank of $j$ and $j.dummy_2$.
-	\item the vertex $j$ is the level-last vertex in its micro-tree, then we search the micro-tree $t_2$ which is ``to the right'' from $j$.
-	We find its $\tau_2$ name using a structure which we show later.
+	This check can be easily done by comparing pre-order rank of $i$ and $\dummyII(i)$.
+	
+	\item the vertex $i$ is the level-last vertex in its micro-tree, then we search the micro-tree $t_2$ which is ``to the right'' from $i$.
+	We find its $\tau_2$ name using a structure which we describe later.
 	We distinguish two cases:
 	\begin{itemize}
-		\item $t_2$ contains a dummy vertex and $j$ is in its subtree, then we solve the search in $t_2$ using a look-up table searching for the first vertex $v$ on the desired level with $pre\_rank(v) > pre\_rank(dummy_2)$.
-		\item otherwise, it is the level-first vertex in the micro-tree.
+		\item If the micro-tree $t_2$ contains a dummy vertex and $i$ is in its subtree, then we solve the search in $t_2$ using a look-up table \levelNext' searching for the first vertex $v$ on the desired level with $\preRank(v) > \preRank(\bottomII(t_2))$.
+		\item Otherwise, it is the level-first vertex in the micro-tree $t$.
 	\end{itemize}
-	\item the vertex $j$ is the level-last vertex in its mini-tree.
+
+	\item The vertex $i$ is the level-last vertex in its mini-tree.
 	We need to find vertex in the mini-tree $t_1$ which is ``to the right'' from the current one.
 	As before, we distinguish two cases:
 	\begin{itemize}
-		\item $j$ is a descendant of the dummy vertex in $t_1$, then we need to find the micro-tree which contains the vertex $v$ such that:
-		$$ v = \argmin_{\substack{depth(k) = depth(j) \\ pre\_rank(root_1(t))> pre\_rank(k) \\ pre\_rank(k) > pre\_rank(dummy_1(t)) + subtree\_size(dummy_1(t))}} pre\_rank(k)$$
-		As there is at most one dummy vertex in a mini-tree, we store a compressed array $dummy\_next$ which contains $\tau_2$ names of micro-trees which contain the answer for all admissible levels.
-		This compressed array contains at most $B$ elements in $3b$ runs (which follows from lemma \ref{l:level-first-3}) and therefore used $O(b \log B) = o(B)$ bits of space.
-		Let $t_2$ be the micro-tree from the array $dummy\_next$, then we finish the query as in the previous case.
-		\item otherwise, the answer is the level-first vertex of the mini-tree $t_1$.
-	\end{itemize}
-\end{itemize}
+		\item If $i$ is a descendant of the dummy vertex in $t_1$, then we need to find the micro-tree which contains the vertex $v$ such that $\preRank(v) > \preRank(\bottomI(t_1))$.
+		
+		As there is at most one dummy vertex in a mini-tree, we store a compressed array $\dummyNext$ which contains $\tau_2$ names of micro-trees which contain the answer for all admissible levels.
+		This compressed array contains at most $B$ elements in $O(\frac{B}{b})$ runs and therefore uses $O(\frac{B}{b} \log B) = o(B)$ bits of space.
+		The number of runs follows from the constant bound in lemma \ref{l:level-first-3} and the fact that there are $O(\frac{B}{b})$ micro-trees in a mini-tree.
 
-We design a structure which we use to solve the second and the third case.
-Let's assume a graph $G$ whose nodes are mini-trees and each two nodes $x, y$ are connected whenever there is a vertex $u$ in $x$ and a vertex $v$ in $y$ such that $level\_next(i, u) = v$.
+		Let $t_2$ be the micro-tree which is obtained from the compressed array $\dummyNext$.
+		We finish the query as in the previous case since $\dummyII(t_2)$ could be an ancestor of $i$.
+		
+		\item Otherwise, the answer is the level-first vertex in the mini-tree $t_1$.
+	\end{itemize}
+\end{enumerate}
+
+We define a graph $G$ whose nodes are mini-trees and each two nodes $x, y$ are connected whenever there is a vertex $u$ in $x$ and a vertex $v$ in $y$ such that $\levelNext(i, u) = v$.
 
 \begin{lemma}\label{l:level-graph}
 	The graph $G$ has $O(\frac{n}{B})$ edges.
@@ -2517,52 +2550,53 @@ Let's assume a graph $G$ whose nodes are mini-trees and each two nodes $x, y$ ar
 	The graph is planar, therefore there is a linear bound on number of edges.
 \end{proof}
 
-For each mini-tree $i$ we create a compressed array $lnext_1$:
-$$i.lnext_1[j] = level\_next((0, 0, 0), level\_last(i, depth(i) + j))$$
+For each mini-tree $i$, we define an array $\lnextI$:
+$$ \lnextI[j] = \levelNext(\rootI(0), \levelLast(i, \dep(i) + j)).\tau_1$$
 If there is no next vertex, than we use the name $-1$.
 
-These compressed arrays contain at most $n$ elements in total, and according to the previous lemma, there are only $O(\frac{n}{B})$ runs in all compressed arrays.
-The bound on number of runs follows from lemmas \ref{l:level-first-3} and \ref{l:level-graph}
-The extra ``no next vertex'' names do not matter as we could have equivalently defined that $level\_next((0, 0, 0), level\_last((0, 0, 0), d)) = level\_first((0, 0, 0), d)$.
+We build a collection of compressed arrays out of all $\lnextI$ arrays, which will be stored in the global structure.
+They contain $O(n)$ elements in total as each vertex except for mini-tree roots is the right-most one in at most one mini-tree, and the number of mini-tree roots is $O(\frac{n}{B})$.
+There are at most $O(\frac{n}{B})$ runs in all arrays, which follows from the lemmas \ref{l:level-graph} ans \ref{l:level-first-3}; there are only $O(1)$ ways how three and three runs can be combined together.
+The extra ``no next vertex'' names do not matter as we they form a single run until the end of the array.
 The collection of compressed arrays requires $O(\frac{n}{B} \log n) = o(n)$ bits of space.
 
-We construct a similar structure $lnext_2$ for all micro-trees, storing the $\tau_2$ name of the right micro-trees.
-This requires $O(\frac{B}{b} \log B) = o(B)$ bits of memory.
+We construct a similar structure $\lnextII$ for all micro-trees, storing the $\tau_2$ name of the micro-trees containing the level-next vertex.
+This requires $O(\frac{B}{b} \log B) = o(B)$ bits of memory, and it is stored in each mini-tree structure.
 
 \begin{algorithm}
 \begin{algorithmic}
-\Function{level\_next}{$i, j$}
-	\If{$j = level\_last(i, depth(j))$}
+\Function{level\_next}{$a, i$}
+	\If{$i = \levelLast(a, \dep(i))$}
 		\State \Return{$-1$}
 	\EndIf
 	
-	\State $k \gets level\_next[j.size, j.rep, j.\tau_3]$ \Comment{Search in micro-tree}
-	\If{$k = -1 \boolor j.dummy_2 \ne null \booland j.dummy_2 < k$} \Comment{Check dummy vertex}
-		\State $f \gets level\_first(dummy\_down(dummy_2(j)), depth(j))$
+	\State $j \gets \levelNext[i.\size, i.\rep, i.\tau_3]$ \Comment{Search in micro-tree}
+	\If{$i.\dummyII \ne -1 \booland (j = -1 \boolor \preRank(\bottomII(i)) < \preRank(j))$}
+		\State $f \gets \levelFirst(\bottomII(i), \dep(i))$  \Comment{Check dummy vertex}
 		\If{$f \ne -1$}
 			\State \Return{$f$}
 		\EndIf
-	\ElsIf{$k \ne -1$}
-		\State \Return{$j.\tau_1, j.\tau_2, k$} \Comment{Answer in micro-tree}
+	\ElsIf{$j \ne -1$}
+		\State \Return{$i.\tau_1, i.\tau_2, j$} \Comment{Answer in micro-tree}
 	\EndIf
 	
-	\State $t_2 \gets j.lnext_2[depth(j) - depth(root_2(j))]$ \Comment{Search for micro-tree}
-	\If{$t_2 \ne -1 \booland t_2.dummy_2 \ne null \booland is\_ancestor(dummy\_down(dummy_2(t_2)), j)$}
-		\State \Return {$level\_next'[t_2.size, t_2.rep, depth(j) - depth(root_2(t_2))]$}
+	\State $t_2 \gets i.\lnextII[i.\tau_2, \dep(i) - \dep(\rootII(i))]$ \Comment{Search for micro-tree}
+	\If{$t_2 \ne -1 \booland t_2.\dummyII \ne -1 \booland \isAncestor(\bottomII(t_2), i)$}
+		\State \Return {$\levelNext'[t_2.\size, t_2.\rep, \dep(i) - \dep(\rootII(t_2))]$}
 	\ElsIf{$t_2 \ne -1$}
-		\State \Return{$level\_first(t_2, depth(j))$}
+		\State \Return{$\levelFirst(t_2, \dep(i))$}
 	\EndIf
 	
-	\State $t_1 \gets j.lnext_1[depth(j) - depth(root_2(j))]$ \Comment{Search for mini-tree}
-	\If{$t_1 \ne -1 \booland t_1.dummy_1 \ne null \booland is\_ancestor(dummy\_down(dummy_1(t_1)), j)$}
-		\State $t_2 \gets t_1.dummy\_next[depth(j) - depth(dummy_1(t_1))]$
-		\If{$t_2.dummy_2 \ne null \booland is\_ancestor(dummy\_down(dummy_2(t_2)), j)$}
-			\State \Return {$level\_next'[t_2.size, t_2.rep, depth(j) - depth(root_2(t_2))]$}
+	\State $t_1 \gets \lnextI[i.\tau_1, \dep(i) - \dep(\rootII(i))]$ \Comment{Search for mini-tree}
+	\If{$t_1 \ne -1 \booland t_1.\dummyI \ne -1 \booland \isAncestor(\bottomI(t_1), i)$}
+		\State $t_2 \gets t_1.\dummyNext[\dep(i) - \dep(\dummyI(t_1))]$
+		\If{$t_2.\dummyII \ne -1 \booland \isAncestor(\bottomII(t_2), i)$}
+			\State \Return {$\levelNext'[t_2.\size, t_2.\rep, \dep(i) - \dep(\rootII(t_2))]$}
 		\Else
-			\State \Return{$level\_first(t_2, depth(j))$}
+			\State \Return{$\levelFirst(t_2, \dep(i))$}
 		\EndIf
 	\ElsIf{$t_1 \ne -1$}
-		\State \Return{$level\_first(t_1, depth(j))$}
+		\State \Return{$\levelFirst(t_1, \dep(i))$}
 	\Else
 		\State \Return{$-1$}
 	\EndIf
@@ -2572,11 +2606,14 @@ This requires $O(\frac{B}{b} \log B) = o(B)$ bits of memory.
 
 \subsection{Final Thoughts}
 
-In the beginning we defined a constant $c \ge 2$ which can be set to $2$ as long as we do not require the ancestral and level operations in the form we have shown (they require $c \ge 3$).
-However, it is not true $c >2$ is required as \todo{ref} shown the same structure with slightly more complicated operations for which $c = 2$ is sufficient.
-We chose the simpler options as they use the same structures which we used in other parts of this work.
+In the beginning we defined the size $B$ dependent on the constant $c \ge 2$.
+We can set $c = 2$ as long as we do not require the ancestral and level operations in the form we have shown (they require $c \ge 3$).
+However, it is not true that $c >2$ is required as \todo{ref} shown the same structure with slightly more complicated operations for which $c = 2$ is sufficient.
+We chose the simpler options as they allowed use reuse structures which we defined in other parts of this work.
 
-The structure supports a very similar spectrum of operations as FF while being easier to extend as it is often sufficient to implement the operation on mini-tree and micro-tree scales using techniques inspired by traditional solutions, and adding a look-up table for queries contained within micro-trees.
+The TC data structure supports all operations of FF; it is better in ranking operations as \postRank{}, \postSelect{}, \dfudsRank{}, \dfudsSelect{} are not supported by the former one.
+The advantage of TC is that it is easier to extend it by adding small bits to an existing skeleton.
+On the other hand, some operations are significantly harder to implement.
 
 \section{Universal Succinct Representation}
 
