@@ -126,6 +126,7 @@
 \setlength{\textfloatsep}{5pt plus 2pt minus 2pt}
 \setlength{\intextsep}{5pt plus 2pt minus 2pt}
 %\setlength{\abovecaptionskip}{0pt}
+%\setlength{\abovecaptionskip}{10pt}
 %\renewcommand\textfraction{0.0}
 %\setcounter{totalnumber}{100}
 %\renewcommand\floatpagefraction{0.1}
@@ -445,7 +446,7 @@
 \defineName[ancSearchI]{anc\_search\m{_1}}
 \defineName[ancSearchII]{anc\_search\m{_2}}
 
-% in structures, TC level
+% in structures, TC level, first last
 \defineName[lfirstI]{lfirst_1}
 \defineName[lfirstII]{lfirst_2}
 \defineName[lfirstKI]{lfirst\_k_1}
@@ -457,9 +458,48 @@
 \defineName[llastKI]{llast\_k_1}
 \defineName[llastKII]{llast\_k_2}
 
+% in structures, TC level, next
 \defineName[dummyNext]{dummy\_next}
 \defineName[lnextI]{lnext_1}
 \defineName[lnextII]{lnext_2}
+
+% in structures, USR intro
+\defineName[bpSubstring]{bp\_substring}
+\defineName[dfudsSubstring]{dfuds\_substring}
+\defineName[tcMicrotree]{tc\_microtree}
+
+% in structures, USR restriction
+\defineName[bp]{bp}
+\defineName[dfuds]{dfuds}
+\defineName[bpDummy]{bp\_dummy}
+\defineName[dfudsDummy]{dfuds\_dummy}
+\defineName[bpReduce]{bp\_reduce}
+\defineName[dfudsReduce]{dfuds\_reduce}
+\defineName[degreeOwn]{degree\_own}
+\defineName[bpLast]{bp\_last}
+\defineName[bpFollowing]{bp\_following}
+\defineName[dfudsLast]{dfuds\_last}
+\defineName[dfudsFollowing]{dfuds\_following}
+\defineName[dfudsStart]{dfuds\_start}
+
+% in structures, USR skinny
+\defineName{restore}
+\defineName[readTree]{read\_tree}
+\defineName[bpSkinnyDown]{bp\_skinny\_down}
+\defineName[bpSkinnyUp]{bp\_skinny\_up}
+\defineName[dfudsSkinnyDown]{dfuds\_skinny\_down}
+\defineName[dfudsSkinnyUp]{dfuds\_skinny\_up}
+\defineName[bpRep]{bp\_rep}
+\defineName[dfudsRep]{dfuds\_rep}
+\defineName{ip}
+\defineName[bpSubstringSkinny]{bp\_substring\_skinny}
+\defineName[dfudsSubstringSkinny]{dfuds\_substring\_skinny}
+\defineName[bpIndex]{bp\_index}
+\defineName[dfudsIndex]{dfuds\_index}
+
+% in structures, USR general
+\defineName[bpNext]{bp\_next}
+\defineName[dfudsNext]{dfuds\_next}
 
 \def\struct#1#2{#1{:}\ #2}
 

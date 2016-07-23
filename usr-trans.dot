@@ -1,17 +1,22 @@
 digraph {
+//	rankdir=LR
+//	ratio=compress
+
 	rlu [label="Right-leaning\ngoing up"];
 	llu [label="Left-leaning\n going up"];
 	rld [label="Right-leaning\ngoing down"];
 	lld [label="Left-leaning\ngoing down"];
 
+	{rank=same; rlu llu}
+	{rank=same; rld lld}
 
-	llu -> lld;
-	llu -> rld;
+	llu -> lld [label="Next"];
+	llu -> rld [label="Next or\nright connection"];
 	
-	rld -> lld;
+	rld -> lld [label="Left connection"];
 
-	rlu -> llu;
+	rlu -> llu [label="Next"];
 
-	lld -> llu [label="Initially"];
-	rld -> rlu [label="Initially"];
+	lld -> llu [label="Turn"];
+	rld -> rlu [label="Turn"];
 }

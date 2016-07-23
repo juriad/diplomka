@@ -137,7 +137,7 @@ Here we describe how it is possible to store a tree in a bit string of size $N =
 	Authors often compete and equip their DFUDS and BP structures with more indices that support operations with which the other representation comes.
 \end{description}
 
-\section{LOUDS}
+\section{Level-Order Unary Degree Sequence}
 
 The first method of representing an ordinal tree succinctly was first described by \cite{jacobson1989space}.
 The encoding of the tree is based on BFS traversal.
@@ -442,7 +442,7 @@ The unsupported operations are more concerned about ancestors and subtrees than 
 We developed a new index for the operation \dep{} and \levelAny{} which greatly expands the possibilities.
 Its simple implementation requiring only three types of indices (\rank{}, \select{}, \blockOfD{}) make it suitable for cases when there are not many requirements set on the supported operations.
 
-\section{BP}
+\section{Balanced Parentheses}
 
 In the previous section, we have seen that it is possible to build a succinct data structure for storing trees which requires essentially only the \rank{} and \select{} operations on the underlying bit string.
 Here we focus on a different schema which exploits the property that the two symbols associated with a vertex are correctly matched in the bit string.
@@ -735,9 +735,9 @@ The operations which remain unsupported are:
 Its main advantage of the BP representation is the simplicity and the support for many operations including \lca and the \dep, for which it pays by hard, yet not impossible, \childRank, \childSelect and \degree operations.
 If we restrict degrees of the vertices to constants, the BP representation becomes suddenly a very good choice.
 
-\section{DFUDS}
+\section{Depth-First Unary Degree Sequence}
 
-\emph{Depth-First Unary Degree Sequence} is an encoding which tries to combine the advantages from both LOUDS (child queries are natively supported) and BP (each subtree is stored locally instead of being spread throughout the encoding).
+\emph{Depth-First Unary Degree Sequence} (DFUDS) is an encoding which tries to combine the advantages from both LOUDS (child queries are natively supported) and BP (each subtree is stored locally instead of being spread throughout the encoding).
 
 The encoding is defined recursively:
 \begin{enumerate}

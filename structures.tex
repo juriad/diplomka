@@ -23,7 +23,9 @@ Here we present data structures which are fundamentally different in either the 
 	Its main advantage is that it automatically benefits from any indices which are proposed for either BP, DFUDS or TC representations.
 \end{description}
 
-\section{FF}
+\todo{Mention transformation into a binary tree}
+
+\section{Fully Functional Representation}
 
 Both BP representation which we described in the previous chapter was based on using \rank{} and \select{}, and \match{} and \enclose{} operations as the main tool.
 There were several operations which required an additional index (\childAny{} and \levelAncestor{}), and several operations which were not supported at all (\levelAny{}).
@@ -917,7 +919,7 @@ If these operations are crucial, the only data structure which supports them is 
 
 \todo{clarify the value of $c$}
 
-\section{TC}
+\section{Tree Covering}\label{s:TC}
 
 All tree data structures which we have shown so far have one thing in common; they solve their operations on two or three different levels:
 \begin{enumerate}
@@ -2617,373 +2619,602 @@ On the other hand, some operations are significantly harder to implement.
 
 \section{Universal Succinct Representation}
 
-All the previous structures can be split into two parts (recalling the definition of systematic data structures):
-\begin{enumerate}
-	\item data -- in case of BP (and FF -- it shares the data part of the representation) and DFUDS it is clearly the bit string $S$ of size $2n$ bits.
-	In case of TC it could be the structure stripped off all fields which are not necessary for reconstruction of the original tree.
-	We can go even further and split the data into the sequence of pairs $(size, rep)$ for each micro-tree and a simple structure which maintains their relationships (number of mini-trees in the tree, number of micro-trees in a mini-tree, parents, primaries).
-	From now on we will treat the simple structure as an index.
-	\item index -- any structure or structures of size $o(n)$ bits which speeds up the queries; for BP and DFUDS they were rank, select, match, rmq indices.
-	In case of TC we incorporated the index alongside the micro-tree $rep$s, however as the structure takes only $o(n)$ bits (the tables of offsets of mini-trees, and micro-trees), we can extract it and keep it in a parallel structure.
-\end{enumerate}
+All of the previous structures can be split into two parts (recalling the definition of systematic data structures):
+\begin{description}
+	\item[data]
+	In case of BP (and FF -- the same representation with different indices) and DFUDS, it is clearly the bit string $S$ of size $2n$ bits.
 
-Any algorithm for word-RAM can access only $w = \O(\log n)$ consecutive bits of memory in each step.
-As all the operations which we have shown were formulated for word-RAM, we can replace the data bit-string itself with a structure which answers queries on $w$ consecutive bits in time $O(1)$.
-As long as the structure uses only $2n + o(n)$ bits, the resulting data structure is still succinct.
+	In case of TC, it is the representations of micro-trees in form of a sequence of pairs $(\size, \rep)$.
+	Although it is not enough to restore the original tree -- for that we would need to store at least the number of mini-trees in the tree, number of micro-trees in a mini-tree, parents, primaries and dummy vertices, we do not consider it here.
+	
+	\item[index] 
+	Any structure or structures of size $o(n)$ bits which speeds up the queries; for BP and DFUDS they were indices for \rank{}, \select{}, \match{}, \rmqi{}.
+	In case of TC, the global, mini-tree and micro-tree structures without what we defined as \emph{data} take only $o(n)$ bits and will be considered as an index.
+\end{description}
 
-We define a structure for a universal succinct representation which provides three operations running in time $O(1)$:
+Any algorithm for word-RAM can access only $w = \Theta(\log n)$ consecutive bits of memory in one step.
+Since all the operations which we have shown were formulated for word-RAM, at each step at most $w$ bits of the bit string $S$ or at most one micro-tree representation $(\size, \rep)$ can be accessed in the memory.
+We can replace the data part of each data structure by simulation of the memory access in time $O(1)$.
+As long as the structure providing the simulation uses only $2n + o(n)$ bits, the original data structure is still succinct.
+
+We define a data structure for a universal succinct representation which provides the following three operations in running time $O(1)$:
+\begin{description}
+	\item[$\bpSubstring(i, s) \rightarrow S$]
+	It returns $s \le w$ bits of BP representation staring at position $i$.
+	
+	\item[$\dfudsSubstring(i, s) \rightarrow S$] 
+	It returns $s \le w$ bits of DFUDS representation staring at position $i$.
+	
+	\item[$\tcMicrotree(\tau_1, \tau_2) \rightarrow (\size, \rep)$]
+	Returns the micro-tree representation by its $(\tau_1, \tau_2)$ name.
+	We assume that the decomposition and the naming schema which we described in the section \ref{s:TC} is used.
+\end{description}
+
+Although the parameter $s$ can be in range $[1, w]$, we will restrict it to a fraction of $\log n$; the exact value depends on the target representation and on a constant which we leave as a parameter of the data structure.
+We also constraint $i$ to be a multiple of $s$.
+The answer to a query with unrestricted $i$ and $s$ can still be obtained by $O(1)$ queries of the restricted operations.
+
+\bigbreak
+
+Assuming that such data structure exist, we can equip it with all \emph{indices} (for BP, DFUDS and TC) in order to obtain a succinct data structure which supports the union of all operations of individual representations.
+Although it may seem that TC is superior to any other representation, there are still advantages:
 \begin{itemize}
-	\item $BP\_substring(i, b)$ -- returns $b$ bits of BP representation staring at position $i$.
-	\item $DFUDS\_substring(i, b)$ -- returns $b$ bits of DFUDS representation staring at position $i$;
-	\item $TC\_microtree(\tau_1, \tau_2)$ -- returns the micro tree ($\tau_1, \tau_2$).
-	We assume that the decomposition and the naming schema which we described in the section \todo{ref TC} is used.
+	\item If there are more ways to support the same operation, the fastest one or the one requiring the smallest index (both in terms of a real implementation) can be chosen.
+	\item If any new operation becomes supported by either of the representations, the universal data structure can benefit from it.
 \end{itemize}
-
-The parameter $b$ can be in range $[1, w]$.
-However, from now on we fix it to $b = \frac{\log n}{16}$ and call it a block size.
-The answer to any other value of the parameter can be obtained by $O(1)$ queries with the fixed $b$ with an optional trim of unwanted bits.
-
-Assuming that a structure with such properties exist, we can immediately build a succinct structure which supports the union of all operation described in sections BP, DFUDS, FF and TC by adding the right indices of size $o(n)$.
-The advantage is also that any progress in any of the mentioned structures becomes immediately available in this structure by simply adding the necessary index.
 
 \subsection{Restriction to Mini-Trees}
 
 We start with the same two-level decomposition as in the Tree Covering representation.
-First, we focus on supporting BP and DFUDS operations, which we do on a mini-tree level.
+The mini-trees are the primary part of the data structure, which is where the operations \bpSubstring and \dfudsSubstring are supported.
+The micro-trees will be used much later since they are required only to support the operation \tcMicrotree{}.
 
-We define two compressed arrays $BP$ and $DFUDS$: for each bit (except for the first one in case of $DFUDS$) we store $\tau_1$ name of the mini-tree to which the vertex whose bit it is belongs.
-Contrary to \todo{ref article} we associate the bits in unary degree sequence of vertex $v$ with the vertex $v$ and not his individual children.
-This simplifies the data structure.
+Almost every parenthesis in the bit strings $S$ of BP and DFUDS representation can be associated with a vertex:
+\begin{itemize}
+	\item an opening parenthesis in BP directly represents a vertex;
+	\item a closing parenthesis in BP represents the same vertex as the matching opening one;
+	\item the first parenthesis in DFUDS is unassociated;
+	\item the first parenthesis following a closing one or parenthesis at position $1$ directly represents a vertex;
+	\item any other parenthesis in DFUDS represents the same vertex as the preceding one.
+\end{itemize}
+Contrary to the original proposal in \cite{farzan2009universal}, we use a different association in the DFUDS representation.
+The advantage of our approach is that the algorithms become simpler and we are able to generate bigger blocks of bits.
+
+We define two compressed arrays $\bp$ and $\dfuds$ which contain the $\tau_1$ name in the TC representation of the vertex associated with the parenthesis at every position.
 
 \begin{lemma}\label{l:usr-runs}
-	Every $\tau_1$ name occurs in at most 4 runs in the compressed array $BP$ and 3 runs in $DFUDS$.
+	Every $\tau_1$ name occurs in at most 4 runs in the compressed array $\bp$ and 3 runs in $\dfuds$.
 \end{lemma}
 \begin{proof}
-	Because the definitions of the BP and DFUDS representations are based on pre-order traversal of the tree, and they are recursive, we know all vertices between the first and last mentions of $\tau_1$ are in the subtree of the mini-tree root $v$.
-	
-	We can assume that the root $v$ of a mini-tree $t$ belong to $t$, otherwise the BP representation lacks the first and last mention of $t.\tau_1$, which can only decrease the number of runs.
-	In case of DFUDS, the root representation is continuous leading to omission of $degree(root_1(t))$ first occurrences of $t.\tau_1$.
-	
-	We also assume that the mini-tree $t$ contains at least two vertices, otherwise it is trivial.
-	We call the own the children of $v$ which belong to the mini-tree $v$.
+	The definitions of the BP and DFUDS representations are based on pre-order traversal of the tree, and they can be expressed recursively.
+	All vertices between the first and the last occurrence of the $\tau_1$ name of a mini-tree $t$ are in the subtree of the mini-tree root $v$ of $t$.
+	We call \emph{own} the children of $v$ which are contained in the mini-tree $t$.
 	
 	There are three types of connections which connect other mini-trees to $t$.
-	All type (1) and type (2) connections involve $v$ -- some subtrees rooted in children of $v$ can belong to other mini-trees.
-	The own children of $v$ form an interval which is not interrupted by any type (1) nor type (2) connections.
-	In BP representation the type (1) and type (2) connected mini-trees are either just after the opening parenthesis of $v$ or just before the closing parenthesis of $v$.
-	They can separate the opening and closing parentheses from the consecutive block of children in $t$.
-	In case of the DFUDS representation, the type (1) and type (2) connections can split the representation of $v$ from its children in $t$.
-	However, in comparison to BP, the last occurrence of $t.\tau_1$ is in the subtree of the last own child of $v$, which precedes representation of any connections to the right from children in $t$.
+	All type (1) and type (2) connections involve the root $v$; some subtrees rooted in children of $v$ can belong to other mini-trees.
+	The own children of $v$ form an interval which is not interrupted by any type (1) nor type (2) connection.
 	
-	Each mini-tree can have up to one type (3) connection which can break the run of own children of $v$ in two.
+	In the array $\bp$, the subtree of $v$ consists of:
+	\begin{enumerate}
+		\item the opening parenthesis of the root $v$,
+		\item subtrees of children preceding own children (the first interruption),
+		\item subtrees of own children,
+		\item subtrees of children following own children (the second interruption),
+		\item the closing parenthesis of the root $v$.
+	\end{enumerate}
+	
+	In the array $\dfuds$, the subtree of $v$ is slightly different:
+	\begin{enumerate}
+		\item the degree sequence of the root $v$,
+		\item subtrees of children preceding own children (the only interruption),
+		\item subtrees of own children,
+		\item subtrees of children following own children.
+	\end{enumerate}
+	
+	Any of the parts in both arrays can be empty, which can only decrease the number of interruptions.
+	Each mini-tree can further have up to one type (3) connection which can interrupt once the run containing own children.
+	
+	The number of runs follows from the number of interruptions.
 \end{proof}
 
-By the lemma, there are at most $O(1)$ runs, therefore the size of $BP$ and $DFUDS$ is $o(n)$.
+According to the lemma, there are at most $O(1)$ runs of each name, therefore the size of the compressed arrays $\bp$ and $\dfuds$ is $o(n)$.
 
-We also immediately solve all queries which are not fully contained within a single mini-tree and all queries which involve any bit of root's representation.
-For each run, we store the position where it starts and where it ends together with the preceding, first, last and following $w$ bits of the BP and DFUDS representations.
-In case of DFUDS we replace the first $w$ bits of the first run (where the root start) by $w$ bits starting at the position of root's closing parenthesis.
-This requires $O(\log n) + w = o(B)$ bits per mini-tree.
+\bigbreak
 
-The queries of this type can be detected by $O(1)$ tests.
-The only case which is more complicated is query on bits from DFUDS representation of the mini-tree root $v$.
-There we need to generate the right number of opening parentheses which are part of the degree sequence of $v$.
+We immediately solve all queries which span over multiple $\tau_1$ names in the arrays $\bp$ and $\dfuds$, and also all queries which involve any bit of the representation of any mini-tree root in the DFUDS case.
+
+For each run, we store the last and the following $w$ bits of both representations.
+In case of DFUDS and a primary mini-tree, we also store the first $w$ bits starting at the position of the closing parenthesis in the degree sequence of the root.
+This requires $O(\frac{n}{B} w) = o(n)$ bits.
+
+We can detect such queries in $O(1)$ time by the following two conditions:
+\begin{gather*}
+	\runLast(i) - i < b \\
+	\dfuds[i].\primaryI = \dfuds[i] \booland \rank(\dfuds, i) \le \dfuds[i].\degree + 1
+\end{gather*}
+In the first case we simply answer the query using the parts which we have stored; the number of the run can be found using the function \elementIndex{}.
+In case of the root in DFUDS representation, we first generate the right number of opening parentheses and then append the stored part.
 All this can be implemented using arithmetic and bitwise operations on word-RAM.
 
-From now on, we can assume that all queries can be reduced to only a single mini-tree.
-We also don't have to handle specially the case of existence mini-tree dummy vertex, because any query in which it could be involved is not contained in the mini-tree and therefore it was already solved.
-It is still necessary to keep it in order to calculate the degree of its parent correctly for DFUDS representation.
-The position $i$ gets transformed so that it is a position inside the mini-tree including the mini-tree root; we do this by the function $before$ applied to $BP$ or $DFUDS$ compressed arrays and corrections due non-own children of potentially shared mini-tree root.
+From now on, we can assume that all queries span a single run.
+They can therefore be restricted to a query on the BP or DFUDS representation of a single mini-tree.
 
-$$
-i' = \begin{cases}
-	before(BP, i) & \textrm{if BP and}\ BP[i].\tau_1 = BP[i].primary_1 \\
-	before(BP, i) + 1 & \textrm{if BP, otherwise} \\
-	before(DFUDS, i) - DFUDS[i].degree + DFUDS[i].degree\_own & \textrm{if DFUDS and}\ DFUDS[i].\tau_1 = DFUDS[i].primary_1 \\
-	before(DFUDS, i) + DFUDS[i].degree\_own + 1 & \textrm{if DFUDS, otherwise}
-\end{cases}
-$$
+We do not have to handle specially the case of existence of a mini-tree dummy vertex since its encounter causes an interruption in the arrays $\bp$ and $\dfuds$, and therefore such query must have already been solved.
+It is still necessary to keep it in order to calculate the degree of its parent correctly in the DFUDS representation.
 
-\bigskip
+We store the offset of the dummy vertex in the BP and DFUDS representation of the mini-tree.
+The dummy vertex is represented by the sequence \str{()} in BP and by \str{)} in DFUDS representation.
+The position $i$ is transformed to a position $i'$ inside the BP and DFUDS representations of the mini-tree.
 
-We call a vertex \emph{significant} if its subtree size is larger than $\frac{\log n}{16}$.
-A \emph{skeleton} of a mini-tree is the subtree induced by significant vertices, which by is connected as each ancestor is also significant.
+\begin{algorithm}
+\begin{algorithmic}
+\Function{\bpReduce}{$i$}
+	\State $i' \gets \rank(\bp, i) - 1$
+	\If{$\bp[i].\tau_1 \ne \bp[i].\primaryI$} \Comment{Not primary}
+		\State $i' \gets i' + 1$ \Comment{Reintroduce the root}
+	\EndIf
+	\If{$\bpDummy \ne -1 \booland i' \ge \bpDummy$} \Comment{Dummy vertex is before}
+		\State $i' \gets i' + 2$ \Comment{Introduce the dummy vertex}
+	\EndIf
+\EndFunction
+\end{algorithmic}
+\end{algorithm}
 
-There are at most $O(\frac{B}{\log n})$ leaves in the skeleton as the subtree of each of them contains at least $\frac{\log n}{16}$ vertices.
-We can assume that there is also at least one significant vertex as otherwise the size of a mini-tree is less than $w$, and so every query is already has already been solved.
+\begin{algorithm}
+\begin{algorithmic}
+\Function{\dfudsReduce}{$i$}
+	\State $i' \gets \rank(\dfuds, i) - 1$
+	\If{$\dfuds[i].\tau_1 = \dfuds[i].\primaryI$} \Comment{Primary}
+		\State $i' \gets i' - \dfuds[i].\degree - 1$ \Comment{Remove root's degree sequence}
+	\EndIf
+	\State $i' \gets i' + \dfuds[i].\degreeOwn + 1$ \Comment{Reintroduce the root}
+	\If{$\dfudsDummy \ne -1 \booland i' \ge \dfudsDummy$} \Comment{Dummy vertex is before}
+		\State $i' \gets i' + 1$ \Comment{Introduce the dummy vertex}
+	\EndIf
+\EndFunction
+\end{algorithmic}
+\end{algorithm}
+
+So far we needed the following fields to be stored:
+\begin{description}
+	\item[Global]
+	\begin{description}
+		\item[]
+		
+		\item[$\bp$]
+		The compressed array which maps positions of parentheses of the BP representation to mini-trees.
+		
+		\item[$\dfuds$]
+		The compressed array which maps positions of parentheses of the DFUDS representation to mini-trees.
+		
+		\item[$\bpLast, \bpFollowing, \dfudsLast, \dfudsFollowing$]
+		Arrays containing words of the last and the following $w$ bits for each run and for both representations.
+	\end{description}
+	
+	\item[Mini-tree]
+	\begin{description}
+		\item[]
+		
+		\item[$\tau_1, \primaryI$]
+		They are the same as in the TC data structure.
+		
+		\item[$\degree, \degreeOwn$]
+		The full degree of the mini-tree root, and its root when restricted to children in this mini-tree. 
+		
+		\item[$\bpDummy, \dfudsDummy$]
+		Positions of the dummy vertex in the BP and DFUDS representations of the mini-tree.
+		
+		\item[$\dfudsStart$]
+		Contains the $w$ bits of the DFUDS representation starting at the position of the closing parenthesis in the degree sequence of the root.
+	\end{description}
+\end{description}
+
+\bigbreak
+
+From now on, the restrict our description to a single mini-tree; we ignore all other mini-trees, including those connected via the dummy vertex.
+
+We call a vertex \emph{significant} if its subtree size is larger than $d' = \frac{\log n}{d}$, for a constant $d$.
+
+A \emph{skeleton} of a mini-tree is the subtree induced by significant vertices.
+The skeleton must be connected since each ancestor of a significant vertex is also significant.
+
+There are at most $O(\frac{B}{\log n})$ leaves in the skeleton as the subtree of each of them contains at least $d'$ vertices.
+We can assume that there is also at least one significant vertex as otherwise the size of the representation of the mini-tree is less than $w$, and so every query has already been solved.
 
 \subsection{Skinny Mini-Trees}
 
 We call a mini-tree \emph{skinny} if its skeleton is a path.
 We solve this special case first, and then generalize it to all skeletons.
 
-We use the same notation as \todo{ref article}:
+We use the same notation as in the original article \cite{farzan2009universal}:
 Let $P$ by the skeleton, which is a path, $u$ its leaf and $v$ the last child of $u$.
 \begin{align*}
-	S &= \{ s : parent(s) \in P \booland s \notin P \} \\
-	S_D &= \{ s \in S : pre\_rank(s) \le pre\_rank(v) \} \\
-	S_U &= \{ s \in S : pre\_rank(s) > pre\_rank(v) \}
+	S &= \{ s : \parent(s) \in P \booland s \notin P \} \\
+	S_D &= \{ s \in S : \preRank(s) \le \preRank(v) \} \\
+	S_U &= \{ s \in S : \preRank(s) > \preRank(v) \}
 \end{align*}
 
-We represent a skinny mini-tree using four bit strings:
-\begin{itemize}
-	\item Path down, $P_D$ -- the concatenation of the unary degree sequences of vertices in the skeleton, assuming only their children in $S_D$.
-	They are stored in the order from the root to $u$.
-	\item Path up, $P_U$ -- the same for children in $S_U$ and direction from $u$ to the root.
-	\item Trees on path down, $T_D$ -- subtrees of $S_D$ stored consecutively according to their pre-order numbers.
+We represent a skinny mini-tree by four bit strings:
+\begin{description}
+	\item[Path down, $P_D$]
+	The concatenation of the unary degree sequences of vertices in the skeleton, assuming only their children in $S_D$.
+	They are stored in the order from the root to the leaf $u$.
+	
+	\item[Path up, $P_U$]
+	The same for children in $S_U$ and direction from $u$ to the root.
+	
+	\item[Trees on path down, $T_D$]
+	Subtrees of $S_D$ stored consecutively according to their pre-order numbers.
 	We call the trees \emph{left dangling trees}.
 	The trees can be stored in any self-delimiting representation which requires at most $2k - 1$ bits for a tree with $k$ vertices.
 	We can either use BP without the first parenthesis, which is an opening one, or DFUDS without the artificially prepended opening parenthesis.
-	\item Trees on path up, $T_U$ -- the same for subtrees of vertices $S_U$ ordered by their pre-order numbers.
+	
+	\item[Trees on path up, $T_U$]
+	The same for subtrees of vertices $S_U$ ordered by their pre-order numbers.
 	We call them \emph{right dangling trees}.
-\end{itemize}
+\end{description}
 
 These four bit strings together use exactly $2$ bits per every vertex of the mini-tree.
 Each opening parenthesis in $P_D$ and $P_U$ can be paired with the one missing in representations of the dangling trees in $T_D$ and $T_U$.
-Vertices belonging to the path are represented by closing parentheses in $P_D$ and $P_U$, one in each.
+Vertices belonging to the skeleton are represented by closing parentheses in $P_D$ and $P_U$, one in each.
 
 We can restore the original mini-tree from this representation:
 \begin{algorithm}
 \begin{algorithmic}
-\Function{restore}{}
+\Function{\restore}{}
 	\State $v \gets null$
 	\While{$P_D$ has more symbols}
 		\State $v \gets$ new child of $v$
-		\While{The symbol in $P_D$ is an opening parenthesis}
+		\While{Read a symbol in $P_D$; is it an opening parenthesis}
 			\State Read a tree from $T_D$, decode it and add it as a child to $v$
 		\EndWhile
 	\EndWhile
 	\While{$P_U$ has more symbols}
-		\While{The symbol in $P_U$ is an opening parenthesis}
+		\While{Read a symbol in $P_U$; is it an opening parenthesis}
 			\State Read a tree from $T_U$, decode it and add it as a child to $v$
 		\EndWhile
-		\State $v \gets parent(v)$
+		\State $v \gets \parent(v)$
 	\EndWhile
 \EndFunction
 \end{algorithmic}
 \end{algorithm}
 
-\subsubsection{Generation of BP and DFUDS Representations}
+\subsubsection{Generation of the BP and DFUDS Representations}
 
-\begin{lemma}
-	Using an index of size $o(B)$, we can query $BP\_substring(j b, b)$ of any aligned block in constant time.
+\begin{lemma}\label{l:usr-bp-skinny}
+	Using an index of size $o(B)$, we can query $q' = \frac{\log n}{q}$ bits of BP representation of a skinny mini-tree provided that $i$ is a multiple of $q'$.
+	The constant $q$ is restricted to:
+	$$\frac{2}{q} + \frac{4}{d} < 1$$
 \end{lemma}
 \begin{proof}
 	We first formulate an algorithm which outputs the BP representation of the whole mini-tree.
-	The algorithm is based on $restore$:
+	The algorithm is based on \restore{}; we split it into two functions.
 	
 	\begin{algorithm}
 	\begin{algorithmic}
-	\Function{BP\_rep\_skinny}{}
-		\State $p_D \gets 0; p_U \gets 0; t_D \gets 0; t_U \gets 0$
+	\Function{\bpSkinnyDown}{}
+		\State $p_D \gets 0; t_D \gets 0$
 		\While{$p_D < |P_D|$}
-			\State $write("(")$
-			\While{$P_D[p_D] = "("$}
-				\State $t \gets read\_tree(t_D); t_D \gets t_D + |t|$
-				\State $write(BP\_rep[t])$
-				\State $p_D \gets p_D + 1$
+			\State $\out(\openingParen)$
+			\While{$P_D[p_D] = \openingParen$}
+				\State $t \gets \readTree(t_D); t_D \gets t_D + |t|; p_D \gets p_D + 1$
+				\State $\out(\bpRep[t])$
 			\EndWhile
 			\State $p_D \gets p_D + 1$ \Comment{Consume the closing parenthesis}
 		\EndWhile
+	\EndFunction
+
+	\Function{\bpSkinnyUp}{}
+		\State $p_U \gets 0; t_U \gets 0$
 		\While{$p_U < |P_U|$}
-			\While{$P_U[p_U] = "("$}
-				\State $t \gets read\_tree(t_U); t_U \gets t_U + |t|$
-				\State $write(BP\_rep[t])$
-				\State $p_U \gets p_U + 1$
+			\While{$P_U[p_U] = \openingParen$}
+				\State $t \gets \readTree(t_U); t_U \gets t_U + |t|; p_U \gets p_U + 1$
+				\State $\out(\bpRep[t])$
 			\EndWhile
 			\State $p_U \gets p_U + 1$ \Comment{Consume the closing parenthesis}
-			\State $write(")")$
+			\State $\out(\closingParen)$
 		\EndWhile
 	\EndFunction
 	\end{algorithmic}
 	\end{algorithm}
 	
-	For each $j$ we store the state of the algorithm: the instruction pointer and value of all local variables, which is $O(\log \log n)$ bits.
-	Using this index we can restart the course of the algorithm from any position which related to the output is either a parenthesis of a vertex in $P$ or beginning of a dangling tree.
-	In order to support any position of the output, we add to the index an offset $o$ which allows us to skip the first $o$ bits of a BP representation of a dangling tree.
+	For each $j$ we store the state of the algorithm at the point when it is about to access the arrays in order to produce the $i$-th bit of the representation:
+	\begin{itemize}
+		\item which function $f$ is being processed, $1$ bit;
+		\item the instruction pointer $\ip$, $O(1)$ bits;
+		\item the values of all local variables, $O(\log \log n)$ bits.
+	\end{itemize}
 	
-	In order to generate any $b$ bits of BP representation, at most $b$ bits are read from $P_D$ or $P_U$ as well as up to $b + 2 \frac{\log n}{8}$ bits from $T_D$ or $T_U$.
-	We can therefore implement the algorithm solely as a look-up table which is provided with all the bits which it may use; that is $4b + 4 \frac{\log n}{8} + 7 \log \log n + c < \log n$: the $\log \log n$ is for the offset $o$, values of $p_D, p_U, t_D, t_U$ and $|P_D|, |P_U|$, and $c$ is a constant for the instruction pointer.
-	The size of the look-up table is $o(n)$ bits.
+	Using this index we can restart the course of the algorithm from any position which, related to the output, is either a parenthesis of a vertex in $P$ or the beginning of a dangling tree.
+	In order to support any position of the output, we add to the index an offset $o$ which allows us to skip the first $o$ bits of which we do not need.
+	
+	In order to generate any $s$ bits of the BP representation, either function needs to read at most $s$ bits from $P_*$ as well as up to $s + 4d'$ bits from $T_*$.
+	The term $4d'$ follows from accessing two dangling trees more than is needed.
+	
+	We can therefore implement the algorithms solely as two precomputed look-up tables \bpSkinnyDown{} and \bpSkinnyUp{} which get all information from the index and return the needed bits.
+	The tables return correctly aligned bits ready for the output together with number of bits which they could not generate.
+	The table has an additional argument $s$ which specifies the number of right-aligned bits to return.
+	The total size of the index of the look-up table is $2q' + 4d' + O(\log \log n)$, which is from where the restriction on value of $q$ comes.
+	
+	We state the algorithm in a more general form which allows to generate $s \le q$ bits; it also returns the number of bits which it could not produce.
+	Neither of the these features is useful for skinny mini-trees as we always need $q$ bits, and the query cannot reach the end because such query has already been solved by using the stored bits in $\bpLast$.
+	
+	\begin{algorithm}
+	\begin{algorithmic}
+	\Function{\bpSubstringSkinny}{$i, s$}
+		\State $r \gets 0$ \Comment{Representation buffer}
+		\State $(f, \ip, p, t, o) \gets \bpIndex[\frac{i}{q'}]$
+		
+		\If{$f = 0$} \Comment{Function for going down}
+			\State $S \gets (P_D[p:p+q'], T_D[t:t + q' + 4d'], |P_D|, |T_D|)$
+			\State $(r, s) \gets \bpSkinnyDown[S, \ip, p, t, o, s]$
+			\State $\ip \gets 0; p \gets 0; t \gets 0; o \gets 0$
+		\EndIf
+		
+		\If{$s > 0$} \Comment{Function for going up}
+			\State $S \gets (P_U[p:p+q'], T_U[t:t + q' + 4d'], |P_U|, |T_U|)$
+			\State $(r', s) \gets \bpSkinnyUp[S, \ip, p, t, o, s]$
+			\State $r \gets r \bitor r'$ \Comment{Bitwise or}
+		\EndIf
+		
+		\State \Return{$r, s$}
+	\EndFunction
+	\end{algorithmic}
+	\end{algorithm}
 \end{proof}
 
-\begin{lemma}
-	Using an index of size $o(B)$, we can query $DFUDS\_substring(j b, b)$ of any aligned block in constant time.
+\begin{lemma}\label{l:usr-dfuds-skinny}
+	Using an index of size $o(B)$, we can query $q' = \frac{\log n}{q}$ bits of BP representation of a skinny mini-tree provided that $i$ is a multiple of $q'$.
+	The constant $q$ is restricted to:
+	$$\frac{3}{q} + \frac{4}{d} < 1$$
 \end{lemma}
 \begin{proof}
 	We use the same technique as in the previous lemma.
-	The algorithm is a little more complicated.
-	We need to to go through $P_D$ twice: the first time to report the degree, and the second time when we output the left dangling trees.
-	We also go through $P_U$ twice: the first time from the end to the beginning treating closing parentheses as delimiters, and the second time to output the right dangling trees.
-	
-	There are two more local variable $p'_D$ and $p'_U$ for which we also need to provide $b$ bits of $P_D$ and $P_U$.
-	In case of $p'_U$ we provide $b$ bits before the offset as the algorithm only decrements it.
-	The key key of the look-up table has size $6b + 4 \frac{\log n}{8} + 9 \log \log n + c < \log n$.
+	The algorithm is a little more complicated as it needs to go through $P_D$ twice: the first time to report the degree, and the second time when the left dangling trees are reported.
+	It also go through $P_U$ twice: the first time from the end to the beginning treating closing parentheses as delimiters, and the second time to output the right dangling trees.
 	
 	\begin{algorithm}
 	\begin{algorithmic}
-	\Function{DFUDS\_rep\_skinny}{}
-		\State $p_D \gets 0; p_U \gets 0; p'_U \gets |P_U| - 2; t_D \gets 0; t_U \gets 0$
-		\State $write("(")$ \Comment{The artificial first parenthesis}
+	\Function{\dfudsSkinnyDown}{}
+		\State $p_D \gets 0;  p_U \gets |P_U| - 2; t_D \gets 0$
 		\While{$p_D < |P_D|$}
-			\State $p'_D \gets p_D$ \Comment{First we output the degree sequence}
-			\While{$P_D[p'_D] = "("$} \Comment{Left dangling children}
-				\State $write("(")$
-				\State $p'_D \gets p'_D + 1$
-			\EndWhile
-			\State $p'_D \gets p'_D + 1$ \Comment{Consume the closing parenthesis}
-			\If{$p'_D < |P_D|$} \Comment{Child in the path}
-				\State $write("(")$
-			\EndIf
-			\While{$P_U[p'_U] = "(" \booland p'_U \ge 0$} \Comment{Right dangling children}
-				\State $write("(")$
-				\State $p'_U \gets p'_U - 1$
-			\EndWhile
-			\State $p'_U \gets p'_U - 1$ \Comment{Consume the closing parenthesis}
-			\State $write(")")$ \Comment{End of unary degree sequence}
-			\While{$P_D[p_D] = "("$} \Comment{Then we output the left dangling children}
-				\State $t \gets read\_tree(t_D); t_D \gets t_D + |t|$
-				\State $write(DFUDS\_rep[t])$
+			\State $p_D \gets p_D$ \Comment{First we output the degree sequence}
+			\While{$P_D[p_D] = \openingParen$} \Comment{Left dangling children}
 				\State $p_D \gets p_D + 1$
+				\State $\out(\openingParen)$
+			\EndWhile
+			\State $p_D \gets p_D + 1$ \Comment{Consume the closing parenthesis}
+			\If{$p_D < |P_D|$} \Comment{Child in the path}
+				\State $\out(\openingParen)$
+			\EndIf
+			\While{$P_U[p_U] = \openingParen \booland p_U \ge 0$} \Comment{Right dangling children}
+				\State $p_U \gets p_U - 1$
+				\State $\out(\openingParen)$
+			\EndWhile
+			\State $p_U \gets p_U - 1$ \Comment{Consume the closing parenthesis}
+			\State $\out(\closingParen)$ \Comment{End of unary degree sequence}
+			\While{$P_D[p_D] = \openingParen$} \Comment{Then we output the left dangling children}
+				\State $t \gets \readTree(t_D); t_D \gets t_D + |t|; p_D \gets p_D + 1$
+				\State $\out(\dfudsRep[t])$
 			\EndWhile
 			\State $p_D \gets p_D + 1$ \Comment{Consume the closing parenthesis}
 		\EndWhile
+	\EndFunction
+	
+	\Function{\dfudsSkinnyDown}{}
+		\State{$p_U \gets 0; t_U \gets 0$}
 		\While{$p_U < |P_U|$} \Comment{Output the right dangling trees}
-			\If{$P_U[p_U] = "("$}
-				\State $t \gets read\_tree(t_U); t_U \gets t_U + |t|$
-				\State $write(DFUDS\_rep[t])$
+			\If{$P_U[p_U] = \openingParen$}
+				\State $t \gets \readTree(t_U); t_U \gets t_U + |t|$
+				\State $\out(\dfudsRep[t])$
 			\EndIf
 			\State $p_U \gets p_U + 1$ \Comment{Consume the closing parenthesis}
 		\EndWhile
 	\EndFunction
 	\end{algorithmic}
 	\end{algorithm}
+	
+	The index contains record about three local variables.
+	The look-up table \dfudsSkinnyDown{} requires access to $q'$ bits of $P_U$ and $P_D$, and to $q' + 4d'$ bits of $T_D$, while \dfudsSkinnyDown{} needs $q'$ bits of $P_U$, and $q' + 4d'$ bits of $T_U$.
+	The maximum total size of the index is $3q' + 4d' + O(\log \log n)$, which is from where the restriction on value of $q$ comes.	
+	
+	The algorithm \dfudsSubstringSkinny{} for the DFUDS representation is similar to \bpSubstringSkinny{}.
+	The difference is only in the data which are provided to the look-up tables.
 \end{proof}
 
-It is possible to split the algorithms into several parts which touch only some bit strings, not all 4 of them at 6 different places.
-This change would allow to generate blocks of a double size.
+The better calculation of the size of the index proved to be beneficial.
+If we set $d = 16$, which was the value originally proposed in \cite{farzan2009universal}, we set $q = 3$ for BP and to $q = 5$ for DFUDS representation.
+Both values are significantly better than the former $q = 8$ for BP and $q = 24$ for DFUDS representation.
 
 \subsection{General Mini-Trees}
 
 If the skeleton is a general tree, we decompose it iteratively into paths.
-We first remove the left-most path connecting the root with the first skeleton leaf; we call it left-leaning path.
-For each tree in the rest of the skeleton, we remove its right-most path connecting the root with the last skeleton leaf; we call this path right-leaning.
-We repeat this until every vertex of the skeleton is in a left-leaning or right-leaning path.
+We first remove the left-most path connecting the root with the first skeleton leaf; we call it \emph{left-leaning path}.
+For each tree in the rest of the skeleton, we remove its right-most path connecting the root with the last skeleton leaf; we call it \emph{right-leaning path}.
+We repeat this until every vertex of the skeleton is in a left-leaning or a right-leaning path.
 
-All subtrees which do not contain any significant vertex are connected to a significant vertex; they are again called left or right dangling trees.
-The paths together with dangling trees form skinny mini-trees.
-There are $O(\frac{B}{\log n})$ of them as the subtree size of each skeleton leaf is at least $\frac{\log n}{16}$.
+The decomposition keeps subtrees of non-significant vertices connected to their parent, which is now in a path; they are again called left and right dangling trees.
+A path together with its dangling trees can be viewed as a skinny mini-tree.
+There are $O(\frac{B}{\log n})$ paths as each of them ends in a leaf.
 We assign each path a number starting with $0$.
 
-The paths are connected with each other:
+The paths are connected with each other in three possible ways:
 \begin{itemize}
-	\item left-leaning path can have some left-leaning and righ-leaning paths connected to the right.
-	If there are more connections to one vertex, we store only the left-most connection.
-	\item right-leaning path can have some left-leaning paths connected to the left.
+	\item A left-leaning path can have left-leaning and righ-leaning paths connected to the right.
+	If there are more of them connected to one vertex, we store only the left-most one.
+	
+	\item A right-leaning path can have left-leaning paths connected to the left.
 	Again, if there are more of them connected to the same vertex, we store only the left-most one.
-	\item all paths except for one have a next path.
+	
+	\item All paths except for one have a \emph{next path}.
 	The next path is either the path containing the right sibling of its root if it exists, or the path containing the parent of its root.
-	The only path which does not have next path is the path containing the mini-tree root.
+	The only path which does not have a next path is the path containing the mini-tree root.
 \end{itemize}
 
-In the skinny mini-trees we could uniquely reference any bit of the representation by the state $s$ of the algorithm and the offset $o$.
-In case of general mini-trees, we add the number of the path.
-The size of the triplet is $O(\log \log n)$ and we call it a \emph{reference}.
-The index for all $j = i \% b$ is a reference.
+In the skinny mini-trees we could uniquely reference any bit of the representation by the state of the algorithm and the offset $o$.
+In the case of general mini-trees, we extend the index by the number of the path.
+The size of the index record is $O(\log \log n)$ and we call it a \emph{reference}.
 
 \subsubsection{Path Structures}
 
-We first add opening parentheses to the bit strings $P_D$ and $P_U$ for all connected paths.
-This change adds $O(\frac{B}{\log n})$ bits because the each root of a path (except for the path containing the mini-root root) is represented by $3$ bits in total.
+First, we add opening parentheses to the bit strings $P_D$ and $P_U$ for all connected paths.
+Without this change reporting the vertex degree in the DFUDS representation would be wrong.
+This change adds $O(\frac{B}{\log n})$ bits because the each path is connected to at most one other path.
+The root of a path (except for the path containing the mini-root root) is represented by $3$ bits in total.
 
-The structure for a path contains the following fields:
+For each path we define arrays $C_D$ and $C_U$ which marks the positions of the parentheses which we have just added.
+Note that only one of the arrays is non-empty since left-leaning paths have connections only to the right -- in $C_U$, and right-leaning paths only to the left -- in $C_D$.
+In order to find the position of the closest connection, we turn the arrays $C_D$ and $C_U$ into a collection of compressed arrays using the operation \succ{}.
+The values in the arrays are the references denoting where to continue; we store two versions of them: for BP and for DFUDS representation.
+
+There are $O(B)$ elements in the each collection of compressed arrays in total since they contain the same number of elements as the arrays $P_*$.
+Each reference in the compressed arrays refers to the root of a connected path, therefore each of them occurs in a single run, and the total number of them is bounded by the number of paths.
+Each collection of compressed arrays takes $o(B)$ bits od space.
+
+\begin{description}
+	\item[Path]
+	The path structure contains the following fields:
+	\begin{description}
+		\item[$k$]
+		The number of the path.
+		
+		\item[$P_D, P_U, T_D, T_U$]
+		As before.
+	
+		\item[$\bpNext, \dfudsNext$]
+		References to the next path for both BP and DFUDS representations.
+	\end{description}
+	
+	\item[Mini-tree]
+	The fields which are stored for the whole mini-tree.
+	\begin{description}
+		\item[$\bpIndex, \dfudsIndex$]
+		These are the indices from the algorithms \bpSubstringSkinny{} and \dfudsSubstringSkinny{} generalized to incorporate the path number.
+		They contain a reference for each multiple of $q'$.
+		
+		
+		\item[$\bp\_C_D, \bp\_C_U, \dfuds\_C_D, \dfuds\_C_U$]
+		The collections of compressed arrays which contain references to connected paths for all paths.
+		
+		\item[Paths]
+		Concatenated structures for paths together with a table of their offsets.
+	\end{description}
+\end{description}
+
+\subsubsection{Algorithm for the General Mini-Trees}
+
+We extend the algorithm for skinny mini-trees by several modifications:
 \begin{itemize}
-	\item $P_D, P_U, T_D, T_U$ -- as before;
-	\item $C_D, C_U$ -- compressed arrays of references to the nearest connection.
-	We derive $C_D$ incrementally from $P_D$ and connections to other paths; similar derivation is used for $C_U$.
-	\begin{align*}
-		C'_D[i] &= 1 \iff P_D[i] = "(" \booland P_D[i]\ \textrm{is a root of a different path} \\
-		C''_D[i] &= \textrm{reference to the root of the path at}\ succ(C'_D, i) \\
-		C_D &= compressed\_array(C''_D)
-	\end{align*}
-	The compressed arrays $C_D$ and $C_U$ are stored in two version: for BP and DFUDS representations; the structures can be partly shared as only the $names$ arrays differ.
-	Note that only one of $C_D$, $C_U$ need to be stored depending on whether the path is left-leaning or right-leaning.
-	\item $next\_BP$, $next\_DFUDS$ -- references to the next path for both BP and DFUDS representations.
+	\item It is provided the reference instead of itself finding it in an index.
+	
+	\item It finds the position $c$ of the closest connected path in the direction of traversal and provides it to the look-up table.
+	
+	\item Whenever the algorithm captured by the look-up table encounters the position $c$, it shall end with and return the reason.
+	
+	\item The look-up tables return more information:
+	\begin{itemize}
+		\item the number of bits which they could not generate;
+		\item the buffer containing the generated bits;
+		\item the situation which lead to the end:
+		\begin{enumerate}
+			\item the requested number of bits was generated;
+			\item a turn from direction down to up is requested;
+			\item a switch to a connected path is necessary;
+			\item a switch to the next path is requested.
+		\end{enumerate}
+	\end{itemize}
+	
+	\item If the reason is a switch (3) or (4), a recursive call with the number of bits left to be generated is made.
 \end{itemize}
 
-Each compressed array contains each run only once.
-All references in the compressed arrays point to path roots, and every path root is referenced from only once.
-Therefore, there are $O(\frac{B}{\log n})$ runs in total, and the space of all arrays together is $o(B)$ bits.
-
-While the algorithms generate the BP or DFUDS representations, it can happen that they need to switch to a different path.
-We extend the algorithms (look-up tables in fact) $BP\_rep\_skinny$ and $DFUDS\_rep\_skinny$ to support the connections and control the number of generated bits.
-We provide them with two extra arguments, which are offsets:
-\begin{itemize}
-	\item $c_D = upper(C_D, p_D)$ -- the nearest connection on the way down;
-	\item $c_U = upper(C_U, p_U)$ -- the nearest connection on the way up.
-\end{itemize}
-The algorithm returns as soon as it is about to output the dangling trees for $p_d = c_d$ or $p_u = c_u$, as they represent connections to different paths.
-
-The algorithms also return more information:
-\begin{itemize}
-	\item the number of bits they generated;
-	\item the generated bits;
-	\item the situation which lead to the end:
-	\begin{enumerate}
-		\item sufficient number of bits was generated;
-		\item a switch is necessary to at offset $c_d$;
-		\item a switch is necessary to at offset $c_u$;
-		\item a switch is necessary to $next$.
-	\end{enumerate}
-\end{itemize}
-
-The algorithms returning a block $j$ of a BP and DFUDS representation of a mini-tree are the same:
+We present an algorithm returning a block of $q'$ bits of the BP representations starting at a position which is a multiple of $q'$.
+The same restrictions to $q$ applies as in the lemma \ref{l:usr-bp-skinny}.
+A similar algorithm is for DFUDS representation (with its constraint on the value of $q$).
 
 \begin{algorithm}
 \begin{algorithmic}
-\Function{substring}{j, rep}
-	\State $(path, state=(p_d, p_u, \ldots), offset) \gets index_{rep}[j]$
-	\State $block \gets ""; bits \gets 0$
-	\While{$bits < b$}
-		\State $c_D \gets upper(paths[path].C_{D, rep}, p_D); c_U \gets upper(paths[path].C_{U, rep}, p_U)$
-		\State $(bl, bi, end) \gets skinny_{rep}[\textrm{parts of bit strings}, state, c_D, c_U]$
-		\State $block = concat(block, bl[offset, bi]); bits \gets bits + bi$
-		\If{$end = 1$}
-			\State $(path, state=(p_d, p_u, \ldots), offset) \gets paths[path].C_{D, rep}[p_D]$
-		\ElsIf{$end = 2$}
-			\State $(path, state=(p_d, p_u, \ldots), offset) \gets paths[path].C_{U, rep}[p_U]$
-		\ElsIf{$end = 3$}
-			\If{$paths[path].next_{rep} = null$}
-				\State \Break
-			\Else
-				\State $(path, state=(p_d, p_u, \ldots), offset) \gets paths[path].next_{rep}$
-			\EndIf
-		\EndIf
-	\EndWhile
-	\State \Return{$block, bits$}
+\Function{\bpSubstring}{$I, s$} \Comment{$I$ is the record in the global index}
+	\State $(k, f, \ip, p, t, o) \gets I$
+	
+	\If{$f = 0$} \Comment{Function for going down}
+		\State $S \gets (k.P_D[p:p+q'], k.T_D[t:t + q' + 4d'], |k.P_D|, |k.T_D|)$
+		\State $c \gets \runLast(\bp\_C_D, k, p); C \gets \bp\_C_D[k, c]$
+		\State $(r, s, e) \gets \bpSkinnyDown[S, I, s, c]$
+	\ElsIf{$f = 1$} \Comment{Function for going up}
+		\State $S \gets (k.P_U[p:p+q'], k.T_U[t:t + q' + 4d'], |k.P_U|, |k.T_U|)$
+		\State $c \gets \runLast(\bp\_C_U, k, p); C \gets \bp\_C_U[k, c]$
+		\State $(r, s, e) \gets \bpSkinnyUp[S, I, s, c]$
+	\EndIf
+	
+	\If{$e = 2$} \Comment{Switch direction}
+		\State{$(r', s) \gets \bpSubstring((k, 1, 0, 0, 0, 0), s)$}
+		\State $r \gets r \bitor r'$
+	\ElsIf{$e = 3$} \Comment{Switch to connection}
+		\State{$(r', s) \gets \bpSubstring(C, s)$}
+		\State $r \gets r \bitor r'$
+	\ElsIf{$e = 4 \booland k.\bpNext \ne -1$} \Comment{Switch to next}
+		\State{$(r', s) \gets \bpSubstring(k.\bpNext, s)$}
+		\State $r \gets r \bitor r'$
+	\EndIf
+	
+	\State \Return{$r, s$}
 \EndFunction
 \end{algorithmic}
 \end{algorithm}
 
-It only remains to show that the number of iterations of the while loop is constant.
+\bigbreak
+
+It only remains to argue that the depth of the recursion is constant.
 We inspect the graph of transitions between paths.
 
-\todo{image}
+\begin{figure}[h]
+	\centering
+	\includegraphics[scale=0.8]{usr-trans}
+	\caption{Graph of the transitions between paths and directions of the traversal}
+\end{figure}
 
-First we observe that the subtree size of the skeleton leaf is at least $\frac{\log n}{16}$, and so the encoding of skeleton leaf produces at least $b$ bits.
-No matter on which type of path and the direction, we always process a skeleton leaf after at most $5$ iterations of the while loop.
+First we observe that all cycles in the graph the edge labeled ``Turn''.
+We focus on the transitions of the direction of a path traversal from ``down'' to ``up''.
+
+\begin{lemma}
+	When the direction of the path traversal changes from ``down'' to ``up'', at least $2d'$ bits of the representation are generated.
+\end{lemma}
+\begin{proof}
+	As the initial reference in the global index can lead anywhere, we start the analysis after the first transition.
+	All references leading to a left-leaning path traversed down target its root.
+	In case of the right-leaning path traversed down there are three possible references to it:
+	\begin{itemize}
+		\item If the path was referenced as a right connection, then its root was the target.
+		\item If the path was referenced as the next from a sibling of its root, then its root was targeted.
+		\item If the path was referenced as the next from other vertex, then it was from the root of its left connection.
+		Because of the path decomposition algorithm, this left-leaning path cannot be connected to the skeleton leaf.
+	\end{itemize}
+
+	In all these cases the whole subtree of the skeleton leaf is processed.
+	Since the subtree contains $d'$ vertices, at least $2d'$ bits of representation are generated.
+\end{proof}
+
+From the lemma and from the lengths of the cycles follows that at most $3 \frac{q'}{2d'} + 2 = O(\frac{d}{q}) = O(1)$ recursive calls are required.
+The additional $2$ is the number of recursive calls before the first cycle.
+
+Since we want to generate as many bits as possible, we want to set $q$ small, however that results in deeper recursion and longer running time.
+Setting $q = 2d$ ensures that a single ``Turn'' generates enough bits.
 
 \subsection{Micro-Tree Representation}
 
-We decompose the mini-tree $M$ to micro-trees as it is usual for Tree Covering representation.
-We reuse lemma \ref{l:usr-runs} which in this case claims that a BP representation of a micro-tree forms at most four runs in the BP representation of a mini-tree.
-We prefer the BP representation over DFUDS as we do not need to adjust the degree of the micro-tree root and also incorporating the micro-tree dummy vertex is easier.
+The mini-tree is decomposed into micro-trees as it is usual for the Tree Covering representation.
+We reuse the lemma \ref{l:usr-runs} which in this case claims that the BP representation of a micro-tree forms at most four runs in the BP representation of a mini-tree.
+We prefer the BP representation over DFUDS because no degree adjustment of the root is necessary.
 
-The mini-tree-local offsets of the beginning and the end are stored for each run.
-The length of each run is bounded by the size of a micro-tree, therefore $O(1)$ queries of the BP representation are necessary.
-The size of BP representation of a micro-tree can be calculated from the stored offsets of the runs.
-Since it is at most $\frac{\log n}{2}$ bits, we can use a look-up table to transcode it into any other representation which is native for the TC structure.
+For each micro-tree $(\tau_1, \tau_2)$ we store positions of the beginning and the end of each run of $\tau_2$ withing the BP representation of the mini-tree $\tau_1$.
+If the micro-tree contains a dummy vertex, then an adjustment of the run boundaries by $1$ is needed.
+The length of each run is bounded by the size of the micro-tree, which is less then $\frac{\log n}{2}$, therefore $O(1)$ queries of the BP representation are necessary.
+If the micro-tree is not primary, an opening parenthesis is prepended and a closing one appended.
 
-\section{Transformation to a Binary Tree}
+The size of BP representation of a micro-tree can be calculated from the stored offsets of the runs and its primarity.
+Because of the small size of the micro-tree BP representation, we can use a look-up table to transcode it into any other representation which is native for the TC data structure.
 
-\todo{Whole section}
+\subsection{Final Thoughts}
+
+The universal succinct representation provides a way how to combine several data structures which we have shown in the previous sections.
+As two of the three representations (BP/FF, DFUDS, TC) support nearly the same set of operations, its benefits consists in allowing to choose the most space or time efficient implementation of an operation out of several alternatives.
