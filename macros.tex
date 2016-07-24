@@ -120,7 +120,7 @@
 \algrenewtext{ElsIf}[1]{\algorithmicelse\ \algorithmicif\ #1\algcolon}
 \algrenewtext{Else}{\algorithmicelse\algcolon}
 
-\algnewcommand\Break{\textbf{Break}}
+\algnewcommand\Break{\textbf{break}}
 
 \setlength{\floatsep}{5pt plus 2pt minus 2pt}
 \setlength{\textfloatsep}{5pt plus 2pt minus 2pt}
@@ -145,16 +145,16 @@
 \newcommand{\bitrsh}{\mathbin{\gg}}
 
 \newcommand{\boolnot}{\mathord{\textrm{not}\,}}
-\newcommand{\booland}{\mathbin{\textrm{and}}}
-\newcommand{\boolor}{\mathbin{\textrm{or}}}
+\newcommand{\booland}{\mathrel{\textrm{and}}}
+\newcommand{\boolor}{\mathrel{\textrm{or}}}
 
 \DeclareMathOperator*{\argmin}{arg\,min}
 \DeclareMathOperator*{\argmax}{arg\,max}
 
-\DeclareMathOperator{\textif}{\textrm{if}}
-\DeclareMathOperator{\textthen}{\textrm{then}}
-\DeclareMathOperator{\textelse}{\textrm{else}}
-\DeclareMathOperator{\textotherwise}{\textrm{otherwise}}
+\DeclareMathOperator{\textif}{\ \textrm{if}\ }
+\DeclareMathOperator{\textthen}{\ \textrm{then}\ }
+\DeclareMathOperator{\textelse}{\ \textrm{else}\ }
+\DeclareMathOperator{\textotherwise}{\ \textrm{otherwise}\ }
 
 \def\str#1{\relax\ifmmode\texttt{"#1"}\else\texttt{"#1"}\fi}
 \def\openingParen{\str(}
@@ -311,7 +311,7 @@
 % in Trees, DFUDS
 \defineName[toEnd]{to\_end}
 \defineName[toLast]{to\_last}
-\defineName[toSymetric]{to\_symetric}
+\defineName[toSymmetric]{to\_symmetric}
 
 % in structures, FF operations
 \defineName[summ]{sum}
@@ -505,5 +505,20 @@
 
 \usepackage[nobottomtitles*]{titlesec}
 \renewcommand{\bottomtitlespace}{.2\textheight}
+
+\makeatletter
+\newcommand{\DeclareMathActive}[2]{%
+  % #1 is the character, #2 is the definition
+  \expandafter\edef\csname keep@#1@code\endcsname{\mathchar\the\mathcode`#1 }
+  \begingroup\lccode`~=`#1\relax
+  \lowercase{\endgroup\def~}{#2}%
+  \AtBeginDocument{\mathcode`#1="8000 }%
+}
+
+\newcommand{\std}[1]{\csname keep@#1@code\endcsname}
+%\patchcmd{\newmcodes@}{\mathcode`\-\relax}{\std@minuscode\relax}{}{\ddt}
+%\AtBeginDocument{\edef\std@minuscode{\the\mathcode`-}}
+\DeclareMathActive{;}{,\ }
+\makeatother
 
 \usepackage[section]{placeins}

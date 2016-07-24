@@ -1,7 +1,7 @@
 \chapter{Advanced Data Structures}
 
-In the previous chapter, we showed how three different bit string encodings of ordinal trees can be turned into data structures which support wide varieties of operations provided that they are equipped with the \rank{} and \select{} (and later \match{} and \enclose{}) indices.
-Here we present data structures which are fundamentally different in either the primitive operations which they use, or that they require more advanced encoding instead of being based on a single bit string.
+In the previous chapter, we showed how three different bit string encodings of ordinal trees can be turned into data structures which support wide varieties of operations, provided that they are equipped with the \rank{} and \select{} (and later \match{} and \enclose{}) indices.
+Here we present data structures which are fundamentally different in either the primitive operations they use, or that they require more advanced encoding instead of being based on a single bit string.
 
 \begin{description}
 	\item[Fully-Functional (FF)] 
@@ -11,33 +11,33 @@ Here we present data structures which are fundamentally different in either the 
 	\item[Tree Covering (TC)]
 	Tree covering is a data structure based on a recursive decomposition of the tree into mini-trees and micro-trees which are then encoded.
 	Each level of the decomposition is stored and processed in a different way.
-	Since it is more structure rather than bit string oriented, it is easier to augment it with small pieces of information which are required by various operation.
+	Since it is tree structure rather than bit string oriented, it is easier to augment it with small pieces of information which are required by various operations.
 	This is a big difference from
 	\begin{enuminline}
 		\item discovering, more than inventing, the inner rules of the representations, which we did with ranking and selecting;
-		\item or developing a general indices which covers the bit string in various blocks on multiple levels.
+		\item or developing general indices which cover the bit string in various blocks on multiple levels.
 	\end{enuminline}
 	\item[Universal Succinct Representation (USR)]
 	An attempt to develop a universal data structure which diminishes the differences between several representations.
 	It provides a view to the BP and DFUDS bit string representation as well as decomposition into micro-trees.
-	Its main advantage is that it automatically benefits from any indices which are proposed for either BP, DFUDS or TC representations.
+	Its main advantage is that it automatically benefits from any indices which are proposed for either BP, DFUDS, or TC representations.
 \end{description}
 
 \todo{Mention transformation into a binary tree}
 
 \section{Fully Functional Representation}
 
-Both BP representation which we described in the previous chapter was based on using \rank{} and \select{}, and \match{} and \enclose{} operations as the main tool.
+The BP representation which we described in the previous chapter was based on using \rank{} and \select{}, and \match{} and \enclose{} operations as the main tool.
 There were several operations which required an additional index (\childAny{} and \levelAncestor{}), and several operations which were not supported at all (\levelAny{}).
-All the operations which we have just listed have one thing in common, they all can be expressed using more general operations.
-We did not show the indices for \levelAncestor in the BP and DFUDS representations for a reasons: they were unnecessarily complicated, whereas here in the Fully Functional data structure, it is going to be one of the easiest operations.
+All the operations which we have just listed have one thing in common: they can all be expressed using more general operations.
+We did not show the indices for \levelAncestor{} in the BP and DFUDS representations for a reason: they were unnecessarily complicated, whereas here in the Fully Functional data structure, it is going to be one of the easiest operations.
 
 We define a new set of primitive operations for which we then design a single index, incorporating even the range operation.
 The index will be general -- any of the representations (LOUDS, BP, DFUDS) can use it, however only BP will benefit from it.
 
 \subsection{New Operations}
 
-We follow on \ref{ss:rmq-def} and define operations on the bit string $S$ parametrized by the function $g$ which is to be applied.
+We follow on the section \ref{ss:rmq-def} and define operations on the bit string $S$ parametrized by the function $g$ which is to be applied.
 \begin{description}
 	\item[The sum operation]
 	Since \rank{} will no longer be a primitive operation, we cannot use it to compute $G[i]$.
@@ -48,15 +48,15 @@ We follow on \ref{ss:rmq-def} and define operations on the bit string $S$ parame
 	We replace \select{} in all forms by linear searching operations.
 	\begin{description}
 		\item[\fwdSearch{}]
-		Returns the first position $j$ such that the values sum up to $d$.
+		Returns the first position $j$ after a given position $i$ such that the values sum up to $d$.
 		$$\fwdSearch(S, g, i, d) = \min_{j > i} \{j : \summ(S, g, i, j) = d\}$$
 		
 		\item[\bwdSearch{}]
-		Works the same way as \fwdSearch{} except that it searches in direction towards the beginning of the bit string.
+		Works the same way as \fwdSearch{} except that it searches towards the beginning of the bit string.
 		$$\bwdSearch(S, g, i, d) = \max_{j < i} \{j : \summ(S, g, j, i) = d\}$$
 	\end{description}
 	
-	Note that despite using the same names in \ref{s:match-enclose}, their definition here is different.
+	Note that despite having used the same names in section \ref{s:match-enclose}, their definition here is different.
 	They refer to operations defined for all $i \in [0, N)$, rather than only to look-up tables. 
 	
 	\item[Range operations]
@@ -69,8 +69,8 @@ We follow on \ref{ss:rmq-def} and define operations on the bit string $S$ parame
 		$$\rmq(S, g, i, j) = \summ(S, g, 0, i - 1) + \min_{i \le k \le j} \summ(S, g, i, k)$$
 
 		\item[\rmqSize{}]
-		Returns how many occurrences there are in the given range.
-		$$\rmqSize(S, g, i, j) = | \{ i \le k \le j : \summ(S, g, i, k) = \rmq(S, g, i, j) \} | $$
+		Returns how many occurrences of minimum there are in the given range.
+		$$\rmqSize(S, g, i, j) = | \{ k : i \le k \le j \booland \summ(S, g, i, k) = \rmq(S, g, i, j) \} | $$
 		
 		\item[\rmqRank{}]
 		Returns how many occurrences of minimum there are in the given range up to position $r$.
@@ -99,8 +99,8 @@ We follow on \ref{ss:rmq-def} and define operations on the bit string $S$ parame
 \bigbreak
 
 We show how it is possible to realize all operations which we used as primitives in the previous succinct data structures only by sums, searches and range operations on calculated arrays.
-We immediately get data structure equivalent to those in the previous chapter in terms of the operations which they support.
-Later we will show that even more operations becomes feasible for the BP representation.
+We immediately get a data structure equivalent to those in the previous chapter in terms of the operations which they support.
+Later we will show that even more operations become feasible for the FF representation.
 
 \begin{description}
 	\item[Operations on general bit strings]
@@ -127,11 +127,11 @@ Therefore, while designing the index, we can focus only on the new operations.
 \subsection{The Succinct Index}
 
 As we are describing a universal index which is independent of its specific usage for representing trees, we again use $N$ to denote the size of the bit string.
-We also parametrize all operations by the function $g$.
+We also parametrize all operations by the function $g$ which will be fixed for the rest of this section.
 
 The structure of the index follows the general idea of dividing into blocks and them into small blocks.
 Here the blocks will be of roughly polylogarithmic size and small blocks of size $b = \frac{\log N}{2}$ in order to be processed by using look-up tables.
-If the query spans multiple small blocks withing a single block, the queries are handled by min-max trees.
+If the query spans multiple small blocks within a single block, the queries are handled by min-max trees.
 The queries spanning multiple blocks are answered by a macro structure.
 
 \bigbreak
@@ -157,16 +157,16 @@ We use the following look-up tables which directly implement the primitive opera
 \end{description}
 
 The values of $i, j, r$ are in range $[0, b - 1]$; the values $d, v$ are in range $[-b, b]$; the value of $p$ is in range $[0, b - 1]$ plus the special value indicating that such position does not exist in the small block.
-Together we have 9 precomputed tables; each of them requires $O(\sqrt{N} \log N \log \log^3 N)$ bits of memory.
+Together we have 9 precomputed tables; each of them requires $O(\sqrt{N} \log N \log \log N)$ bits of memory.
 
 The tables are used to answer all range operations whenever $i$ and $j$ are in the same small block.
 In case of the searches, they also determine that the answer is not present in the small block.
 
-We also use the look-up tables to handle the prefix and suffix of a range query, or at the beginning or end of a search query.
+We also use the look-up tables to handle the prefix and suffix of a range query, or at the beginning or the end of a search query.
 
 \subsection{Min-Max Tree}
 
-Each block contains $k^c$ small blocks for $k = \frac{\log N}{\log \log N}$ and an arbitrary constant $c \ge 1$.
+Each block contains $k^c$ small blocks for $k = \frac{\log N}{\log \log N}$ and an arbitrary integer constant $c \ge 1$.
 The value of the constant $c$ will be discussed at the end.
 The purpose of the min-max tree is to lift the operations from $b$ bits to $b k^c$ while retaining their constant running time.
 
@@ -238,10 +238,10 @@ We say that the small block $j$ \emph{covers} a value $v$ if $m[j] \le v \le M[j
 	No small block in the subtree of a min-max tree node not covering the value $v$ contains the answer.
 \end{lemma}
 \begin{proof}
-	We remind an important property of the $\pm 1$ functions $g$: 
+	Let us recall an important property of the $\pm 1$ functions $g$: 
 	$$| G[i] - G[i-1] | \le 1$$
-	From that follows that each small block contains all values between its minimum and maximum.
-	The first small block which which covers the desired value $v$ has to contain it.
+	From that it follows that each small block contains all values between its minimum and maximum.
+	The first small block which covers the desired value $v$ has to contain it.
 	
 	Moreover, if $v < \rmq[S_{b(i)}, (i + 1) \% b, b - 1]$ (less than minimum of the rest of the small block), then it is sufficient to find the first small block $j$ such that $m[j] \ge v$ because $M[j] \ge m[j-1]$.
 	A similar statement holds for $v$ being greater than the maximum.
@@ -320,7 +320,7 @@ We combine the lists into a single list and find the answer to the queries in it
 \begin{algorithm}
 \begin{algorithmic}
 \Function{\rmqList}{$S, g, i, j$} \Comment{$b(i) \ne b(j)$}
-	\State $L \gets []; R \gets []$ \Comment{Initialization of the empty lists}
+	\State $L \gets [\,]; R \gets [\,]$ \Comment{Initialization of the empty lists}
 	\State $i_m \gets \rmq[S_{b(i)}, g, i \% b, b - 1] + e[b(i) - 1];$ \Comment{Similarly $j_m; i_M; j_M$}
 	\State $i_{\ms} \gets \rmqSize[S_{b(i)}, g, i \% b, b - 1];$ \Comment{Similarly $j_{\ms}; i_{\Ms}; j_{\Ms}$}
 	\State $\append(L, \{\struct{f}{b(i)}, \struct{l}{b(i)}, \struct{m}{i_m}, \struct{\ms}{i_{\ms}}, \struct{M}{i_M}, \struct{\Ms}{i_{\Ms}} \})$ \Comment{Info for $b(i)$}
@@ -407,9 +407,9 @@ Once we are in a leaf, we use a look-up table to solve the select there.
 
 When the loop is broken, $I$ contains the information about list of siblings node with one of them containing the desired minimum.
 Using look-up tables which are similar to \nodeSearch{}, we descend into the right child.
-The table also returns the new remaining number of occurrences by subtracting those which are in nodes before $p$.
+The table also returns the new remaining number of occurrences by subtracting those in nodes before $p$.
 
-We first search the restricted range of nodes provided by $I$ keeping track of the number of the occurrences which we are interested in.
+We first search the restricted range of nodes provided by $I$, keeping track of the number of the occurrences which we are interested in.
 
 \begin{algorithm}
 \begin{algorithmic}
@@ -427,19 +427,19 @@ We first search the restricted range of nodes provided by $I$ keeping track of t
 
 There are 7 look-up tables necessary for traversal and processing the tree.
 The tables have an additional (not mentioned) parameter which restricts the size of the block to be processed.
-Whenever an index of a node is returned, it is turned into a node number by adding the number of left-most node involved in the query.
+Whenever an index of a node is returned, it is turned into a node number by adding the number of the leftmost node involved in the query.
 \begin{description}
 	\item[\fwdSearch]
 	The table is looking for the node which contains the first occurrence of $v$ in the block of consecutive nodes.
-	\bwdSearch requires another table returning the position of the last occurrence $v$.
+	\bwdSearch{} requires another table returning the position of the last occurrence $v$.
 	
 	\item[\rmqInfo]
 	Four tables aggregating information for consecutive nodes are necessary; the tables compute minimum, maximum, and sum conditioned by the value of minimum or maximum of the other nodes in the given range.
 	
 	\item[\rmqSelect]
-	One table which is looking for $r$-th occurrence of the minimum.
+	One table which is looking for the $r$-th occurrence of the minimum.
 	It returns the index of the node and the number of occurrences of the minimum in its preceding siblings.
-	\RMQSelect requires a similar table for occurrences of the maximum.
+	\RMQSelect{} requires a similar table for occurrences of the maximum.
 \end{description}
 All tables are defined for blocks of $b$ bits with $O(1)$ parameters of size $O(\log k^c) = O(\log \log N)$.
 
@@ -531,17 +531,17 @@ The same was necessary for the search on the block level.
 
 It remains to show a constant time algorithm for the operation \lrmSearch{} (\LRMSearch{} is similar).
 The \naive{} approach would be to store each $\lrm_i$ as an array $A$ turned into a compressed array using operation \succ{}.
-$$ A[M[i] - m[j]] = j \:\forall j \in \lrm_i$$
+$$ A[M[i] - m[j]] = j \ \forall j \in \lrm_i$$
 The problem with this approach is that, the compressed arrays for all $i$ can contain $O\left(\left(\frac{N}{B}\right)^2\right)$ runs in total, which is too much.
 
 \bigbreak
 
 We observe that the arrays $\lrm_i$ are alike.
 \begin{lemma}
-	Let block $a$ be in two different arrays $\lrm_i$ and $\lrm_j$: 
+	Let a block $a$ be in two different arrays $\lrm_i$ and $\lrm_j$: 
 	$$\lrm_i[x_i] = a = \lrm_j[x_j]$$
-	then all following values in the arrays are the same:
-	$$ \lrm_i[x_i + k] = \lrm_j[x_j + k] \:\forall k \ge 0 $$
+	Then all following values in the arrays are the same:
+	$$ \lrm_i[x_i + k] = \lrm_j[x_j + k] \ \forall k \ge 0 $$
 \end{lemma}
 
 \label{Tlrm} We define a tree $T_{\lrm}$ which is built as a trie for reversed $\lrm$ arrays; it has an artificial root with assigned minimum $m[\roott] = -\infty$.
@@ -562,7 +562,7 @@ We split the search into two parts:
 \bigbreak
 
 Instead of searching through the whole array $\lrm_i$, we limit the number of elements to $\log N$:
-$$ \lrm'_i[j] = \lrm_i[2^j] \forall j \ge 0$$
+$$ \lrm'_i[j] = \lrm_i[2^j] \ \forall j \ge 0$$
 This array is turned into a tiny compressed array of jumps $J_i$ requiring only $O(\log^2 N)$ bits of space, which is $O(\frac{N}{B} \log^2 N) = o(N)$ for $c > 2$.
 
 By using the tiny compressed array, we move to a node $j'$ of $T_{\lrm}$ for which we bounds on depth and height, and the number of ancestors which we have to search through.
@@ -603,8 +603,8 @@ The size of the array is $O(\frac{N}{B} \log N) = o(N)$ bits.
 
 \subsubsection{Range Operations}
 
-We split the queried range into prefix, suffix, and span.
-The solution for prefix an suffix is solved on the block level; we focus on supporting the operations for spans of the queries.
+We split the queried range into a prefix, suffix, and span.
+The solution for the prefix and suffix is solved on the block level; we focus on supporting the operations for spans of the queries.
 
 We use a helper function \rmqiSpan{} which was defined in lemma \ref{lemma:rmq2} with two minor differences:
 \begin{enumerate}
@@ -629,16 +629,16 @@ The structure for \rmqiSpan{} cannot be extended for querying the number of occu
 If we augmented each precomputed interval of size $2^k$ with the number of occurrences, we would still fit in the same space.
 The problem stems for the inability of an easily combination of information from the two intervals, like the $\min$ function does.
 In this case, the inclusion-exclusion principle would have to be used: adding the numbers of occurrences in both intervals and subtracting the number of occurrences in the overlapping part.
-Since the size of the overlapping part is not a power of two in general, and so its number of occurrences is not precomputed, it leads to a recursion and running time $O(\log N)$.
+Since the size of the overlapping part is not a power of two in general, and so its number of occurrences is not precomputed, it leads to recursion and running time $O(\log N)$.
 
 \subsubsection{Structures for \rmqSize{} and \rmqSelect{}}
 
 We store the several indexed and fully indexed dictionaries which use the properties of the minima of the blocks.
-The idea is to reorder the blocks, which are represented by elements in $m[\cdot]$ so that all blocks containing the same minimum are stored consecutively. 
+The idea is to reorder the blocks, which are represented by elements in $m[\cdot]$, so that all blocks containing the same minimum are stored consecutively. 
 
 There are at most $\frac{N}{B}$ distinct minima in range $[-N, N]$.
 We store the minima in an indexed dictionary $\mr{}$ offsetted by $N$ to become a range $[0, 2 N]$
-The indexed dictionary uses $O(\frac{N}{B} \log B)$ bits and supports \rank{} on the minima in constant time.
+The indexed dictionary uses $O(\frac{N}{B} \log B)$ bits and it supports \rank{} on the minima in constant time.
 This is used for referring to $k$-th smallest minimum in the following structures.
 We omit the correction of an off-by-one error caused by \rank{} as the smallest minimum has $k = 1$ instead of desired $k = 0$.
 
@@ -652,7 +652,7 @@ Because of the inequality derived from the generalized Vandermonde's identity \r
 \end{align*}
 
 Finally we define an array $\mpp_k$ for each block minimum $m$ (which is again the $k$-th smallest):
-$$\mpp_k[\sum_{\substack{j \in \mi_k \\ j \le i}} \ms[j] ] = i \:\forall i \in \mi_k$$
+$$\mpp_k[\sum_{\substack{j \in \mi_k \\ j \le i}} \ms[j] ] = i \ \forall i \in \mi_k$$
 We turn all these arrays into a single compressed array $\mpp$ using the operation \succ{}.
 The property of this array, from which it was also derived, connects it to a block $t$ which contains the $r$-th occurrence of the $k$-th smallest minimum:
 $$ t = \select_1(\mi_k, \mpp[k, r]) $$
@@ -689,7 +689,7 @@ As we restricted our queries to their spans, and from \rmqiSpan{} we know the in
 \end{algorithmic}
 \end{algorithm}
 
-The operation \rmqSelect{} first looks for the minimum in prefix, then in span, and finally in suffix.
+The operation \rmqSelect{} first looks for the minimum in the prefix, then in the span, and finally in the suffix.
 The idea of the search in span is to use the property of $\mpp$.
 
 \begin{algorithm}
@@ -737,7 +737,7 @@ The idea of the search in span is to use the property of $\mpp$.
 We follow in discussion of $\pm 1$ functions which we began in \ref{ss:rmq-def}.
 
 Although there are 9 functions $g$ mapping $\{0, 1\} \to \{-1, 0, 1\}$, we only use 3 of them in our index: $\pi, \phi, \psi$.
-Answers to all operations except for searches with parameters $\\part{phi}$ and $\psi$ can be answered using the structure for $\pi$.
+Answers to all operations except for searches with parameters $\phi$ and $\psi$ can be answered using the structure for $\pi$.
 
 For the operation $\summ$, the following identities hold:
 \begin{gather*}
@@ -745,7 +745,7 @@ For the operation $\summ$, the following identities hold:
 	\summ(S, \phi, i, j) + \summ(S, \psi, i, j) = j - i + 1
 \end{gather*}
 
-We can find the explicit formula for \summ{}s:
+The explicit formula for \summ{}s follow from the previous equations:
 \begin{align*}
 	\summ(S, \phi, i, j) &= \frac{(j - i + 1) + \summ(S, \pi, i, j)}{2} \\
 	\summ(S, \psi, i, j) &= \frac{(j - i + 1) - \summ(S, \pi, i, j)}{2}
@@ -942,19 +942,19 @@ Not dissimilar to the other representations, it also uses three levels of scale 
 
 \subsection{Decomposition Algorithm}
 
-Instead of decomposing a bit string of the encoded tree, we decompose the tree and then encode it.
+Instead of decomposing a bit string of the encoded tree, we decompose the tree and then we encode it.
 Two decomposition algorithms have been proposed; they are parametrized by a target number of vertices $B$ to be present in a component.
 The first algorithm \cite{geary2006succinct} decomposes the tree into connected components of size $[B, 3 B - 2]$ with the exception of the component containing the root, which can be undersized.
 Such decomposition cannot exist unless the components are allowed to overlap; more specifically to overlap in their common root.
-It follows from the bounds that there exist $O(\log n)$ components.
+It follows from the bounds that there exist $O(\frac{n}{B})$ components.
 
-This decomposition was used and leads to a succinct data structure which at the time of its introduction supported more operations than BP (child operations) or DFUDS (depth).
+This decomposition was used and it leads to a succinct data structure which at the time of its introduction supported more operations than BP (child operations) or DFUDS (depth).
 The problem of the decomposition was that the components were connected together in too many ways and the structure had to handle many cases.
 
 Later a different decomposition was proposed in \cite{farzan2008uniform} with more details published in \cite{farzan2014uniform}.
 It removes the lower bound on the sizes of the components while retaining their asymptotic number in exchange for restriction on the ways how the components can be connected with each other.
 At most one edge from a non-root vertex connecting a different component is allowed.
-Note that a stronger claim of no such edge existing does not provide a decomposition in a general case (e.g. a tree with depth greater than $2 B$).
+Note that a stronger claim of no such edge existing does not provide a decomposition in a general case (e.g., a tree with depth greater than $2 B$).
 
 \bigbreak
 
@@ -983,8 +983,10 @@ We distinguish three cases:
 	Children are processed from left to right; their temporary components are merged with $v$ and potentially with the components of their right siblings.
 	When the size of the current component is at least $B$, we declare it permanent.
 	If at least one component was declared permanent, we declare all of them as permanent even though the last one can remain undersized.
+	
 	\item If a vertex $v$ has exactly one heavy child $u$, then we process it in a similar way as the case (1).
 	If $u$ is part of a temporary component, nothing changes; otherwise we simply skip it.
+	
 	\item If a vertex $v$ has two or more heavy children ($v$ is a branching vertex), the temporary components containing the heavy children are declared permanent no matter what size they are.
 	All non-heavy children are split into intervals delimited by the heavy children.
 	Each interval is processed as in case (1) with the exception that all components are declared as permanent.
@@ -996,18 +998,22 @@ Several invariants hold during the course of the decomposition algorithm:
 	\item The size of a permanent component is less than $2 B - 2$; the size of a temporary component is less than $B$.
 	A temporary component is only merged with another temporary components; it is declared permanent when its size is at least $B$.
 	Because we merge a temporary component first with the parent and then with its right siblings one by one, its size will never be greater than $(B - 2) + 1 + (B - 1)$, at which point it is declared permanent.
+	
 	\item If a vertex is shared among multiple components, it is their common root.
 	When such situation happens in the algorithm, all of them are declared as permanent and they are never dealt with again.
+	
 	\item Whenever a vertex $v$ is being processed and a component containing $v$ is declared permanent, then $v$ is a heavy vertex.
 	In case (2) and (3) it is heavy from the fact that it is a parent of heavy children.
 	In case (1) the first component is declared permanent if the components of children plus $v$ exceed $B$.
 	If the first component is not declared permanent, none is.
+	
 	\item There is at most one edge leaving a component from a non-root vertex.
 	A root $u$ of a permanent component which is connected by such edge is heavy from the previous invariant.
 	Therefore, when the parent $v$ of $u$ is being processed, $u$ is its heavy child.
 	If a component of another child of $v$ already contained such edge, then $v$ has at least two heavy children and case (3) applies.
 	All components end with $v$ or its children, and so $u$ is connected to a root vertex instead of a non-root one.
-	\item The number of all component is $O\left(\frac{n}{B}\right)$.
+	
+	\item The number of all components is $O\left(\frac{n}{B}\right)$.
 	We charge $O(1)$ undersized components to regular-sized components, branching edges, and branching vertices.
 	The bound then follows from the lemma \ref{l:no-branching}.
 	If an undersized component was declared permanent in (1) or (2), then another component of a regular size was declared too.
@@ -1034,10 +1040,10 @@ This can result in at most two permanent undersized components which we charge t
 \begin{algorithmic}
 \Function{\decompose}{$v, B$}
 	\If{$\isLeaf(v)$}
-		\State \Return{$[], v, -1$} \Comment{No permanent, itself as temporary, heavy children}
+		\State \Return{$[\,], v, -1$} \Comment{No permanent, itself as temporary, heavy children}
 	\Else
-		\State $P \gets []; T \gets []$ \Comment{All permanent and temporary from children}
-		\State $R \gets[]; h \gets 0$ \Comment{Split vertices in children; number of heavy comps}
+		\State $P \gets [\,]; T \gets [\,]$ \Comment{All permanent and temporary from children}
+		\State $R \gets[\,]; h \gets 0$ \Comment{Split vertices in children; number of heavy comps}
 		\State $d \gets 0$ \Comment{Total size of temporary components}
 		\ForAll{$u \gets \children(v)$}
 			\State $(p, t, r') = \decompose(u, B)$ \Comment{Process child}
@@ -1053,7 +1059,7 @@ This can result in at most two permanent undersized components which we charge t
 		\ForAll{$(u, t, r') \gets \zip(\children(v), T, R)$}
 			\If{$\subtreeSize(u) \ge B \booland |t| > 0 \booland h \ge 2$} \Comment{Heavy, temp, c. 3}
 				\If{$r' \ne -1$} \Comment{Needs to be split}
-					\State $s' \gets []$
+					\State $s' \gets [\,]$
 					\ForAll{$u' \gets t$} \Comment{Revise the component}
 						\State $\append(s', u')$
 						\If{$u' = r'$} \Comment{Split vertex found}
@@ -1064,7 +1070,7 @@ This can result in at most two permanent undersized components which we charge t
 				\Else
 					\State $\append(P, t)$ \Comment{Declare permanent}
 				\EndIf
-				\State $t \gets []$ \Comment{$t$ has been processed}
+				\State $t \gets [\,]$ \Comment{$t$ has been processed}
 			\ElsIf{$|t| = 0 \booland |s| > 1 \booland d > B$} \Comment{Heavy, perm, case 2, large}
 				\State $\append(P, s); s \gets [v]; i \gets i + 1$ \Comment{Declare permanent}
 			\ElsIf{$|t| = 0$} \Comment{Heavy, permanent, case 2, small}
@@ -1084,9 +1090,9 @@ This can result in at most two permanent undersized components which we charge t
 		\Statex
 		
 		\If{$|s| = 1$}
-			\State $s \gets []$ \Comment{Reset before returning}
+			\State $s \gets [\,]$ \Comment{Reset before returning}
 		\ElsIf{$i \ge 1 \boolor h \ge 2$} \Comment{At least one regular sized or case 3}
-			\State $\append(P, s); s \gets []$ \Comment{Declare permanent}
+			\State $\append(P, s); s \gets [\,]$ \Comment{Declare permanent}
 		\EndIf
 		\If{$h = \degree(v) \booland h \ge 2$} \Comment{All are heavy, case 3}
 			\State $\append(P, [v])$ \Comment{Declare $v$ as permanent}
@@ -1114,7 +1120,7 @@ There are three different connections between mini-trees (and similarly between 
 	Either of the roots can be shared with other mini-trees.
 	$$\parent(\roott(u)) = \roott(v)$$
 
-	\item a parent of a root of a mini-tree $u$ (bottom) is a non-root vertex in a different mini-tree $v$ (top).
+	\item A parent of a root of a mini-tree $u$ (bottom) is a non-root vertex in a different mini-tree $v$ (top).
 	If this type of connection appears more than once in a mini-tree, then all bottom components share a common root.
 	$$\parent(\roott(u)) \in v \booland \parent(\roott(u)) \ne \roott(v)$$
 \end{enumerate}
@@ -1122,7 +1128,7 @@ There are three different connections between mini-trees (and similarly between 
 We define a set of terms for root related structures, which we use to refer to them without ambiguities.
 A \emph{mini-tree root} is the root of a mini-tree.
 A \emph{root mini-tree} is any mini-tree which contains the mini-tree root.
-Similarly we define the terms for micro-trees where \emph{root micro-tree} refers to a micro-tree which contains a mini-tree root.
+Similarly we define the terms for micro-trees where \emph{root micro-tree} refers to a micro-tree which contains a micro-tree root.
 We also use negations, for example ``a micro-tree root of a non-root mini-tree''.
 
 \subsubsection{Vertex Naming}
@@ -1131,7 +1137,7 @@ We order the mini-trees based on their pre-order number in the original tree:
 $$ p, q: \roott(p) \le \roott(q) \booland \childFirst(\roott(p)) < \childFirst(\roott(q))$$
 Each mini-tree is then assigned number $\tau_1$ based on this order.
 The first mini-tree (it contains the tree root) is assigned the number $0$.
-Similarly we assign a numbers $\tau_2$ to each micro-tree in a mini-tree $\tau_1$ and name the micro-tree $(\tau_1, \tau_2)$.
+Similarly we assign a number $\tau_2$ to each micro-tree in a mini-tree $\tau_1$ and name the micro-tree $(\tau_1, \tau_2)$.
 We continue with individual vertices in the same way; they are given a name $(\tau_1, \tau_2, \tau_3)$.
 
 The size of $\tau_1$ is $O(\log n)$; the sizes of $\tau_2$ and $\tau_3$ are $O(\log \log n)$.
@@ -1147,7 +1153,7 @@ Then we follow with the second level of the decomposition (mini-trees into micro
 The total number of dummy vertices introduced is $O\left(\frac{n}{B} + \frac{n}{b}\right) = O\left(\frac{n}{\log n}\right)$.
 The dummy vertex gets its name as if it was a normal vertex in the top mini-tree or micro-tree.
 The canonical name of a dummy vertex is the canonical name of the vertex to which it is connected in the bottom mini-tree or micro-tree, which is its root.
-The depth of a dummy vertex in a mini-tree or a micro-tree is at least $2$ because it has a parent which is not a root.
+The depth of a dummy vertex in a mini-tree or a micro-tree is at least $2$, because it has a parent which is not a root.
 
 \bigbreak
 
@@ -1178,7 +1184,7 @@ We use compressed arrays in two different settings throughout the whole data str
 For each micro-tree we store several pieces of information:
 \begin{description}
 	\item[Identity of the micro-tree]
-	Information about the position of the micro-tree withing the mini-tree.
+	Information about the position of the micro-tree within the mini-tree.
 	\begin{description}
 		\item[$\tau_2$]
 		Its $\tau_2$ name; if the name equals to $0$, it is a root micro-tree.
@@ -1200,7 +1206,7 @@ For each micro-tree we store several pieces of information:
 	\begin{description}
 		\item[$\parentII$]
 		The $\tau_2$ name of the primary micro-tree which contains its parent.
-		The parent could in theory be stored only in the structure primary micro-tree, however, it is small enough to keep a copy in all of them.
+		The parent could in theory be stored only in the structure of its primary micro-tree, however, it is small enough to keep a copy in all of them.
 		
 		\item[$\typeIII$]
 		A boolean denoting whether it is connected to its parent micro-tree by a type (3) connection.
@@ -1247,7 +1253,7 @@ All our look-up tables will require space $o(n)$.
 
 \bigbreak
 
-We structure for a mini-tree is similar to the micro-tree structure.
+The structure for a mini-tree is similar to the micro-tree structure.
 The only difference is that it contains the collection of compressed arrays for roots of micro-trees.
 \begin{description}
 	\item[Identity of the mini-tree]
@@ -1301,14 +1307,14 @@ The only difference is that it contains the collection of compressed arrays for 
 		\item[]
 	
 		\item[$\microTreeOffsets$]
-		A table of offsets of the micro-tree structures from lemma \ref{l:concat}
+		A table of offsets of the micro-tree structures from lemma \ref{l:concat}.
 		
 		\item[$\microTrees$]
 		The micro-tree structures stored consecutively.
 	\end{description}
 \end{description}
 
-All fields except for $\childrenII$ and the representation, require $O(\log n)$ bit of space.
+All fields except for $\childrenII$ and the representation, require $O(\log n)$ bits of space.
 The collection of compressed arrays $\childrenII$ satisfies the property stated earlier since:
 \begin{enuminline}
 	\item each vertex (and each micro-tree) is a child of at most one root;
@@ -1408,7 +1414,7 @@ As they are not part of the interface of the data structure, the argument $i$ is
 We add four more functions which navigate to special vertices in a given micro-tree or a mini-tree.
 Their names alias with the fields in the representation, however they can always be distinguished by the parentheses.
 The function can also be called with mini-tree name or a micro-tree name.
-The lat four functions assume that such dummy vertex exists.
+The last four functions assume that such dummy vertex exists.
 
 \begin{align*}
 	\rootI(i) &= \canonize(i.\tau_1, 0, 0) \\
@@ -1423,7 +1429,7 @@ The lat four functions assume that such dummy vertex exists.
 
 The operations \isRoot{} and \isLeaf{} use the property that $i$ is a canonical name.
 If $i$ is a root of the tree, it is part of the primary root mini-tree, which in pre-order numbering has the number $0$.
-We apply the same reasoning on micro-micro trees inside the mini-tree and to the vertex inside the micro-tree.
+We apply the same reasoning on micro-trees inside the mini-tree and to the vertex inside the micro-tree.
 
 Similarly, because of the canonicity, $i$ cannot be the name of a dummy vertex inside the top micro-tree.
 The \degree{} look-up table used in \isLeaf{} can therefore be oblivious of the existence of dummy vertices.
@@ -1448,12 +1454,12 @@ The \degree{} look-up table used in \isLeaf{} can therefore be oblivious of the 
 
 A vertex can potentially use a connection of type (3) to its parent; we handle that by utilizing the \dummyUp{} function.
 Then we need to continue differently in cases of a non-root, a micro-tree root but not a mini-tree root, a mini-tree root, and the tree root.
-This pattern of four (sometimes only three) case will keep recurring in most of our algorithms.
+This pattern of four (sometimes only three) cases will keep recurring in most of our algorithms.
 
 If the $i$ is not a micro-tree root ($\tau_3 \ne 0$), we use a look-up table to obtain the answer.
 If it is a micro-tree root ($\tau_3 = 0$) but not a mini-tree root ($\tau_2 \ne 0$), then the parent is present in a micro-tree $\parentII$ within the same mini-tree.
 If the vertex is a mini-tree root, but not the root of the whole tree ($\tau_2 = 0 \booland \tau_1 \ne 0$), the answer is the root of the parent mini-tree.
-The last case -- a parent of the tree root vertex $(0, 0, 0)$ -- simply leafs to a failure.
+The last case -- a parent of the tree root vertex $(0, 0, 0)$ -- simply leads to a failure.
 
 \begin{algorithm}
 \begin{algorithmic}
@@ -1496,7 +1502,7 @@ Note that we use the property from lemma \ref{l:decompose-property}.
 
 Two cases need to be distinguished:
 \begin{enuminline}
-	\item the parent $p$ is withing the same micro-tree,
+	\item the parent $p$ is within the same micro-tree,
 	\item or its is in a different micro-tree.
 \end{enuminline}
 If $p$ is a mini-tree root, we follow the same procedure first on a mini-tree level, then on a micro-tree level.
@@ -1533,7 +1539,7 @@ Finally, we use a look-up table to find the \childRank{} within a micro-tree.
 \end{algorithmic}
 \end{algorithm}
 
-The algorithm \childSelect{} introduces a patter which will be often used in other operations.
+The algorithm \childSelect{} introduces a pattern which will be often used in other operations.
 When $i$ is a mini-tree root, we first find the mini-tree which contains the $k$-th child, and the offset $k'$ within the mini-tree.
 We follow in the same way with micro-trees.
 Finally we solve the query within a micro-tree using a look-up table.
@@ -1578,7 +1584,7 @@ Here we focus on operations which return information about vertices.
 
 \begin{description}
 	\item[Micro-tree]
-	The micro-tree structure is augmented with the following fields.
+	The micro-tree structure is augmented with the following fields:
 	\begin{description}
 		\item[$\depthII$]
 		The depth of the micro-tree root within the mini-tree, which is the distance from the mini-tree root.
@@ -1824,14 +1830,14 @@ This table was used in the operation \subtreeSize{} which is used in \preRank{} 
 
 The \postRank{} and \postSelect{} are very similar to \preAny{}, however there are several differences which make them more complicated.
 
-We use a different definition of belonging -- a vertex belongs to the mini-tree and micro-tree with the lexicographically biggest name instead of the smallest one; we call them the terminary mini-tree and micro-tree.
+We use a different definition of belonging -- a vertex belongs to the mini-tree and micro-tree with the lexicographically biggest name instead of the smallest one; we call them the \emph{terminary mini-tree and micro-tree}.
 We introduce an analogy of the fields $\primaryI$ and $\primaryII$ called $\terminaryI$ and $\terminaryII$ which are used to navigate to the terminary mini-tree and micro-tree from the primary ones.
 
 Since the first vertex which is assigned a post-order number in a mini-tree or micro-tree is its first leaf which could also be a dummy vertex, we store the explicit ($\postLastI$) or offsetted ($\postLastII$) post-order ranks of the last vertices in the mini-tree or a micro-tree.
 The value of $\postLastII$ is non-positive.
 Variables $\last_1$ and $\last_2$ are defined similarly to $\first_1$ and $\first_2$ using the definition of belonging.
 
-We omit the algorithm here because they differ only in details.
+We omit the algorithms here because they differ only in details.
 
 \subsubsection{DFUDS-Order Numbering}
 
@@ -1842,8 +1848,8 @@ We omit the algorithm here because they differ only in details.
 		\dfudsAnc(i) &= \sum_{a \in \ancestors(i) \setminus \{i\}} |\rightSiblings(a)| \\
 		\dfudsRank(i) &=
 		\begin{cases}
-			1 & \isRoot(i) \\
-			\preRank(i) + \dfudsAnc(i)  & \childRank(i) = 1 \\
+			1 & \textif \isRoot(i) \\
+			\preRank(i) + \dfudsAnc(i)  & \textif \childRank(i) = 1 \\
 			\!\begin{aligned}
 				&\dfudsRank(\childFirst(\parent(i))) \\
 				&\ + \childRank(i) - 1
@@ -1878,7 +1884,7 @@ When we refer to the mini-tree structure, it is $i.\tau_1$; the micro-tree struc
 	It is the answer for a mini-tree root; it is stored in the mini-tree structure.
 	
 	\item[$B$]
-	Reduced to a number of right siblings of a mini-tree root; stored in the mini-tree structure.
+	Reduced to the number of right siblings of a mini-tree root; stored in the mini-tree structure.
 	
 	\item[$C$]
 	Since the right siblings of $v_1$ can span over multiple mini-trees, we split $C$ into two parts.
@@ -1890,7 +1896,7 @@ When we refer to the mini-tree structure, it is $i.\tau_1$; the micro-tree struc
 	$C_1$ is stored in the mini-tree structure; $C_2$ in the micro-tree structure.
 	
 	\item[$D$]
-	Reduced to a number of right siblings of a micro-tree root; stored in a micro-tree structure.
+	Reduced to the number of right siblings of a micro-tree root; stored in a micro-tree structure.
 	As the micro-tree root is not a mini-tree root, all its right siblings are in the same mini-tree.
 	
 	\item[$E$]
@@ -1903,7 +1909,7 @@ When we refer to the mini-tree structure, it is $i.\tau_1$; the micro-tree struc
 	\end{align*}
 	
 	$E_1$ is stored in the mini-tree structure; $E_2$ in the micro-tree structure; $E_3$ is provided by a look-up table.
-	Note $E_1$ is stored only for root micro-trees; it has the same value for all of them.
+	Note that $E_1$ is stored only for root micro-trees; it has the same value for all of them.
 \end{description}
 
 The algorithm for \dfudsRank{} consists them mostly of the computation of \dfudsAnc{}.
@@ -1983,7 +1989,7 @@ The operation \dfudsSelect{} is the same \preSelect{}, including the corrections
 	An in-order number is assigned to a vertex which has a degree greater than $1$; we can therefore ignore vertices of degree $0$ or $1$.
 	
 	We calculate how many in-order numbers have been assigned until vertex $i$ is given its first in-order number.
-	The subtrees of left siblings of its ancestors has been fully processed, as has been the subtree of the first child of $i$.
+	The subtrees of left siblings of its ancestors have been fully processed, as has been the subtree of the first child of $i$.
 	The $+1$ in \inAnc{} is for in-order numbers already assigned to $\parent(a)$ for its left children (left siblings of $a$).
 \end{proof}
 
@@ -2123,7 +2129,7 @@ If $v$ is a micro-tree root, then we look closer at the mini-trees which contain
 The name reported for visits from children in a type (1) connected mini-tree $t$ is simply $t$.
 
 \begin{lemma}
-	The number of runs is in the compressed array $\inVerticesI$ by $O(\frac{n}{B})$.
+	The number of runs in the compressed array $\inVerticesI$ is $O(\frac{n}{B})$.
 \end{lemma}
 \begin{proof}
 	There are only the following cases when a vertex $v$ has a different $\tau_1$ name than its immediately preceding vertex $u$ in the array $\inVerticesI$.
@@ -2243,7 +2249,7 @@ This tree $T_1$ has $O(\frac{B}{b})$ nodes.
 
 The operation \lca{} will be solved on three levels: micro-tree, mini-tree and the whole tree.
 If $i_1$ and $i_2$ are within the same micro-tree we use a look-up table.
-Otherwise we use an LCA structure which uses the techniques from \ref{lemma:rmq2}.
+Otherwise we use an LCA structure which uses the techniques from lemma \ref{lemma:rmq2}.
 
 \begin{lemma}\label{l:ff-lca}
 	We can solve the LCA operation on the trees $T_1$ and $T_2$ using indices of $o(n)$ and $o(B)$ bits.
@@ -2251,7 +2257,7 @@ Otherwise we use an LCA structure which uses the techniques from \ref{lemma:rmq2
 \begin{proof}
 	We first assume a general tree $T$ with $p$ nodes.
 	We define an array $E$ which contains nodes as they are visited during an Eulerian tour starting in the root.
-	The array $E$ contains $2p + 1$ nodes, which corresponds to every vertex being visited from each of its neighbors plus one for the root where the tour starts and ends.
+	The array $E$ contains $2p - 1$ nodes, which corresponds to every vertex being visited from each of its neighbors plus one for the root where the tour starts and ends.
 	The answer to $\lca(u, v)$ is the shallowest node between the first occurrence of $u$ and the first occurrence of $v$ in the array $E$.
 	We can therefore reduce the task of finding the lowest common ancestor to task of finding the minimum value in the given range in an array $D[i] = \dep(E[i])$.
 	The position of the minimum can be found by a range minimum query using a precomputed (not look-up) table as in lemma \ref{lemma:rmq2}.
@@ -2260,7 +2266,7 @@ Otherwise we use an LCA structure which uses the techniques from \ref{lemma:rmq2
 	The precomputed table contains directly names of the nodes; it requires requires $p \log^2 p$ bits.
 	In the case of two overlapping intervals we simply compare the depths of the two candidates.
 	
-	In case of $T_1$, we use the field $\depthI$ since the relation of one node being ancestor of the other is preserved.
+	In case of $T_1$, we use the field $\depthI$ since the relation of one node being an ancestor of the other is preserved.
 	The name of the node is its $\primaryI$ name.
 	The tree $T_1$ has $O(\frac{n}{B})$ nodes, so the space required is $O(\frac{n}{B} \log^2 n) = o(n)$ bits for $c \ge 3$.
 	($c$ is the constant from definition of the size $B$.)
@@ -2416,17 +2422,17 @@ Before we use it, we formulate and prove the following lemma.
 We build a tree $T_1$ as a trie from the reversed arrays $\lfirstI$ with an additional artificial root.
 We compress the tree by contracting paths between nodes which are either:
 \begin{enumerate}
-	\item the artificial root node;
-	\item nodes corresponding to mini-tree roots.
+	\item The artificial root node.
+	\item Nodes corresponding to mini-tree roots.
 	All leaves of $T_1$ are mini-tree roots, however not all mini-tree roots are leaves in $T_1$.
-	\item branching nodes in the tree $T_1$.
+	\item Branching nodes in the tree $T_1$.
 	Their number is bounded by the number of leaves of $T_1$.
-	\item nodes corresponding to vertices in the arrays $\lfirstI$ such that their predecessor has a different $\tau_1$ name.
+	\item Nodes corresponding to vertices in the arrays $\lfirstI$ such that their predecessor has a different $\tau_1$ name.
 \end{enumerate}
 Not counting branching nodes, there are at most three vertices for each mini-tree, which follows from the previous lemma.
 The number of nodes in the compressed tree is $O(\frac{n}{B})$.
 
-We associate each node $n$ with the depth of the vertex which it represents in the original tree; the root of $T_1$ is assigned with $\infty$.
+We associate each node $n$ with the depth of the vertex which it represents in the original tree; the root of $T_1$ is assigned the value $\infty$.
 We store the information about the nodes in an array; each node knows its $\tau_1$ name, its depth, and its pre-order number $k$ in $T_1$.
 We also store the pre-order number $k$ of the node which corresponds with the mini-tree root as a field $\lfirstKI$ in a mini-tree structure.
 
@@ -2454,7 +2460,7 @@ Finally, we use a look-up table to find the answer within the correct micro-tree
 The algorithm tests two alternatives and chooses the one with smaller pre-order number.
 \begin{enumerate}
 	\item If the query starts with a mini-tree root, the correct mini-tree is found, then the correct micro-tree is found, and finally the correct vertex is found.
-	\item If the query starts with a micro-tree root, a micro-tree is found withing a potentially incorrect mini-tree, then a vertex is found.
+	\item If the query starts with a micro-tree root, a micro-tree is found within a potentially incorrect mini-tree, then a vertex is found.
 	The mini-tree dummy vertex is check, as it could contain the correct answer; a recursive call causes triggers the option (1).
 	\item If the query starts with a non-root, a vertex is found in a look-up table.
 	The dummy vertex in the micro-tree is checks; a recursive call leads to options (1) or (2).
@@ -2557,8 +2563,8 @@ $$ \lnextI[j] = \levelNext(\rootI(0), \levelLast(i, \dep(i) + j)).\tau_1$$
 If there is no next vertex, than we use the name $-1$.
 
 We build a collection of compressed arrays out of all $\lnextI$ arrays, which will be stored in the global structure.
-They contain $O(n)$ elements in total as each vertex except for mini-tree roots is the right-most one in at most one mini-tree, and the number of mini-tree roots is $O(\frac{n}{B})$.
-There are at most $O(\frac{n}{B})$ runs in all arrays, which follows from the lemmas \ref{l:level-graph} ans \ref{l:level-first-3}; there are only $O(1)$ ways how three and three runs can be combined together.
+They contain $O(n)$ elements in total as each vertex except for mini-tree roots is the rightmost one in at most one mini-tree, and the number of mini-tree roots is $O(\frac{n}{B})$.
+There are at most $O(\frac{n}{B})$ runs in all arrays, which follows from the lemmas \ref{l:level-graph} and \ref{l:level-first-3}; there are only $O(1)$ ways how three and three runs can be combined together.
 The extra ``no next vertex'' names do not matter as we they form a single run until the end of the array.
 The collection of compressed arrays requires $O(\frac{n}{B} \log n) = o(n)$ bits of space.
 
@@ -2611,7 +2617,7 @@ This requires $O(\frac{B}{b} \log B) = o(B)$ bits of memory, and it is stored in
 In the beginning we defined the size $B$ dependent on the constant $c \ge 2$.
 We can set $c = 2$ as long as we do not require the ancestral and level operations in the form we have shown (they require $c \ge 3$).
 However, it is not true that $c >2$ is required as \todo{ref} shown the same structure with slightly more complicated operations for which $c = 2$ is sufficient.
-We chose the simpler options as they allowed use reuse structures which we defined in other parts of this work.
+We chose the simpler options as they allowed us to reuse structures which we defined in other parts of this work.
 
 The TC data structure supports all operations of FF; it is better in ranking operations as \postRank{}, \postSelect{}, \dfudsRank{}, \dfudsSelect{} are not supported by the former one.
 The advantage of TC is that it is easier to extend it by adding small bits to an existing skeleton.
@@ -2628,7 +2634,7 @@ All of the previous structures can be split into two parts (recalling the defini
 	Although it is not enough to restore the original tree -- for that we would need to store at least the number of mini-trees in the tree, number of micro-trees in a mini-tree, parents, primaries and dummy vertices, we do not consider it here.
 	
 	\item[index] 
-	Any structure or structures of size $o(n)$ bits which speeds up the queries; for BP and DFUDS they were indices for \rank{}, \select{}, \match{}, \rmqi{}.
+	Any structure or structures of size $o(n)$ bits which speed up the queries; for BP and DFUDS they were indices for \rank{}, \select{}, \match{}, \rmqi{}.
 	In case of TC, the global, mini-tree and micro-tree structures without what we defined as \emph{data} take only $o(n)$ bits and will be considered as an index.
 \end{description}
 
@@ -2651,12 +2657,12 @@ We define a data structure for a universal succinct representation which provide
 \end{description}
 
 Although the parameter $s$ can be in range $[1, w]$, we will restrict it to a fraction of $\log n$; the exact value depends on the target representation and on a constant which we leave as a parameter of the data structure.
-We also constraint $i$ to be a multiple of $s$.
-The answer to a query with unrestricted $i$ and $s$ can still be obtained by $O(1)$ queries of the restricted operations.
+We also constrain $i$ to be a multiple of $s$.
+The answer to a query with unrestricted $i$ and $s$ can still be obtained by $O(1)$ queries of the restricted type.
 
 \bigbreak
 
-Assuming that such data structure exist, we can equip it with all \emph{indices} (for BP, DFUDS and TC) in order to obtain a succinct data structure which supports the union of all operations of individual representations.
+Assuming that such data structure exists, we can equip it with all \emph{indices} (for BP, DFUDS and TC) in order to obtain a succinct data structure which supports the union of all operations of individual representations.
 Although it may seem that TC is superior to any other representation, there are still advantages:
 \begin{itemize}
 	\item If there are more ways to support the same operation, the fastest one or the one requiring the smallest index (both in terms of a real implementation) can be chosen.
@@ -2666,7 +2672,7 @@ Although it may seem that TC is superior to any other representation, there are 
 \subsection{Restriction to Mini-Trees}
 
 We start with the same two-level decomposition as in the Tree Covering representation.
-The mini-trees are the primary part of the data structure, which is where the operations \bpSubstring and \dfudsSubstring are supported.
+The mini-trees are the primary part of the data structure, which is where the operations \bpSubstring{} and \dfudsSubstring{} are supported.
 The micro-trees will be used much later since they are required only to support the operation \tcMicrotree{}.
 
 Almost every parenthesis in the bit strings $S$ of BP and DFUDS representation can be associated with a vertex:
@@ -2811,7 +2817,7 @@ So far we needed the following fields to be stored:
 
 \bigbreak
 
-From now on, the restrict our description to a single mini-tree; we ignore all other mini-trees, including those connected via the dummy vertex.
+From now on, we restrict our description to a single mini-tree; we ignore all other mini-trees, including those connected via the dummy vertex.
 
 We call a vertex \emph{significant} if its subtree size is larger than $d' = \frac{\log n}{d}$, for a constant $d$.
 
@@ -2828,6 +2834,7 @@ We solve this special case first, and then generalize it to all skeletons.
 
 We use the same notation as in the original article \cite{farzan2009universal}:
 Let $P$ by the skeleton, which is a path, $u$ its leaf and $v$ the last child of $u$.
+Let us define the following sets:
 \begin{align*}
 	S &= \{ s : \parent(s) \in P \booland s \notin P \} \\
 	S_D &= \{ s \in S : \preRank(s) \le \preRank(v) \} \\
@@ -2937,7 +2944,7 @@ We can restore the original mini-tree from this representation:
 	The total size of the index of the look-up table is $2q' + 4d' + O(\log \log n)$, which is from where the restriction on value of $q$ comes.
 	
 	We state the algorithm in a more general form which allows to generate $s \le q$ bits; it also returns the number of bits which it could not produce.
-	Neither of the these features is useful for skinny mini-trees as we always need $q$ bits, and the query cannot reach the end because such query has already been solved by using the stored bits in $\bpLast$.
+	Neither of these features is useful for skinny mini-trees as we always need $q$ bits, and the query cannot reach the end, because such query has already been solved.
 	
 	\begin{algorithm}
 	\begin{algorithmic}
@@ -3000,7 +3007,11 @@ We can restore the original mini-tree from this representation:
 			\State $p_D \gets p_D + 1$ \Comment{Consume the closing parenthesis}
 		\EndWhile
 	\EndFunction
+	\end{algorithmic}
+	\end{algorithm}
 	
+	\begin{algorithm}
+	\begin{algorithmic}
 	\Function{\dfudsSkinnyDown}{}
 		\State{$p_U \gets 0; t_U \gets 0$}
 		\While{$p_U < |P_U|$} \Comment{Output the right dangling trees}
@@ -3029,8 +3040,8 @@ Both values are significantly better than the former $q = 8$ for BP and $q = 24$
 \subsection{General Mini-Trees}
 
 If the skeleton is a general tree, we decompose it iteratively into paths.
-We first remove the left-most path connecting the root with the first skeleton leaf; we call it \emph{left-leaning path}.
-For each tree in the rest of the skeleton, we remove its right-most path connecting the root with the last skeleton leaf; we call it \emph{right-leaning path}.
+We first remove the leftmost path connecting the root with the first skeleton leaf; we call it a \emph{left-leaning path}.
+For each tree in the rest of the skeleton, we remove its rightmost path connecting the root with the last skeleton leaf; we call it a \emph{right-leaning path}.
 We repeat this until every vertex of the skeleton is in a left-leaning or a right-leaning path.
 
 The decomposition keeps subtrees of non-significant vertices connected to their parent, which is now in a path; they are again called left and right dangling trees.
@@ -3040,11 +3051,11 @@ We assign each path a number starting with $0$.
 
 The paths are connected with each other in three possible ways:
 \begin{itemize}
-	\item A left-leaning path can have left-leaning and righ-leaning paths connected to the right.
-	If there are more of them connected to one vertex, we store only the left-most one.
+	\item A left-leaning path can have left-leaning and right-leaning paths connected to the right.
+	If there are more of them connected to one vertex, we store only the leftmost one.
 	
 	\item A right-leaning path can have left-leaning paths connected to the left.
-	Again, if there are more of them connected to the same vertex, we store only the left-most one.
+	Again, if there are more of them connected to the same vertex, we store only the leftmost one.
 	
 	\item All paths except for one have a \emph{next path}.
 	The next path is either the path containing the right sibling of its root if it exists, or the path containing the parent of its root.
@@ -3060,16 +3071,16 @@ The size of the index record is $O(\log \log n)$ and we call it a \emph{referenc
 First, we add opening parentheses to the bit strings $P_D$ and $P_U$ for all connected paths.
 Without this change reporting the vertex degree in the DFUDS representation would be wrong.
 This change adds $O(\frac{B}{\log n})$ bits because the each path is connected to at most one other path.
-The root of a path (except for the path containing the mini-root root) is represented by $3$ bits in total.
+The root of a path (except for the path containing the mini-tree root) is represented by $3$ bits in total.
 
-For each path we define arrays $C_D$ and $C_U$ which marks the positions of the parentheses which we have just added.
+For each path we define arrays $C_D$ and $C_U$ which mark the positions of the parentheses which we have just added.
 Note that only one of the arrays is non-empty since left-leaning paths have connections only to the right -- in $C_U$, and right-leaning paths only to the left -- in $C_D$.
 In order to find the position of the closest connection, we turn the arrays $C_D$ and $C_U$ into a collection of compressed arrays using the operation \succ{}.
 The values in the arrays are the references denoting where to continue; we store two versions of them: for BP and for DFUDS representation.
 
 There are $O(B)$ elements in the each collection of compressed arrays in total since they contain the same number of elements as the arrays $P_*$.
 Each reference in the compressed arrays refers to the root of a connected path, therefore each of them occurs in a single run, and the total number of them is bounded by the number of paths.
-Each collection of compressed arrays takes $o(B)$ bits od space.
+Each collection of compressed arrays takes $o(B)$ bits of space.
 
 \begin{description}
 	\item[Path]
@@ -3105,11 +3116,11 @@ Each collection of compressed arrays takes $o(B)$ bits od space.
 
 We extend the algorithm for skinny mini-trees by several modifications:
 \begin{itemize}
-	\item It is provided the reference instead of itself finding it in an index.
+	\item It is provided the reference (the state of the algorithm) instead of finding it in the index itself.
 	
 	\item It finds the position $c$ of the closest connected path in the direction of traversal and provides it to the look-up table.
 	
-	\item Whenever the algorithm captured by the look-up table encounters the position $c$, it shall end with and return the reason.
+	\item Whenever the algorithm captured by the look-up table encounters the position $c$, it shall stop and return the reason.
 	
 	\item The look-up tables return more information:
 	\begin{itemize}
@@ -3173,7 +3184,7 @@ We inspect the graph of transitions between paths.
 	\caption{Graph of the transitions between paths and directions of the traversal}
 \end{figure}
 
-First we observe that all cycles in the graph the edge labeled ``Turn''.
+First we observe that all cycles in the graph contain the edges labeled ``Turn''.
 We focus on the transitions of the direction of a path traversal from ``down'' to ``up''.
 
 \begin{lemma}
