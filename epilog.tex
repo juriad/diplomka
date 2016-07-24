@@ -1,2 +1,171 @@
 \chapter*{Conclusion}
 \addcontentsline{toc}{chapter}{Conclusion}
+
+The aim of the thesis was to explore the existing succinct data structures for representing trees, to compares them, and possibly to improve them.
+We have succeeded in all three tasks.
+
+\bigbreak
+
+To summarize this thesis, we have presented five ways how a static ordinal tree with $n$ vertices can be encoded using only $2n + o(n)$ bits of space.
+The first three use a direct encoding in a bit string of $2n + 1$ or $2n$ bits.
+The later two representations build on top of them by either replacing the index, or moving the idea of decomposition from bit strings to subtrees.
+Finally, we showed a way how the data part of three different representations can be shared among them.
+
+The representation differ by the set of operations which the support.
+We proceeded from the very simples ones which do not offer much, to representations which support almost every operation.
+The comparison of the supported operation can be found in the table \ref{tab:comparison}.
+Our improvements, which are in more detail, described in the next section are typeset in bold.
+
+
+\begin{sidewaystable}
+	\centering
+	\begin{tabularx}{\textwidth}{|L{1}||L{1}|L{1}|L{1}|L{1}|L{1}|}
+		\hline
+		Operation
+		& LOUDS
+		& BP
+		& DFUDS
+		& FF
+		& TC
+		\\ \hline \hline
+
+		\anyRank{}, \newline
+		\anySelect{}
+		& \loAny{}
+		& \preAny{}, \postAny{}, \inAny{}
+		& \preAny{}, \dfudsAny{}
+		& \preAny{}, \postAny{}, \dfudsAny{}, \inAny{}
+		& \preAny{}, \postAny{}, \dfudsAny{}, \textbf{\inAny{} (new result)}
+		\\ \hline
+		
+		\parent{}, \isRoot{}, \isLeaf{}
+		& Yes
+		& Yes
+		& Yes
+		& Yes
+		& Yes
+		\\ \hline
+		
+		\childAny{}, \degree{}
+		& Yes
+		& Yes, \childRank{}, \childSelect{}, \degree{} not-shown
+		& Yes
+		& \textbf{Yes (alternative)}
+		& Yes
+		\\ \hline
+		
+		\dep{}
+		& \textbf{Yes, new result}
+		& Yes
+		& Yes, not-shown
+		& Yes
+		& Yes
+		\\ \hline
+	
+		\levelAny{} (restrictable)
+		& Yes
+		& No
+		& No
+		& Only iteration (subtree)
+		& \textbf{Only iteration (alternative) (subtree)}
+		\\ \hline
+		
+		\leafAny{} (restrictable)
+		& Yes, in level-order (level range)
+		& Yes (subtree)
+		& Yes (subtree)
+		& Yes (subtree)
+		& Yes (subtree)
+		\\ \hline
+		
+		\isAncestor{}
+		& No
+		& Yes
+		& Yes
+		& Yes
+		& Yes
+		\\ \hline
+		
+		\levelAncestor{}
+		& No
+		& Yes, not-shown
+		& Yes, not-shown
+		& Yes
+		& Yes
+		\\ \hline
+		
+		\lca{}, \distance{}
+		& No
+		& Yes
+		& Yes
+		& Yes
+		& Yes
+		\\ \hline
+		
+		\hei{}, \deepestVertex{}
+		& No
+		& Yes
+		& No
+		& Yes
+		& Yes
+		\\ \hline
+		
+		\subtreeSize{}
+		& No
+		& Yes
+		& Yes
+		& Yes
+		& Yes
+		\\ \hline
+	\end{tabularx}
+	\caption{Comparison of operations supported by various representations}
+	\label{tab:comparison}
+\end{sidewaystable}
+
+\bigbreak
+
+All structures and algorithms which we present in this thesis are also described with two exceptions:
+\begin{description}
+	\item[Fusion tree]
+	A fusion tree is required for the tiny compressed array.
+	This decision can be advocated by the fact that it is only of a theoretical interest.
+	
+	\item[Succinct indexed dictionaty]
+	The succinct indexed dictionary appears twice in our work: first in the definition of the tiny compressed array, and then also in the solution of the generalized \rmqSize{} and \rmqSelect{}.
+	We did not incorporate the description of this structures as it uses technique which are too different from those which we used for representing trees.
+\end{description}
+
+We simplified some operations by not using the state of the art data structures in order to provide a description of a reasonable complexity.
+
+\section*{Our Contribution}
+\addcontentsline{toc}{section}{Our Contribution}
+
+Our first result is the definition of the compressed array in section \ref{s:compressed-array}.
+Although this technique has been widely used, we wrapped it into a structure which provides clearly defined operations.
+The use of the compressed array simplified the notation in many of the presented algorithms.
+
+Our major result the proposal of an index which supports the \dep{} and \levelAny{} operations in the LOUDS representation.
+The LOUDS representation being discovered first, however the attention moved fast to the other representation since the set of operations supported by LOUDS seemed to be very restricted.
+It is now the only representation which supports the operations \levelRank{} and \levelSelect{}.
+
+For the first time, we have defined the operation \rmqSelect{} which generalizes \rmqi{} by allowing to specify the number of the desired occurrence of minimum.
+Until now, only a fixed occurrence, such as the first or the last, could be found.
+We also defined operations \rmqSize{}, \rmqRank{} which return the number of all occurrences of the minimum in range, or in a part of it.
+We used the generalized range operations to propose an alternative algorithm for the \degree{}, \childRank{}, \childSelect{} operations in the FF representation.
+
+We solved the operation \inRank{} and \inSelect{} for the TC representation.
+Although the solution uses the same techniques as \dfudsRank{} and \dfudsSelect{}, which have already been published, the in-order operations are more complex.
+This stems from the property that one vertex can be assigned multiple in-order numbers.
+
+One more of our results is related to the TC representation.
+We propose an alternative algorithms for the operations \levelFirst{} and \levelLast{} which are restricted to a subtree of a given vertex.
+The query is reduced to a problem of finding a level ancestor, which we also describe at two different occasions.
+
+The last of our results involves the universal succinct representation where we achieved two improvements.
+First, we changed ownership of parenthesis in the DFUDS representation which lowered the number of runs in this case to only three.
+It also simplified the algorithm captured by the look-up table generating the bits of the DFUDS representation.
+
+The other improvement is that we analyzed carefully the constant in the definitions of a significant vertex.
+We used this constant and one other to formulate inequalities which describe more precisely the behavior of the BP and DFUDS generating algorithms.
+We increased the lower bound on the number of bits generated in the skinny mini-tree case from $\frac{\log n}{8}$ and $\frac{\log n}{24}$ bits for the BP and DFUDS representations to $\frac{\log n}{3}$ and $\frac{\log n}{5}$ bits.
+

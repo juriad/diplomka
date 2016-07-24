@@ -5,11 +5,6 @@ The traditional way, which most people know and use, is to have a structure for 
 Each edge of the tree is stored twice as a pointer of size $w$.
 Even if we did not need any other space to manage the vertex structures, the space occupied by the edges takes $\Omega (n \log n)$ bits.
 
-In our discussion we assume that no additional value is present in vertices, and we are therefore interested in the structure of the tree itself.
-If values present, we could move them to an external table which is indexed by the number of the vertex to which it belongs.
-The number of the vertex can be its general \rank{}, or if we store values only in leaves, it can be its \leafRank{}.
-This transformation maintains the same space complexity.
-
 We can express how many ordinal trees with $n$ vertices exist in total using Catalan numbers.
 $$ | \mathcal{T}(n) | = C_{n-1} = \frac{1}{n} {2n - 2 \choose n - 1} $$
 The $-1$ stems from the tree having a single root.
@@ -69,16 +64,17 @@ More advanced structures which do not have the limitations of the simple structu
 	
 		$\levelAny$ operations, \newline
 		$\dep(i) \rightarrow l$
-		& The level operations can be parametrized in two orthogonal ways:
-		\begin{iteminline}
-			\item the level (or its range) of the tree in which we are interested,
-			\item and the subtree of a vertex to which the query is restricted.
-		\end{iteminline} \\ \hline
+		& The level operations can be additionally restricted to the subtree of a vertex $a$\\ \hline
 		
 		$\leafAny$ operations, \newline
 		$\isLeaf(i) \rightarrow b$
 		& The order respects the ranks of the leaves (pre-order for DFS, lo-order for BFS).
-		The queries can be further restricted to levels and subtrees.\\ \hline \hline
+		The queries can be further restricted to
+		\begin{iteminline}
+			\item a level (or its range),
+			\item or the subtree of a vertex $a$
+		\end{iteminline}
+		\\ \hline \hline
 		
 		$\isAncestor(i_1, i_2) \rightarrow b$, \newline
 		$\levelAncestor(i, d) \rightarrow j$, \newline
@@ -101,7 +97,7 @@ The operations are defined in the table \ref{tab:list-ops}.
 The desired running time of all operations is $O(1)$.
 
 \emph{Navigation operations} are those which allow traversal of the tree.
-Supporting the operations \childRank{}, \childSelect{} and \degree{} is preferred over the relative operations \childPrev{}, \childNext{}, \childFirst{} and \childLast{}.
+Since the operations \childPrev{}, \childNext{}, \childFirst{} and \childLast{} can be emulated by \childRank{}, \childSelect{} and \degree{}, the support of the later ones is preferred.
 In order to navigate up in the tree \parent{} and \isRoot{} are required.
 
 In the definitions, we use $i$ and $j$ to refer to the internal representation of the vertex.
@@ -208,8 +204,9 @@ The extra function \toBeginning{} returns the position where the degree sequence
 \end{algorithmic}
 \end{algorithm}
 
-The vertex \loRank{} and \loSelect{} are simply $\rank_1(S, i)$ and $\select_1(S, r)$.
-No other vertex orderings are supported.
+Only one vertex numbering schema is supported by this representation -- the level-order numbering.
+The operations \loRank{} and \loSelect{} are simply $\rank_1(S, i)$ and $\select_1(S, r)$.
+
 
 The navigation operations are relatively easy.
 We also define an optimized version of the operation \childLast since we will need it later.
@@ -990,7 +987,11 @@ If it contained the minimum elsewhere, then we cannot simply navigate to the ver
 
 It cannot be the last parenthesis of $p_2$, because we end the interval just before it.
 It also will not be any other parenthesis $p \ge p_2$:
-$$\excess(S, p) \ge \excess(S, \toLast(S, p_2)) + 1 = \excess(S, \toLast(S, \childPrev(S, p_2)))$$
+\begin{align*}
+	& \excess(S, \toLast(S, p_2)) + 1 \\
+	&\quad = \excess(S, \toLast(S, \childPrev(S, p_2))) \\
+	&\quad \le \excess(S, p)
+\end{align*}
 In case of equality, the \rmqi{} returns the leftmost occurrence.
 
 The $\rmqi(S, i_1, i_2 - 1)$ returns position of the last parenthesis of the previous sibling of $p_2$ and therefore $p_2 = \rmqi(S, i_1, i_2 - 1) + 1$.

@@ -166,14 +166,24 @@
 }
 \def\m#1{\relax\ifmmode#1\else$#1$\fi}
 
-% deque operations
+
+
+% deque and array operations
 \defineName{push}
 \defineName{pop}
 \defineName{enqueue}
 \defineName{dequeue}
+\defineName{append}
+\defineName{prepend}
+\defineName{concatenate}
+\defineName{reverse}
 
 % output
 \defineName[out]{output}
+
+
+% in Introduction
+\defineName{val}
 
 % in Foundations
 \defineName{true}
@@ -303,7 +313,6 @@
 
 % in Trees, BP
 \defineName{state}
-\defineName{reverse}
 \defineName[UNSEEN]{\str{UNSEEN}}
 \defineName[OPEN]{\str{OPEN}}
 \defineName[CLOSED]{\str{CLOSED}}
@@ -331,9 +340,6 @@
 \defineName[rightSiblings]{right\_siblings}
 \defineName[rmqInfo]{rmq\_info}
 \defineName[rmqList]{rmq\_list}
-\defineName{append}
-\defineName{prepend}
-\defineName{concatenate}
 \defineName[rmqBlock]{rmq\_block}
 \defineName[rmqSizeBlock]{rmq\_size\_block}
 \defineName[rmqSelectBlock]{rmq\_select\_block}
@@ -522,3 +528,27 @@
 \makeatother
 
 \usepackage[section]{placeins}
+
+\usepackage{rotating}
+
+
+\makeatletter
+\newcommand*{\IfBoldFaceTF}{%
+  \ifx\f@series\my@test@bx
+    \expandafter\@firstoftwo
+  \else
+    \expandafter\@secondoftwo
+  \fi
+}
+\newcommand*{\my@test@bx}{bx}
+\makeatother
+
+
+\let\origUnderscore\_
+\def\_{\leavevmode%
+	\kern.03em\ifmmode%
+		\vbox{\hrule width.4em height.4pt}%
+	\else%
+		\vbox{\IfBoldFaceTF{\hrule width.4em height.6pt}{\hrule width.4em height.4pt}}%
+	\fi%
+}

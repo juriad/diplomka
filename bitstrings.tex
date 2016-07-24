@@ -358,12 +358,14 @@ The look-up tables return $-1$ if such position does not exist in the queried bl
 
 There are two special cases which we address separately:
 \begin{description}
-	\item[block query on matching parenthesis]
+	\item[A block query for a matching parenthesis]
 	We distinguish two cases depending on the parenthesis $S[i]$:
-	If $S[i]$ is an opening parenthesis, then use a forward search $\fwdSearch[S, i, -1, \closingParen, \false]$.
-	For a closing parenthesis, we search backwards $\bwdSearch[S, i, 1, \openingParen, \false]$
+	$$\match(S, i) = \begin{cases}
+		\fwdSearch[S, i, -1, \closingParen, \false] & \textif S[i] = \openingParen \\
+		\bwdSearch[S, i, 1, \openingParen, \false] & \textotherwise
+	\end{cases}$$
 	
-	\item[block query on enclosing parenthesis]
+	\item[A block query for an enclosing parenthesis]
 	We assume that $S[i]$ is an opening parenthesis since the other case will never occur.
 	We run two queries for which we return the first non-negative result:
 	\begin{enumerate}
@@ -816,7 +818,7 @@ This is essentially the same as the partitioning which we used for \rank{} in se
 The implementation of the operations \rank{}, \select{}, and \inspect{}, which are required by the definition of FID, is straightforward.
 The total size of the structure is ${N \choose K} + O(\frac{N \log \log N}{\log N}) = {N \choose K} + o(N)$.
 
-\subsection{Compressed Array}
+\subsection{Compressed Array}\label{s:compressed-array}
 
 In an array, a \emph{run} is a consecutive sequence of identical elements.
 

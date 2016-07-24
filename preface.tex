@@ -1,12 +1,129 @@
 \chapter*{Introduction}
 \addcontentsline{toc}{chapter}{Introduction}
 
-Since the beginning of the computer science many data structures has been proposed.
-The most useful ones are trees -- a data structure representing hierarchies.
+Tree data structures are one of the most commonly used in computer science, and as such they have been studied for decades.
+Many of the data structures are designed to general purpose -- they support most operations which their user may need.
+However, if more information is known about the tree and the operations which are required, then it is possible to come up with a specialized tree data structure which is better better for the particular use-case than any general purpose one.
 
-\todo{static tree}
+\section*{Classification of Trees}
+\addcontentsline{toc}{section}{Classification of Trees}
 
-\todo{define ordinal tree vs. ordered tree}
+We distinguish several types of trees depending on their properties.
+We mark the properties which we assume about the tree in the rest of the thesis by an asterisk.
 
-\section{Our contribution}
+\begin{description}
+	\item[Central vertex]
+	A tree can have one special vertex which designates the center of the root.
+	This vertex is called the \emph{root} of the tree.
+	
+	\begin{description}
+		\item[* Rooted]
+		For a vertex $v$ in the tree we designate its neighbor on the path to the root as its \emph{parent}, and we call all its other neighbors \emph{children}.
+		Rooted trees are used for representing hierarchies: the further a vertex is from the root, the more finer piece of information it represents.
+		
+		\item[Unrooted]
+		If the tree does not have a designated root, its usage is limited to being a special case of a graph.
+		Unrooted trees can be results of some graphs algorithms such as algorithms for the minimum spanning tree.
+	\end{description}
 
+	\item[Ordering of children]
+	Each vertex in a tree has several children; if it has no children, it is called a leaf.
+	There are three major cases of assumptions of the order of the children of a vertex $v$ can be expressed:
+	\begin{description}
+		\item[Free trees]
+		The order of children is not specified; no particular order should be expected.
+		The terms the first, the next, the previous, and the last children of a vertex are not defined.
+		The children can only be accessed all at once or through an iteration which guarantees that all children will be returned exactly once.
+		
+		\item[* Ordinal trees]
+		The order of children is fixed.
+		The children are assigned numbers in order: the first child gets $1$, the next $2$, \dots, the last one is assigned the number $\degree(v)$.
+		We call this number the \emph{child rank}.
+		
+		\item[Cardinal trees]
+		The order of children is also fixed, however the arity $k$ of the tree is fixed too.
+		The children are not assigned numbers in sequence, but they have a unique number in range $[1, k]$.
+		
+		The cardinal trees are often called used for implementing tries.
+		The arity $k$ is then the size of the alphabet.
+	\end{description}
+	
+	\item[Labeling]
+	Any graph and so a tree can have labels assigned to edges between vertices.
+	Since rooted trees have a natural orientation of edges, we can associate the labels with vertices.
+	If an edge from a vertex $v$ to its child $u$ is labeled $l$, then we associate the label $l$ with the vertex $u$.
+	\begin{description}
+		\item[Labeled]
+		The labels can be used to give the vertices their ``type''.
+		For example, if each vertex represents a person, then a labeled edge can express that one vertex is either a son or a daughter of its parent.
+		When the labels are moved into vertices, they would denote the sex of the person.
+		The queries on labeled trees can be parametrized by the label; for example we could query the first son (a male child) of a person.
+		
+		\item[* Unlabeled]
+		All children of vertex have the same type; it is not necessary nor possible to distinguish them in any other way then by their child rank.
+	\end{description}
+	
+	\item[Storing values]
+	The vertices of the tree can store some extra values.
+	They can be stored either in inner vertices, in leaves, or in both. 
+	
+	\begin{description}
+		\item[Values are stored]
+		In many cases of trees the values which are stored in it shape the tree.
+		For example in binary search trees the following invariant holds:
+		$$ \val(\childFirst(v)) < \val(v) < \val(\childLast(v)) $$
+		
+		If it is possible to assign each vertex in the tree a unique number, which we call rank, then the values can be moved to an external table.
+		The value is then accessed by indexing the external table by the rank of a vertex.
+		This reduces the case to the following one.
+		
+		\item[* Structure only]
+		Each vertex does not contain any value outside those which are required for maintaining the structure of the tree itself.
+		
+	\end{description}
+	
+	\item[Modifications]
+	In some use-cases we need to support operations which modify the structure of the tree after it was constructed.
+	In other cases, a tree which does not support any such operations is sufficient.
+	\begin{description}
+		\item[Modifiable]
+		The most basic operations are insertion and deletion of a vertex; more advanced operations involve adding and removing whole subtrees.
+		Sometimes these operations can involve a massive change in the structure of the tree.
+		Self-balancing trees (for example AVL trees) maintain a logarithmic bound on the height of the tree.
+		
+		\item[Dynamic]
+		Some tree data structures (for example Splay trees) modify the structure of the tree even when a query operation is processed.
+		
+		\item[* Static]
+		Static trees allow only operations which do not modify the structure.
+		This restriction allows to design trees which can answer queries faster than the dynamic ones.
+		
+		Since the tree never changes after it is constructed, we talk about encoding of thee.
+	\end{description}
+\end{description}
+
+In this thesis we will be focusing on one specific type of tree data structures: a static data structure for representing rooted ordinal unlabeled trees which do not store any values in their vertices.
+Moreover we will focus on data structures which support operations in constant time, and which are succinct -- they use as little space as possible.
+We will define what ``succinct'' means in the first chapter.
+
+\section*{Organization of This Thesis}
+\addcontentsline{toc}{section}{Organization of This Work}
+
+In the first chapter we define the environment in which we present all results in the thesis.
+This includes the definition of the computation model which we use when we formulate algorithms, types of space-efficient data structures, and general techniques which we use in the following chapters.
+
+The second chapter is dedicated to a simpler data structures than trees.
+We present results about supporting various operations on general and balanced bit strings.
+Since bit strings can be seen as characteristic vectors of a subset of an interval $[0, N)$, we show results about representing sets and supporting the same operations on them.
+We also define a structure called compressed array which we use extensively in the last part of the thesis.
+
+In the third chapter, we define a set of operations on trees which we consider later when developing various tree data structures.
+We present three representations of trees which are based on a single bit string encoding the whole tree.
+Not only are they all very simple, they are also limited in the operations which they support.
+
+In the last chapter, we extend one of the previous representations into a data structure which supports nearly all possible operations.
+We also describe the only data structure which does not reduce the tree into a simple bit string.
+The last result in this thesis connects three of the previous representations.
+
+We conclude with a summary of operations which each of the representations supports.
+In the end we describe what the contribution of our work is.

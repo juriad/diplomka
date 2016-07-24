@@ -17,6 +17,7 @@ Here we present data structures which are fundamentally different in either the 
 		\item discovering, more than inventing, the inner rules of the representations, which we did with ranking and selecting;
 		\item or developing general indices which cover the bit string in various blocks on multiple levels.
 	\end{enuminline}
+	
 	\item[Universal Succinct Representation (USR)]
 	An attempt to develop a universal data structure which diminishes the differences between several representations.
 	It provides a view to the BP and DFUDS bit string representation as well as decomposition into micro-trees.
@@ -37,7 +38,7 @@ The index will be general -- any of the representations (LOUDS, BP, DFUDS) can u
 
 \subsection{New Operations}
 
-We follow on the section \ref{ss:rmq-def} and define operations on the bit string $S$ parametrized by the function $g$ which is to be applied.
+We follow on the section \ref{ss:rmq-def} and define more operations on the bit string $S$ parametrized by the function $g$ which is to be applied.
 \begin{description}
 	\item[The sum operation]
 	Since \rank{} will no longer be a primitive operation, we cannot use it to compute $G[i]$.
@@ -3193,7 +3194,7 @@ We focus on the transitions of the direction of a path traversal from ``down'' t
 \begin{proof}
 	As the initial reference in the global index can lead anywhere, we start the analysis after the first transition.
 	All references leading to a left-leaning path traversed down target its root.
-	In case of the right-leaning path traversed down there are three possible references to it:
+	In case of the right-leaning path traversed down, there are three possible references to it:
 	\begin{itemize}
 		\item If the path was referenced as a right connection, then its root was the target.
 		\item If the path was referenced as the next from a sibling of its root, then its root was targeted.
@@ -3209,7 +3210,7 @@ From the lemma and from the lengths of the cycles follows that at most $3 \frac{
 The additional $2$ is the number of recursive calls before the first cycle.
 
 Since we want to generate as many bits as possible, we want to set $q$ small, however that results in deeper recursion and longer running time.
-Setting $q = 2d$ ensures that a single ``Turn'' generates enough bits.
+Setting $q \ge \frac{d}{2}$ ensures that a single ``Turn'' generates enough bits.
 
 \subsection{Micro-Tree Representation}
 
