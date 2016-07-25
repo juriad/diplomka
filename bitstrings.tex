@@ -1,25 +1,20 @@
 \chapter{Bit String Data Structures}\label{c:bit-strings}
 
 In this chapter we present succinct data structures and succinct indices which are related to bit strings.
-\begin{enumerate}
-	\item We start with definitions of \rank{} and \select{} operations on a general bit string and show the algorithms for them.
-	\item Then we restrict the bit strings to balanced ones for which we define \match{} and \enclose{}.
-	\item We define the problem of \emph{range minimum queries} and present its solution for (balanced) bit strings.
-	\item After that we leave the realm of bit strings and focus on dictionaries -- a data structure rather than an index which supports \rank{} and \select{} queries.
-	\item In the end we define a \emph{compressed array} --a data structure which is a combination of the previous concepts.
-\end{enumerate}
+We start with definitions of \rank{} and \select{} operations on a general bit string and show the succinct indexes for them.
 
-\todo{Do we?}
-We follow with introduction of a structure which is the state of the art in terms of the space complexity.
-Not only does it support the same queries, but it also represents sparse bit strings efficiently.
+Then we assume a sequence of parentheses which are correctly matched and naturally encoded as bit strings, which we call balanced.
+We define the operations \match{} and \enclose{}.
+Finally we define the problem of \emph{range minimum queries} and present its solution for (balanced) bit strings.
 
-Finally, we assume a sequence of parentheses which are correctly matched and encoded as bit strings.
-We define several operations which were not possible in the general case, namely match and enclose, for which we also show succinct indices.
+We leave the realm of bit strings and focus on dictionaries -- a data structure for storing sets with a given number of elements.
+There are various types of dictionaries which differ by the operations which they support.
+We show a simple implementation of a fully indexable dictionary which we use in the introduction of a compressed array.
 
 \section{Operations on Bit Strings}\label{s:op-bs}
 
 We define the following two operations for a general bit string of size $N$ bits.
-We use $\ph$ as a placeholder for a value of a bit -- either $0$ or $1$.
+We use $\ph$ as a placeholder for a value of a bit -- either $0$ or $1$ (and later opening or closing parenthesis).
 \begin{description}
 	\item[$\rank_{\ph}(S, i) \rightarrow r$]
 	Returns the number $r$ of $\ph$ symbols in the bit string $S$ on positions $[0, i]$.
@@ -34,73 +29,76 @@ Using these two operations we are able to derive more operations related to a gi
 \begin{description}
 	\item[$\inspect(S, i) = S[i\char93 \rightarrow \{0, 1\}$]
 	Returns the symbol at position $i$ in the bit string $S$.
-	If for some reason the bit string $S$ was not accessible, the operation can be implemented using \rank{}s.
-	$$ \inspect(S, i) = \rank_1(i) - \rank_1(i - 1) $$
+	If for some reason the bit string $S$ was not accessible, the operation can be implemented using \rank{}s:
+	$$ \inspect(S, i) = \rank_1(i) - \rank_1(i - 1). $$
 
 	\item[$\pred_{\ph}(S, i) \rightarrow j$]
-	Returns the rightmost position $j$ of the symbol \ph{}: $\max(j) : j \le i$.
-	$$ \pred_{\ph}(S, i) = \select_{\ph}(S, \rank_{\ph}(S, i)) $$
+	Returns the rightmost position $j \le l$ of the symbol \ph{}:
+	$$ \pred_{\ph}(S, i) = \select_{\ph}(S, \rank_{\ph}(S, i)). $$
 	
 	\item[$\prev_{\ph}(S, i) \rightarrow j$]
-	Returns the rightmost position $j$ of the symbol \ph{}: $\max(j) : j < i$.
-	$$ \prev_{\ph}(S, i) = \select_{\ph}(S, \rank_{\ph}(S, i - 1)) $$
+	Returns the rightmost position $j < i$ of the symbol \ph{}:
+	$$ \prev_{\ph}(S, i) = \select_{\ph}(S, \rank_{\ph}(S, i - 1)). $$
 
 	\item[$\succ_{\ph}(S, i) \rightarrow j$]
-	Returns the leftmost position $j$ of the symbol \ph{}: $\min(j), j \ge i$.
-	$$ \succ_{\ph}(S, i) = \textrm{if}\ S[i] = \ph\ \textrm{then}\ i \ \textrm{else}\ \select_{\ph}(S, \rank_{\ph}(S, i) + 1) $$
+	Returns the leftmost position $j \ge i$ of the symbol \ph{}:
+	$$ \succ_{\ph}(S, i) = \begin{cases}
+		i & \textif S[i] = \ph; \\
+		\select_{\ph}(S, \rank_{\ph}(S, i) + 1) & \textotherwise.
+	\end{cases} $$
 
 	\item[$\nextt_{\ph}(S, i) \rightarrow j$]
-	Returns the leftmost position $j$ of the symbol \ph{}: $\min(j), j \ge i$.
-	$$ \nextt_{\ph}(S, i) = \select_{\ph}(S, \rank_{\ph}(S, i) + 1) $$
+	Returns the leftmost position $j > i$ of the symbol \ph{}:
+	$$ \nextt_{\ph}(S, i) = \select_{\ph}(S, \rank_{\ph}(S, i) + 1).$$
 \end{description}
 
-Unless it is ambiguous, we omit the first argument specifying the bit string on which the operation is performed.
+Unless it is ambiguous, the first argument specifying the bit string on which the operation is performed can be omitted.
 
 \bigbreak
 
 As all other operations can be derived from \rank{} and \select{}, it is sufficient to show succinct indices for these two.
-Indices for both operations are well studied and many improvements were proposed in order to
+Indices for both operations are well studied.
+Many improvements were proposed in order to
 \begin{iteminline}
-	\item make the theoretical space complexity better,
-	\item spare memory in practical cases,
+	\item lower the theoretical space complexity,
+	\item spare memory in the practical cases,
 	\item speed up the real implementation.
 \end{iteminline}
-\cite{gonzalez2005practical}, \cite{kim2005efficient}, \cite{makinen2007rank}
-
-\begin{thm}
-	There exist a succinct index for \rank{} using $O(\frac{N}{\log N} \log \log N)$ bits of memory, and a succinct index for \select{} using \todo{size of select} bits of memory.
-\end{thm}
-\begin{proof}
-We start with \rank{}, of which we have shown a small part of it in \ref{sss:precomputation-example}.
-It is sufficient to support only $\rank_1(S, i)$ because of the following identity:
-$$ i = \rank_0(i) + \rank_1(i) - 1 $$
-
-The operation \select{} is more complicated as it handles parts of the bit string differently depending on the local density of \ph.
-Two instances of the index are necessary in case of \select{} -- one for each symbol.
-\end{proof}
+For more details we refer to \cite{gonzalez2005practical}, \cite{kim2005efficient}, \cite{makinen2007rank}.
 
 \subsection{\rank}\label{ss:rank}
 
-\todo{retell history based on kim2005efficient}
+We start our description \rank{} which is conceptually easier.
+We show the data in form in which it was originally described by \cite{jacobson1988succinct}.
 
-We cover the bit string by \emph{blocks} and \emph{small blocks}.
+It is sufficient to support only \rank$_1$ because of the following identity:
+$$ i = \rank_0(i) + \rank_1(i) - 1. $$
 
-First we design the small blocks so that we can precompute a look-up table $\rank$ answering rank queries on them.
+\bigbreak
+
+We cover the bit string $S$ by \emph{blocks} and \emph{small blocks}.
+An $i$-th block of size $B$ starts at positions $i B$ and ends at position $(i + 1) B - 1$.
+The small blocks are defined the same way, except they use the size $b$.
+The sizes will be determined later.
+
+First we design the small blocks so that we can precompute a look-up table \rank{} answering rank queries on them.
 The query in the look-up table has one parameter: the small-block-local offset $o = i \% b$, and it returns the number of symbols \ph{} until $o$.
+This is a very similar problem to the one which we showed in the example in section \ref{ex:precomputation}.
+
 The data supplied to the look-up table are the $b$ bits of the small block and the parameter $o$; the answer is in range $[0, b]$.
 The algorithm captured by the look-up table simply iterates through the bits of the small block and adds them together.
 We set $b = \frac{\log N}{2}$.
 The look-up table is a succinct index since $b + \log b + \log (b + 1) < \log N$; the total size is $O(\sqrt{N} \log N \log \log N) = o(N)$ bits.
 
 The blocks represent parts of the bit string of size $B$, which is assumed to be a multiple of $b$.
-Each block $k$ has an array $\block_k$ which for each small block $l$ contains the numbers of \ph{} in the block before the beginning of $l$.
-$$ block_k[l] = \sum_{x = k B}^{k B + l b - 1} (S[x] = \ph) $$
+Each block $k$ has an array $\block_k$ which for each small block $l$ contains the numbers of \ph{} in the block before the beginning of $l$:
+$$ block_k[l] = \sum_{x = k B}^{k B + l b - 1} [S[x] = \ph]. $$
 The sizes of all the block arrays sum up to $\frac{N}{B} \frac{B}{b} \log (B + 1)$.
 When $B$ is set to $\log^2 N$, the size is asymptotically $O(\frac{N}{\log N} \log \log N) = o(N)$.
 As the arrays $\block_k$ have the same size (with the exception of the last one), we can concatenate them without need of lemma \ref{l:concat}.
 
 We do the same on the level of the whole bit string by storing an array $\glob$:
-$$ \glob[k] = \sum_{x = 0}^{k B - 1} (S[x] = \ph) $$
+$$ \glob[k] = \sum_{x = 0}^{k B - 1} [S[x] = \ph]. $$
 The array $\glob$ has $\frac{N}{B}$ elements each of size $\log (N+1)$ bits resulting in size asymptotically $O(\frac{N}{\log^2 N} \log{N}) = O(\frac{N}{\log N}) = o(N)$.
 
 \subsubsection{Algorithm}
@@ -109,7 +107,9 @@ We find out which block $k$ and which small block $l$ inside the block contains 
 \begin{algorithm}
 \begin{algorithmic}
 \Function{\rank}{$S, i$}
-	\State $k \gets \frac{i}{B}; l \gets \frac{i \% B}{b}; s \gets b \frac{i}{b}$
+	\State $k \gets \frac{i}{B}$%
+	\Instr $l \gets \frac{i \% B}{b}$%
+	\Instr $s \gets b \frac{i}{b}$
 	\State\Return{$\glob[k] + \block_k[l] + \rank[S[s : s + b], i \% b]$}
 \EndFunction
 \end{algorithmic}
@@ -117,12 +117,17 @@ We find out which block $k$ and which small block $l$ inside the block contains 
 
 \subsubsection{Implementation Details}
 
-The look-up table could be substituted by an instruction \verb|POPCNT| which is provided by certain CPU architectures.
-Alternatively an algorithm with a theoretic running time $O(\log \log N)$ can be used, which leads in practice to a negligible slowdown, as the implementation still uses a fixed number of instructions.
+The look-up table could be substituted by an instruction \verb|POPCNT| which is part of Advanced Bit Manipulation instruction set which is provided by many CPU architectures (\cite{intelsys}).
+Alternatively an algorithm with a theoretic running time $O(\log \log N)$ can be used, which leads in practice to a negligible slowdown, as the practical implementation still uses a fixed number of instructions.
 
 \subsection{\select}\label{ss:select}
 
-\todo{retell history based on kim2005efficient}
+The operation \select{} is more complicated than \rank{} as it handles parts of the bit string differently depending on the local density of \ph{}.
+We show the index as it was proposed by \cite{clark1998compact}.
+
+Two instances of the index are also necessary, since there is no identify would allow a reduction from \select$_1$ to \select$_0$.
+
+\bigbreak
 
 The \select{} operation also covers the bit string with multiple levels of blocks.
 The biggest difference from \rank{} is that the sizes of the blocks are not fixed -- they are chosen by the number of symbols \ph{} or their density in the bit string.
@@ -136,25 +141,31 @@ Note that not every symbol of the bit string is covered since there can be seque
 The $\glob$ array contains offset of all blocks.
 
 We call a block \emph{sparse} if its size is greater than or equal to $K$ bits, otherwise it is called \emph{dense}.
+The value of $K$ will be determined later.
 This property can be easily tested from the difference of two consecutive offsets in $\glob$.
 
 If a block is sparse, we store the block-local offsets of all symbols \ph{} in an array $\blockEnum$.
 We will deal with dense blocks later, once we discuss the constraints on $B$ and $K$ and set their values.
 For the space density of $\glob$, the following must hold in order to obtain a succinct index:
 \begin{gather*}
-\frac{\frac{N}{B} \log N}{N} = \frac{\log N}{B} = o(1) \\
-B = \omega(\log N)
+\frac{\frac{N}{B} \log N}{N} = \frac{\log N}{B} = o(1), \\
+B = \omega(\log N).
 \end{gather*}
 
 Each offset in the enumeration of a sparse block can be in range $[0, N)$, resulting in up to $\log N$ bits of space.
 We have a lower bound on the size of a block ($K$) which allows us to phrase a constraint on the upper bound of the block density.
+We need:
 \begin{gather*}
-\frac{B \log N}{K} = o(1) \\
-K = \omega(B \log N)
+\frac{B \log N}{K} = o(1), \\
+K = \omega(B \log N).
 \end{gather*}
 
 In order to have a strong bound for the dense blocks, we want to set $B$ and $K$ as small as possible.
-A sensible choice is to set $B = \log N \log \log N$ and $K = (\log N \log \log N) \log N \log \log N = B^2 $.
+A sensible choice is to set:
+\begin{align*}
+	B &= \log N \log \log N, \\
+	K &= (\log N \log \log N) \log N \log \log N = B^2.
+\end{align*}
 There is one more structure which needs to be discussed -- an array $\blocks$ of pointers to the beginnings of representations of blocks.
 Nevertheless, its space is the same as of the array $\glob$.
 
@@ -170,21 +181,21 @@ An array $\smallBlocks$ pointing to the beginnings of the representations of sma
 The lower bound on the size of a dense block is $B$ bits.
 The constraint on $b$ from the definition of $\block$ is:
 \begin{gather*}
-\frac{\frac{B}{b} \log K}{B} = \frac{\log K}{b} = o(1) \\
-b = \omega(\log K) = \omega(\log(\log N \log \log N)^2) = \omega(\log \log N)
+\frac{\frac{B}{b} \log K}{B} = \frac{\log K}{b} = o(1), \\
+b = \omega(\log K) = \omega(\log(\log N \log \log N)^2) = \omega(\log \log N).
 \end{gather*}
 
 Each offset in the enumeration of a sparse small block can be in range $[0, K)$ resulting in up to $\log K$ bits of space.
-The lower bound on the size of a block used for calculating the index density is $k$.
+The lower bound on the size of a block used for calculating the index density is $k$:
 \begin{gather*}
-\frac{b \log K}{k} = o(1) \\
-k = \omega(b\log K)
+\frac{b \log K}{k} = o(1), \\
+k = \omega(b\log K).
 \end{gather*}
 
 We choose:
 \begin{align*}
-b &= \log \log N \log \log \log N \\
-k &= (\log \log N \log \log \log N) \log(\log N \log \log N)^2 \log \log \log N = b^2
+b &= \log \log N \log \log \log N, \\
+k &= (\log \log N \log \log \log N) \log(\log N \log \log N)^2 \log \log \log N = b^2.
 \end{align*}
 
 It remains to discuss the constraint on the array $\smallBlocks$ which contains $\frac{B}{b}$ pointers of size $l$.
@@ -196,7 +207,7 @@ The size $l$ of the pointer is $\log K$, and therefore the size of the whole arr
 We have been neglecting the case of dense small blocks; now we show how it is handled.
 Dense small blocks are limited to size $k = o(\log N)$, which makes it possible to process them using a precomputed look-up table.
 Only one look-up table is sufficient because all dense small blocks can be padded from the right to the same size, while retaining the same result.
-No additional per dense small block structure is necessary; the pointer in the array $\smallBlocks$ is a dummy value.
+No additional structure  is necessary for small blocks; the pointer in the array $\smallBlocks$ is a dummy value.
 
 \subsubsection{Algorithm}
 
@@ -219,11 +230,13 @@ Note that the loop of the stated algorithm terminates, because we are guaranteed
 \begin{algorithm}
 \begin{algorithmic}
 \Function{\select}{$S, r$}
-	\State $a \gets \frac{r}{B}; r' \gets r \% B$
+	\State $a \gets \frac{r}{B}$%
+	\Instr $r' \gets r \% B$
 	\If{$a\ \textrm{is sparse}$}
 		\State \Return{$\glob[a] + \blocks[a].\blockEnum[r']$}
 	\Else
-		\State{$a' \gets \frac{r'}{b}; r'' \gets r' \% b$}
+		\State $a' \gets \frac{r'}{b}$%
+		\Instr $r'' \gets r' \% b$
 		\State $j \gets \glob[a] + \blocks[a].\block$
 		\If{$a'\ \textrm{is sparse}$}
 			\State \Return{$j + \blocks[a].\smallBlocks[a'].\smallBlockEnum[r'']$}
@@ -246,15 +259,14 @@ Note that the loop of the stated algorithm terminates, because we are guaranteed
 \subsubsection{Implementation Details}
 
 We can do the same trick as in \rank{}: we replace the theoretical look-up table with instructions of modern processors, namely \verb|POPCNT| and \verb|PDEP|.
-This allows us to process dense small blocks by chunks of $s = 64$ bits.
+The later instruction is part of Bit Manipulation Instruction Set 2; details of this instructions are described in the Intel manual \cite{intelsys}.
+Using these instructions allows us to process dense small blocks by chunks of $s = 64$ bits.
 
-The while loop leads to tens to hundreds of iterations which is the main reason for the bad performance of this algorithm in real situations.
+The while loop leads to tens to hundreds of iterations which is the main reason for the bad performance of this algorithm.
 Better results can be achieved by using a different indices which despite not being necessarily succinct, tend to be smaller and faster in real situations.
-\todo{refs}
+The details can be found in \cite{kim2005efficient}.
 
-\subsection{Bounds}
-
-\todo{bounds}
+% \todo{bounds}
 
 \section{Balanced Bit Strings}
 
@@ -262,7 +274,8 @@ A \emph{balanced bit string} is a bit string containing \emph{opening} and \emph
 Since we aim for a systematic succinct data structure, we need to design the storage of the data and the indices separately.
 
 The universe of balanced bit string with $n$ opening and closing parentheses has exactly $C_n = \frac{1}{n+1} {2n \choose n}$ elements, where $C_n$ represents the $n$-th \emph{Catalan number}.
-$$ \log C_n \sim \log \frac{4^n}{n \sqrt{\pi n}} = 2n - \log n - \frac{1}{2} \log{\pi n} \sim 2n - O(\log n) $$
+The number of bits required for representation of elements in this universe is:
+$$ \log C_n \sim \log \frac{4^n}{n \sqrt{\pi n}} = 2n - \log n - \frac{1}{2} \log{\pi n} \sim 2n - O(\log n). $$
 Therefore, we can store the balanced bit string using the trivial encoding of parentheses as zeros and ones while retaining the succinctness of the data structure.
 We use $N = 2n$ to refer to the size of the bit string.
 
@@ -274,50 +287,51 @@ Because of the additional structure, which stems from the balanced property, we 
 	If the parenthesis at the position $i$ is not an opening one, the result is $i$.
 	
 	\item[$\findOpen(i) \rightarrow j$]
-	It is defined in a similar way as \findClose.
+	If $S[i] = \openingParen$, then $i$ is returned; otherwise it returns the position $j$ such that $\findClose(j) = i$.
 	
 	\item[$\match(i) \rightarrow j$]
 	Returns the position $j$ of the parenthesis which is paired with the one on position $i$.
 	This operation is just a convenient wrapper around \findOpen{} and \findClose{} depending on the parenthesis at the position $i$.
+	It is defined as:
 	$$ \match(i) = 
 	\begin{cases}
-		\findClose(i) & \textif S[i] = \openingParen \\
-		\findOpen(i) & \textotherwise
+		\findClose(i) & \textif S[i] = \openingParen; \\
+		\findOpen(i) & \textotherwise.
 	\end{cases}$$
 	
 	\item[$\excess(i) \rightarrow d$]
-	Returns the difference $d$ between number of opening and closing parentheses until the position $i$.
-	$$ \excess(i) = \rank_((i) - \rank_)(i)$$
+	Returns the difference $d$ between the number of opening and closing parentheses until the position $i$:
+	$$ \excess(i) = \rank_((i) - \rank_)(i). $$
 	
 	\item[$\parenDepth(i) \rightarrow d$]
-	Returns the depth $d$ of parentheses pair $(i, \match(i))$.
-	$$ \parenDepth(i) = \excess(\findOpen(i)) - 1 = \excess(i) - (S[i] = \openingParen) $$
+	The \emph{depth} $d$ of a parentheses pair $(i, \match(i))$ is defined as:
+	$$ d = \parenDepth(i) = \excess(\findOpen(i)) - 1 = \excess(i) - [S[i] = \openingParen]. $$
+	In order to distinguish the depth of a parentheses pair and the depth of a vertex in a tree (which we will use often later), we call the operation \parenDepth{}.
 	
 	\item[$\enclose(i) \rightarrow j$]
 	Returns the position $j$ of the opening parenthesis which tightly encloses the pair $(i, \match(i))$.
-	If the result of \enclose{} is not defined, we set it to $-1$.
+	If the result of \enclose{} is not defined, we set it to $-1$:
 	\begin{align*}
-		\enclose(i) = -1 \textif \parenDepth(i) = 0
+		\enclose(i) = -1 \textif \parenDepth(i) = 0.
 	\end{align*}
 	In all the other cases, the following (in)equalities hold:
 	\begin{align*}
-		k &= \enclose(i) \\
-		\excess(k) &= \excess(\findOpen(i)) - 1 \\
-		k &< \findOpen(i) \\
-		\match(k) &> \findClose(i)
+		k &= \enclose(i), \\
+		\excess(k) &= \excess(\findOpen(i)) - 1, \\
+		k &< \findOpen(i), \\
+		\match(k) &> \findClose(i).
 	\end{align*}
 	Sometimes \enclose{} can be generalized to take two parameters:
 	
 	\item[$\enclose(i_1, i_2) \rightarrow j$]
-	Returns the position $j$ of an opening parenthesis which tightly encloses the pairs $(i_1, \match(i_1))$ and $(i_2, \match(i_2))$.
+	Returns the position $j$ of an opening parenthesis which tightly encloses the pairs $(i_1, \match(i_1))$ and $(i_2, \match(i_2))$:
 	\begin{align*}
-		j &= \enclose(i_1, i_2) \\
 		\excess(j) &< \min(\excess(\findOpen(i_1)), \excess(findOpen(i_2))) \\
 		j &< \min(\findOpen(i_1), \findOpen(i_2)) \\
-		\match(j) &> \max(\findClose(i_1), \findClose(i_2))
+		\match(j) &> \max(\findClose(i_1), \findClose(i_2)).
 	\end{align*}
 	This operation is indeed a generalization of the one-parameter \enclose{}:
-	$$\enclose(i, i) = \enclose(i)$$
+	$$\enclose(i, i) = \enclose(i).$$
 	
 	The result does not have to exist in a general balanced bit string, however it will not be an issue in our case.
 	
@@ -329,7 +343,7 @@ Because of the additional structure, which stems from the balanced property, we 
 	The value of the minimum is $\rmq(i_1, i_2) = \excess(\rmqi(i_1, i_2))$.
 	
 	\item[$\RMQi(i_1, i_2) \rightarrow j$]
-	Returns the position with maximum excess.
+	\emph{Range Maximum Query} -- Returns the position with maximum excess.
 \end{description}
 
 We will restrict ourselves to balanced bit strings which contain only one pair of parentheses such that their $\parenDepth$ is equal to zero.
@@ -343,37 +357,12 @@ The index for the two-parameter \enclose{} is then implemented using \rmqi.
 
 \subsection{Structure for \match{} and \enclose{}}\label{s:match-enclose}
 
-\todo{refs}
-
 We describe a succinct index which supports \findClose{}, \findOpen{}, and \enclose{} with one parameter.
-First we cover the balanced bit string into blocks of size $B = \frac{\log N}{2}$.
+We follow the description given by \cite{geary2006simple}; other options are summarized in \cite{arroyuelo2010succinct}.
 
-We will use two similar look-up table to answer all queries within a block.
-\begin{itemize}
-	\item $\fwdSearch[S, i, d, \paren, \far]$ returns the first position $j \ge i$ for which holds that $\excess(S, j) = \excess(S, i) + d$ and $S[j] = \paren$.
-	If $\far = \true$, then $j$ must be a far parenthesis.
-	\item $\bwdSearch[S, i, d, \paren, \far]$ is the same except for $j \le i$.
-\end{itemize}
-The look-up tables return $-1$ if such position does not exist in the queried block.
+\bigbreak
 
-There are two special cases which we address separately:
-\begin{description}
-	\item[A block query for a matching parenthesis]
-	We distinguish two cases depending on the parenthesis $S[i]$:
-	$$\match(S, i) = \begin{cases}
-		\fwdSearch[S, i, -1, \closingParen, \false] & \textif S[i] = \openingParen \\
-		\bwdSearch[S, i, 1, \openingParen, \false] & \textotherwise
-	\end{cases}$$
-	
-	\item[A block query for an enclosing parenthesis]
-	We assume that $S[i]$ is an opening parenthesis since the other case will never occur.
-	We run two queries for which we return the first non-negative result:
-	\begin{enumerate}
-		\item $\bwdSearch[S, i, -1, \openingParen, \false]$ which returns $\enclose(S, i)$,
-		\item and $\fwdSearch[S, i, -2, \closingParen, \false]$ returning $\match(\enclose(S, i))$.
-	\end{enumerate}
-\end{description}
-
+First, we cover the balanced bit string by blocks of size $B = \frac{\log N}{2}$.
 For each position $i$ we denote $B(i)$ the block to which it belongs.
 
 \subsubsection{Pioneers}
@@ -388,7 +377,7 @@ We provide definitions of special parentheses:
 	
 	\item[opening (closing) pioneer]
 	An opening (closing) far parenthesis $i$ is an \emph{opening (closing) pioneer} if the matches of $i$ and of a preceding opening (following closing) far parenthesis $j$ are located in different blocks:
-	$$ j < i \booland B(\match(j)) \ne B(\match(i)) $$
+	$$ j < i \booland B(\match(j)) \ne B(\match(i)). $$
 	
 	Note that a matching parenthesis of an opening (closing) pioneer does not have to be a closing (opening) pioneer.
 	
@@ -414,6 +403,34 @@ We provide definitions of special parentheses:
 	There are at most $E$ pioneer pairs, and therefore at most $2 |E|$ pioneers.
 \end{proof}
 
+\subsection{Block Queries}
+
+We will use two similar look-up table to answer all queries within a block.
+\begin{itemize}
+	\item $\fwdSearch[S, i, d, \paren, \far]$ returns the first position $j \ge i$ for which holds that $\excess(S, j) = \excess(S, i) + d$ and $S[j] = \paren$.
+	If $\far = \true$, then $j$ must be a far parenthesis.
+	\item $\bwdSearch[S, i, d, \paren, \far]$ is the same except for $j \le i$.
+\end{itemize}
+The look-up tables return $-1$ if such position does not exist in the queried block.
+
+There are two special cases which we address separately:
+\begin{description}
+	\item[A block query for a matching parenthesis]
+	We distinguish two cases depending on the parenthesis $S[i]$:
+	$$\match(S, i) = \begin{cases}
+		\fwdSearch[S, i, -1, \closingParen, \false] & \textif S[i] = \openingParen; \\
+		\bwdSearch[S, i, 1, \openingParen, \false] & \textotherwise.
+	\end{cases}$$
+	
+	\item[A block query for an enclosing parenthesis]
+	We assume that $S[i]$ is an opening parenthesis since the other case will never occur.
+	We run two queries for which we return the first non-negative result:
+	\begin{enumerate}
+		\item $\bwdSearch[S, i, -1, \openingParen, \false]$ which returns $\enclose(S, i),$,
+		\item and $\fwdSearch[S, i, -2, \closingParen, \false]$ returning $\match(\enclose(S, i))$.
+	\end{enumerate}
+\end{description}
+
 \bigbreak
 
 We aim to reduce the queries from the original bit string $S$ to queries on a bit string $P$ consisting of pioneers.
@@ -422,7 +439,7 @@ We are allowed to store the array $P$ since its size is $O(\frac{N}{\log N}) = o
 We will also use a structure which tells us the positions of pioneers in the bit string $S$.
 A naïve approach would be to use a bit string $P'$ marking the positions of pioneers: $P'[i] = 1 \iff i\ \textrm{is pioneer}$. We equip $P'$ with indices for $\rank_1$ and $\select_1$.
 The problem is that the size of the bit string $P'$ is $N$ instead of $o(N)$.
-To address this problem, we use a \emph{fully indexed dictionary} which we introduce in the next section.
+To address this problem, we use a \emph{fully indexable dictionary} which we introduce in the next section.
 
 \subsubsection{Reduction of \findClose}
 
@@ -434,7 +451,7 @@ Otherwise, $i$ is an opening far parenthesis.
 Either $i$ is pioneer or we find the preceding pioneer; we denote it $j$ in both cases.
 It must be an opening parenthesis because the first opening far parenthesis in a block is such and there cannot be another pioneer pair between $i'$ and $i$.
 We find the match of $i'$ as:
-$$ k = \findClose(S, i') = \select_1(P', \findClose(P, \rank_1(P', i'))) $$
+$$ k = \findClose(S, i') = \select_1(P', \findClose(P, \rank_1(P', i'))). $$
 If $i = i'$, then $k$ is the answer which we return.
 
 Otherwise, we know that $B(k) = B(\findClose(S, i')) = B(\findClose(S, i))$; else $i$ would have been a pioneer.
@@ -532,36 +549,38 @@ We instead require only a constant number of levels of the recursion, $t = 2$ is
 For every position in a bit string of size $O(\frac{N}{\log^2 N})$ we can precompute the answers to both operations \match{} and \enclose{}; such table $T$ has size $O(\frac{N}{\log^2 N} \log \frac{N}{\log^2 N}) = O(\frac{N}{\log N}) = o(N)$.
 Note that this table is not a universal look-up table which could be shared among multiple instances of the data structure.
 
-We do not even need to represent the bit string $P$ on the second level since we only need the index to the table $T$ provided by the indexed dictionary $P'_2$.
+We do not even need to represent the bit string $P$ on the second level since we only need the index to the table $T$ provided by the indexable dictionary $P'_2$.
 
 \bigskip
 
 All space complexities so far are:
 \begin{itemize}
 	\item $O(\frac{N}{\log N})$ -- the bit string $P$ on the first level;
-	\item $O(\frac{N}{\log N}\log \log N)$ -- the fully indexed dictionary $P'$ on the first level;
-	\item $O(\frac{N}{\log^2 N}\log \log N)$ -- the fully indexed dictionary $P'_2$ on the second level;
+	\item $O(\frac{N}{\log N}\log \log N)$ -- the fully indexable dictionary $P'$ on the first level;
+	\item $O(\frac{N}{\log^2 N}\log \log N)$ -- the fully indexable dictionary $P'_2$ on the second level;
 	\item $O(\frac{N}{\log N})$ -- the precomputed table $T$ on the second level;
 	\item $O(\sqrt{N}\log^2 N \log\log N)$ -- the universal look-up tables \fwdSearch{} and \bwdSearch{}.
 \end{itemize}
-Note that we have no special requirements on operations supported by $S$ and $P$; we only need to access up to $B$ consecutive bits, which bit strings support.
+Note that we have no special requirements on the operations supported by $S$ and $P$; we only need to access up to $B$ consecutive bits, which bit strings allow.
 
 \subsection{Index for Range Minimum Query}
 
-The problem of \emph{range minimum query} has applications in many areas and therefore is well studied. \todo{references}
-In this section we first define a more general problem (which we solve in a later chapter) and then show a simple succinct index which will be sufficient in most cases.
+The problem of \emph{range minimum query} has applications in many areas and therefore is well studied: \cite{bender2000lca}, \cite{fischer2010optimal}, \cite{durocher2013simple}.
+In this section we first define a more general problem (as did \cite{sadakane2010fully}) which we fully solve in a later chapter.
+We then show a simple succinct index which will still be sufficient in most cases and will be needed for the general solution.
 
-Although Range Minimum Query can is defined for an arbitrary bit string, it will be useful only for balanced bit strings.
+Although Range Minimum Query can is defined for an arbitrary bit string (or even an array of numbers), it will be useful only for balanced bit strings.
 That is the reason why we present it here.
 
 \subsubsection{$\pm 1$ Functions}\label{ss:rmq-def}
 
 We first describe all possible functions $g$ which are mapping the values of bits $\{0, 1\}$ into a set $\{-1, 0, 1\}$.
 We call all the functions $g$ as $\pm 1$ functions.
+They are:
 \begin{itemize}
-	\item $\phi(b) = b$
-	\item $\psi(b) = 1 - b$
-	\item $\pi(b) = 2 b - 1$
+	\item $\phi(b) = b$,
+	\item $\psi(b) = 1 - b$,
+	\item $\pi(b) = 2 b - 1$,
 	\item inverses ($-\phi(b), -\psi(b), -\pi(b)$) and constant functions mapping each value of $b$ to the same fixed value.
 	They are mentioned only to clarify that there are $3^2$ functions in total.
 	These functions will not be useful for us.
@@ -569,9 +588,10 @@ We call all the functions $g$ as $\pm 1$ functions.
 
 We define an array $G$ for a function $g$ as:
 $$ G[i] = \begin{cases}
-	\sum_{k = 0}^i g(S[i]) & \textif i \ge 0 \\
-	0 & \textif i < 0
+	\sum_{k = 0}^i g(S[i]) & \textif i \ge 0; \\
+	0 & \textotherwise.
 \end{cases} $$
+
 \bigbreak
 
 We redefine the operation \rmqi{} and \RMQi{} to use the array $G$ instead of excesses of the array $S$.
@@ -580,8 +600,8 @@ Similarly we define Range Maximum Query $\RMQi(G, i_1, i_2)$ returning the leftm
 We also define function $\rmq(G, i_1, i_2)$ and $\RMQ(G, i_1, i_2)$ returning the value rather than the position.
 
 We can see that only the function $\pi$ is useful as the others are monotonic and therefore the range minimum is at the position $i_1$ and maximum at the position $i_2$.
-An alternative definition of the array $G_\pi = E$ uses the excess function:
-$$ E[i] = \sum_{k=0}^i \pi(S[i]) = \rank_1(i) - \rank_0(i) = \excess(i) $$
+An alternative definition of the array $G$ applied to $\pi$ (which we call $E$) uses the excess function:
+$$ E[i] = \sum_{k=0}^i \pi(S[i]) = \rank_1(i) - \rank_0(i) = \excess(i). $$
 
 \bigbreak
 
@@ -590,12 +610,13 @@ A function which we could use instead of \excess{} is for example \parenDepth{}.
 It differs from \excess{} by one at positions of opening parentheses and it can be expressed as a function depending on two consecutive bits:
 $$\delta(a, b) = 
 \begin{cases}
--1 &\textif a = 0 \booland b = 0 \\
-0 &\textif a = 0 \booland b = 1 \\
-0 &\textif a = 1 \booland b = 0 \\
-1 &\textif a = 1 \booland b = 1
-\end{cases}$$
-$$ D[i] = \sum_{k=0}^i \delta(S[i - 1], S[i]) = \parenDepth(i) $$
+	-1 &\textif a = 0 \booland b = 0; \\
+	0 &\textif a = 0 \booland b = 1; \\
+	0 &\textif a = 1 \booland b = 0; \\
+	1 &\textif a = 1 \booland b = 1.
+\end{cases} $$
+An array $D$ of depths of parentheses is then defined as:
+$$ D[i] = \sum_{k=0}^i \delta(S[i - 1], S[i]) = \parenDepth(i).$$
 
 The property that $| G[i] - G[i-1] | \le 1$ will be useful much later when we introduce a more complicated and also more versatile structure.
 
@@ -617,11 +638,11 @@ A query can have any of prefix, suffix or span (or more of them) empty.
 
 There is a special case of a range which fully is contained within a single block; we solve it separately using the following lemma.
 \begin{lemma}\label{lemma:rmq1}
-	We can solve $\rmqi(E, i_1, i_2)$ in constant time whenever $i_2 - i_1 + 1 < \frac{\log N}{2}$.
+	We can solve the operation $\rmqi(E, i_1, i_2)$ in constant time whenever $i_2 - i_1 + 1 < \frac{\log N}{2}$.
 \end{lemma}
 \begin{proof}
 	We can express every element of $E$ as:
-	$$E[i_1 - 1] + \sum_{k = 0}^{i_2 - i_1} \pi(S[i_1 + k])$$
+	$$ E[i_1 - 1] + \sum_{k = 0}^{i_2 - i_1} \pi(S[i_1 + k]). $$
 	All the values depend only on the block $S[i_1 : i_2 + 1]$ and the value of $E[i - 1]$.
 	Because the minimum is independent of the absolute value, the dependence on $E[i - 1]$ is irrelevant.
 	
@@ -691,7 +712,7 @@ In the special case when the range is contained within a single block or a singl
 
 We gather the candidates for minimum in (1) and (2) by querying the \rmqi{} structures and in (3) by using a look-up table as described by lemma \ref{lemma:rmq1}.
 Once we have all candidates $C$, we return the one with the lowest value:
-$$ j = \argmin_{c \in C} E[c] $$
+$$ j = \argmin_{c \in C} E[c]. $$
 
 We omit the pseudo-code of the algorithm as it deals with many cases which are essentially the same.
 
@@ -713,18 +734,18 @@ We observe that the following properties hold for $\findClose(p_1)$:
 	\item it is the leftmost parenthesis with such \excess{}.
 \end{itemize}
 The second property follows from the fact that it is a closing parenthesis and that:
-$$ \excess(k) \ge \excess(j) \ \forall j \le k < \match(j) $$
+$$ \excess(k) \ge \excess(j) \ \forall j \le k < \match(j). $$
 
 We also observe that $\findClose(p_1) + 1$ is an opening parenthesis of the next parentheses pair following $p_1$.
-These properties allow us to find a parenthesis which is tightly enclosed by $j$ and reduce the query to a one-parameter enclose.
-$$ j = enclose(i_1, i_2) = enclose(rmqi(i_1, i_2) + 1) $$
+These properties allow us to find a parenthesis which is tightly enclosed by $j$ and reduce the query to a one-parameter enclose:
+$$ j = enclose(i_1, i_2) = enclose(rmqi(i_1, i_2) + 1). $$
 
 \section{Dictionaries}
 
 The bit strings which we have been discussing so far can be seen from a different point of view:
 A bit string $S$ of size $N$ is a representation of a set $A$ which is a subset of $[0, N)$ such that a number $x \in A \iff S[x] = 1$.
 
-The natural encoding is the one which we have used -- representing the membership of each numbers in the universe $[0, N - 1]$ by a bit in a characteristic vector.
+The natural encoding is the one which we have used -- representing the membership of each numbers in the universe $[0, N)$ by a bit in a characteristic vector.
 It is still true that such encoding is succinct as there are $| \mathcal{A}(N) | = 2^{|[0, N)|} = 2^N$ possible sets in the universe, and therefore $N$ bits is required.
 
 However, we can restrict the subsets $A$ of $[0, N)$ by the number of elements $K$.
@@ -738,20 +759,20 @@ We define structures supporting various operations, which we already know from t
 	\item[dictionary]
 	A \emph{dictionary} is a data structure which stores $A$ and can answer membership queries $x \in A$.
 	
-	\item[indexed dictionary] \todo{change indexed -> indexable}
-	An \emph{indexed dictionary} (ID) is a dictionary which can answer \rank{} for elements of the set $A$ and \select{} queries.
+	\item[indexable dictionary]
+	An \emph{indexable dictionary} (ID) is a dictionary which can answer \rank{} for elements of the set $A$ and \select{} queries.
 	\begin{align*}
 		\rank(A, i) &= |\{ a \in A : a \le i \}| \\
 		\select(A, j) &= i \in A \booland \rank(A, i) = j \\
 	\end{align*}
 	
-	\item[fully indexed dictionary]
-	A \emph{fully indexed dictionary} (FID) is an indexed dictionary for both sets $A$ and its complement $\overline{A}$.
+	\item[fully indexable dictionary]
+	A \emph{fully indexable dictionary} (FID) is an indexable dictionary for both sets $A$ and its complement $\overline{A}$.
 	
 	We can extend the $\rank(A, i)$ for all $i \in [0, N)$:
 	$$ \rank(A, i) = \begin{cases}
-		\rank(A, i) & \textif i \in A \\
-		i - \rank(\overline{A}, i) + 1 & \textotherwise
+		\rank(A, i) & \textif i \in A; \\
+		i - \rank(\overline{A}, i) + 1 & \textotherwise.
 	\end{cases}$$
 	
 	Moreover, all operations \pred{}, \succ{}, \prev{}, \nextt{} are well defined for FID.
@@ -760,25 +781,33 @@ We define structures supporting various operations, which we already know from t
 
 We will use the notation from general bit strings:
 \begin{align*}
-	\rank_1(A, i) &= \rank(A, i) \\
-	\rank_0(A, i) &= \rank(\overline{A}, i) \\
-	\select_1(A, j) &= \select(A, j) \\
-	\select_0(A, j) &= \select(\overline{A}, j) \\
+	\rank_1(A, i) &= \rank(A, i), \\
+	\rank_0(A, i) &= \rank(\overline{A}, i), \\
+	\select_1(A, j) &= \select(A, j), \\
+	\select_0(A, j) &= \select(\overline{A}, j). \\
 \end{align*}
 
 \bigbreak
 
-\begin{lemma}\label{l:succint-indexed-dictionary}
-	There is a succinct indexed dictionary which uses $\log {N \choose K} + o(K) + O(\log \log N)$ bits.
-	This is the main result of \cite[Theorem~4.1]{raman2007succinct}.
+The first and only succinct indexable dictionary was developed by \cite{raman2007succinct} in Theorem~4.1.
+We state their result as a lemma without proof.
+
+\begin{lemma}\label{l:succint-indexable-dictionary}
+	There is a succinct indexable dictionary which uses $\log {N \choose K} + o(K) + O(\log \log N)$ bits.
 \end{lemma}
 
 \subsection{Sublinear Fully Indexed Dictionary}\label{ss:sublinear-fid}
 
-\todo{ref}
+We show a simple fully indexable dictionary of a size $\log {N \choose K} + o(N)$.
+In all cases when we use this structure, the space complexity will be $o(N)$, which is the reason for its name.
+Note that if $N = 2K$, then the size is $N - O(\log N)$; balanced bit strings are a special case of such setup.
 
-We show a simple fully indexed dictionary of a sublinear size which uses the succinct indices for \rank{} and \select{} which we showed in section \ref{s:op-bs}.
-It is also the missing piece in the structure for \match{} and \enclose{} \ref{s:match-enclose}.
+This structure is based on Lemma~4.1 in \cite{raman2007succinct}.
+The difference is that we reuse the succinct indices for \rank{} and \select{} which we showed in section \ref{s:op-bs} instead of implementing them again.
+
+This FID is also the missing piece in the structure for \match{} and \enclose{} in section \ref{s:match-enclose}.
+
+\bigbreak
 
 The main idea of the data structure is to provide an access to $B = \frac{\log N}{2}$ bits of the characteristic vector.
 Since any algorithm can access up to $w = O(S)$ bits in a single step, we can provide it with a constant slowdown.
@@ -787,11 +816,11 @@ We split the characteristic vector $S$ into blocks $S_1, S_2, \ldots$ of size $B
 We extend $N$ so that the last block is full; this difference is negligible.
 
 We represent each block $i$ implicitly by a binary number $[0, {B \choose K_i})$ encoded in $b_i \le S$ bits.
-The space bound for storing all blocks consecutively as a bit string $S'$ follows from the generalized Vandermonde's identity:
+The space bound for storing all blocks consecutively as a bit string $S'$ follows from the generalized Vandermonde's identity (\cite{belbachircombinatorial}).
 \begin{align*}
-	\sum_{\sum_i K_i = K} \prod_i {s \choose K_i} &= {N \choose K} \\
-	\sum_i \log {s \choose K_i} &\le \log {N \choose K} \\
-	\sum_i b_i &\le \log {N \choose K} + \frac{N}{s}
+	\sum_{K_1 + K_2 + \dots = K} \prod_i {B \choose K_i} &= {N \choose K} \\
+	\sum_i \log {B \choose K_i} &\le \log {N \choose K} \\
+	\sum_i b_i &\le \log {N \choose K} + \frac{N}{B}
 \end{align*}
 
 We also store two arrays of size $O(\frac{N}{B} \log B)$:
@@ -828,47 +857,44 @@ The goal will be to store $A$ in space $o(a)$.
 We can \emph{compress} such array $A$ by storing:
 \begin{description}
 	\item[\AFID]
-	A fully indexed dictionary containing the positions of the last elements of each run.
-	$$ \AFID = [i : A[i + 1] \ne A[i]] $$
+	A fully indexable dictionary containing the positions of the last elements of each run:
+	$$ \AFID = [i : A[i + 1] \ne A[i]]. $$
 	The FID contains $r$ values resulting in the space complexity $\log {a \choose r} + o(a)$.
 
 	\item[\AElems]
-	An array $A$ with each run reduced to a single (last) element.
-	$$ \AElems = [A[i] : i \in \AFID] $$
+	An array $A$ with each run reduced to a single (last) element:
+	$$ \AElems = [A[i] : i \in \AFID]. $$
 	The array contains $r$ elements of total size $rs$ bits.
 	
 	\item[\ABefore]
-	An array containing the numbers of occurrences of the element $A$ before the current run.
-	$$ \ABefore = [|\{ j : j < \prev_1(\AFID, i) \booland A[j] = A[i] \}| : i \in \AFID ] $$
+	An array containing the numbers of occurrences of the element $A$ before the current run:
+	$$ \ABefore = [|\{ j : j < \prev_1(\AFID, i) \booland A[j] = A[i] \}| : i \in \AFID ]. $$
 	The size of the array is $r \log a$.
 \end{description}
 
 We define several operation for this compressed array:
 \begin{description}
 	\item[\elementIndex(A, i)]
-	A helper operation which simplifies the following ones.
-	$$ \elementIndex(A, i) = \rank_1(\AFID, \succ_1(\AFID, i)) $$
+	Returns the number of the run which contains position $i$:
+	$$ \elementIndex(A, i) = \rank_1(\AFID, \succ_1(\AFID, i)). $$
 
 	\item[$A[i\char93$]
 	It provides access to any element:
-	$$ A[i] = \AElems[\elementIndex(A, i)] $$
+	$$ A[i] = \AElems[\elementIndex(A, i)]. $$
 
 	\item[\runFirst{}, \runLast{}, \runLength{}]
 	It returns the position of the first and last elements of the run containing $i$.
 	\runLength{} returns the length of the run.
+	They are defined as:
 	\begin{align*}
-		\runFirst(A, i) &= \prev_1(\AFID, i) + 1 \\
-		\runLast(A, i) &= \succ_1(\AFID, i) \\
-		\runLength(A, i) &= \runLast(A, i) - \runFirst(A, i) + 1
+		\runFirst(A, i) &= \prev_1(\AFID, i) + 1, \\
+		\runLast(A, i) &= \succ_1(\AFID, i), \\
+		\runLength(A, i) &= \runLast(A, i) - \runFirst(A, i) + 1.
 	\end{align*}
-	
-	\item[\before{}]
-	Provides direct access to the array \ABefore{}.
-	$$ \before(A, i) = \ABefore[\elementIndex(A, i)] $$
 	
 	\item[\rank{}]
 	Returns how many elements same as $A[i]$ there has been until the position $i$:
-	$$ \rank(A, i) = \before(A, i) + (i - \runFirst(A, i) + 1) $$
+	$$ \rank(A, i) = \ABefore[\elementIndex(A, i)] + (i - \runFirst(A, i) + 1). $$
 	
 	\item[\size{}]
 	Returns the total number of elements $a$.
@@ -883,10 +909,10 @@ The total space complexity follows a simple summation: $a = \sum_i a_i$ and $r =
 We extend the structure of the compressed array by the following field:
 \begin{description}
 	\item[\AParts{}]
-	It contains $t + 1$ elements of positions where $A_i$ starts.
+	An array containing $t + 1$ elements of positions where $A_i$ starts:.
 	\begin{align*}
-		\AParts[0] &= 0 \\
-		\AParts[i] &= \sum_{j = 0}^{i - 1} |A_{j}|
+		\AParts[0] &= 0, \\
+		\AParts[i] &= \sum_{j = 0}^{i - 1} |A_{j}|.
 	\end{align*}
 	The size of \AParts{} is the same as the size of \ABefore{} which was built on top of an array of the same size containing a single part.
 \end{description}
@@ -898,13 +924,14 @@ This makes sure that runs do not extend over several parts, which would make it 
 This is already incorporated in the total number of runs: $r = \sum_i r_i$.
 
 Using this extra array, which has same space complexity as \ABefore{}, we can support the operations on part $p \in [0, t)$ which differs by an initial offsetting of $i$:
-$$i' = \AParts[p] + i$$
+$$i' = \AParts[p] + i.$$
 Note that we can also answer \size{} of each part, and check the bounds before an operation is commenced.
 
 \bigbreak
 
 We define a way how to turn a partially filled array $A'$ with a characteristic vector $C$, which is usually obvious from the context and definition of $A'$, into a compressed array $A$ for a given operation \op{} which is one of \pred{}, \succ{}, \prev{}, \nextt{}.
-$$A[i] = A'[\op(C, i)] \:\forall i$$
+The missing elements in the array are defined as:
+$$A[i] = A'[\op(C, i)].$$
 
 \subsection{Tiny Compressed Array}
 
@@ -912,24 +939,26 @@ The compressed array, as we defined it using the FID, is going to be sufficient 
 However it is impractical in situations when the number of runs is very small since the size of the FID depends polynomially on the size of the universe $a$ rather than on the number of elements $r$ which are represented by the set. 
 We are interested in developing a more space-efficient structure for $r = O(\log a)$.
 
-The polynomial dependency of FID on the size of the universe $a$ is not only problem of our quite simple data structure; in fact there is no known FID which does not suffer with this problem. \cite{grossi2009more}, \cite{patrascu2008succincter}
+The polynomial dependency of FID on the size of the universe $a$ is not only problem of our quite simple data structure.
+In fact there is no known FID which does not suffer with this problem.
+The two state of the art data structures by \cite{patrascu2008succincter}, and \cite{grossi2009more} have a similar polynomial dependency.
+
 We overcome the problem by replacing the FID by two more advanced data structures which together provide the same result under this restricted $r$.
 The resulting space complexity will be $O(\log^2 a)$ bits.
 
-When we apply it to out settings, the space complexity is $O(\log^2 a)$.
-
-The indexed dictionary will also be used independently.
-
-\subsubsection{Fusion Tree}
-A \emph{fusion tree} is a data structure which stores $n$ $l$-bit integers and supports \pred{} and \succ{} operations in time $O(\log_l n)$ requiring space $O(n l)$ bits. \cite{fredman1993surpassing} \cite{puatracscu2006time}
-
-Applied to our problem of a set containing $O(\log a)$ values, we get a data structure which uses $O(\log^2 a)$ bits and answers the operations in time $O(1)$.
-
 \bigbreak
 
-The fusion tree provides the operations \pred{} and \succ{}.
-The operation \rank$_1$ is needed only by \elementIndex{} where its argument is already member of the dictionary (that was arranged by \succ{}).
-We use the succinct indexable dictionary from lemma \ref{l:succint-indexed-dictionary} to support \rank$_1$.
+The first structure which we need is a \emph{fusion tree} which was described by \cite{fredman1993surpassing} and proven optimal for our case by \cite{puatracscu2006time}.
+We state their result as lemma which we do not prove.
+\begin{lemma}
+	A fusion tree stores $n$ $l$-bit integers and supports \pred{} and \succ{} operations in time $O(\log_l n)$ requiring space $O(n l)$ bits.
+\end{lemma}
+
+The compressed array requires only operations \prev$_1$, \succ$_1$ and \rank$_1$; the fusion tree provides the first two.
+Applied to our problem of a set containing $O(\log a)$ values, we uses $O(\log^2 a)$ bits and answers the operations in time $O(1)$.
+
+In order to support the \rank$_1$, we use the indexable dictionary from lemma \ref{l:succint-indexable-dictionary}.
+Although, its \rank{} is not universal -- it is restricted to elements of the dictionary, in combination the \pred{} operation of the fusion tree, it can still be supported.
 
 \bigbreak
 

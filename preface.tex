@@ -12,32 +12,44 @@ Unlabeled in our case means that all vertices are treated equally by all operati
 Moreover we will focus on static data structures that support all operations in constant time and that are succinct -- their space complexity is close to the optimal one.
 We will define what the restriction on space complexity means in the first chapter.
 
-This problem of space-efficient data structures for representing trees was first studied by \cite{jacobson1989space} and since then resulted in several different solutions.
-Succinct representations of trees have found several applications, namely compression of suffix trees as described in \cite{jansson2012ultra} and XML document processing described in \cite{geary2006succinct}.
+\bigbreak
 
+This problem of space-efficient data structures for representing trees was first studied by \cite{jacobson1989space}.
+Although their data structure was very limited, it brought attention to the topic, and lead to discovering three other distinct approaches.
+The hard part about succinct representations comes with adding support for operations which are not native for it.
+Many authors competed by introducing succinct indices with which they augmented their representation in order to support operations of the other representations.
+Quite recently (\cite{farzan2008uniform}, \cite{sadakane2010fully}) two data structures were proposed which can answer almost every operation.
+
+Succinct representations of trees have found an applications in the following two areas: XML processing (\cite{geary2006succinct},\cite{lu2008balanced} and \cite{delpratt2008engineering}), and suffix trees (\cite{jansson2012ultra} and \cite{munro2001space}).
+Both applications handle volumes of data for which the traditional data structures are inadequate.
+In the latter case, it not unusual to represent a single human genome, which on its own requires about 750~MB.
+Building a traditional suffix tree which uses multiple pointers per vertex increases the memory needed manyfold.
+
+\bigbreak
+
+We continue in the saga of succinct representations of trees.
 We investigate and describe the main data structures which are dominant in this area.
-Not only do we summarize the current state of the succinct encodings of trees, we also come up with own results.
-We propose several operations which has not been supported before by their respective representations
+Not only do we summarize the current state, we also come up with own results which push the frontier even further.
+We propose two operations which has not been supported before by their respective representations.
 We also offer alternative implementations or small improvements of others.
 
 \section*{Organization of This Thesis}
-\addcontentsline{toc}{section}{Organization of This Work}
+\addcontentsline{toc}{section}{Organization of This Thesis}
 
 In the first chapter we define the environment in which we present all results in the thesis.
 This includes the definition of the computation model which we use when we formulate algorithms, types of space-efficient data structures, and general techniques which we use in the following chapters.
 
-The second chapter is dedicated to a simpler data structures than trees.
+The second chapter is dedicated to simpler data structures than trees.
 We present results about supporting various operations on general and balanced bit strings.
-Since bit strings can be seen as characteristic vectors of a subset of an interval $[0, N)$, we show results about representing sets and supporting the same operations on them.
+Since bit strings can be seen as characteristic vectors of a subset of an interval $[0, N)$, we continue with results about representing sets and supporting the same operations on them.
 We also define a structure called compressed array which we use extensively in the last part of the thesis.
 
-In the third chapter, we define a set of operations on trees which we consider later when developing various tree data structures.
+In the third chapter, we define a set of operations on trees which we consider later when introduce various tree data structures.
 We present three representations of trees which are based on a single bit string encoding the whole tree.
-Not only are they all very simple, they are also limited in the operations which they support.
+We focus on operations which can be supported using the structures developed in the second chapter.
 
-In the last chapter, we extend one of the previous representations into a data structure which supports nearly all possible operations.
-We also describe the only data structure which does not reduce the tree into a simple bit string.
-The last result in this thesis connects three of the previous representations.
+In the last chapter, we extend one of the representations described earlier into a data structure which supports nearly all possible operations.
+We also present the only data structure which decomposes the tree into subtrees instead of reducing it to a simple bit string.
+The last result in this thesis connects three representations into a single data structure, and thereby combines their advantages.
 
-We conclude with a summary of operations which each of the representations supports.
-In the end we describe what the contribution of our work is.
+We conclude with a table of operations which each of the representations supports, and a summary of the contribution of our work.

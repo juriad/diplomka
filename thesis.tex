@@ -88,20 +88,16 @@
 
 % Abstract (recommended length around 80-200 words; this is not a copy of your thesis assignment!)
 \def\Abstract{% TODO abstract
-
-The 
-
-
-Abstract.
-Stručné (succinct) říkáme těm datovým strukturám, kterým stačí prostor blízký k informačně-teoretickému optimu, a přitom stále mají příznivou časovou složitost vhodné množiny operací.
-
-Cílem práce je prozkoumat existující stručné datové struktury pro reprezentaci stromů, porovnat jejich chování a případně je vylepšit.
+We focus on space-efficient, namely succinct, representations of static ordinal unlabeled trees.
+These structures have space complexity which is optimal up to a lower-order term, yet they support a reasonable set of operations in constant time.
+This topic has been studied in the last 27 years by numerous authors who came with several distinct solutions to this problem.
+It is not only of an academic interest, the succinct tree data structures has been used in several data-intensive applications, such as XML processing and representation of suffix trees.
+In this thesis, we describe the current state of knowledge in this area, compare the many different approaches, and propose several either new or alternative algorithms for operations in the representations alongside.
 }
 
 % 3 to 5 keywords (recommended), each enclosed in curly braces
-\def\Keywords{%
-	% TODO keywords
-	{trees} {succinct data structures}
+\def\Keywords{% TODO keywords
+	{trees}, {succinct data structures}, {balanced parentheses}, {tree covering}
 }
 
 %% The hyperref package for clickable links in PDF and also for storing

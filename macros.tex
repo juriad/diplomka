@@ -89,54 +89,76 @@
 
 %%% My own macros
 
+% DEFINITION of this ugly word
 \def\naive{naïve}
+
+% REDEFITION of phi
 \let\uglyphi\phi
 \let\phi\varphi
 
+% DEFINITION of \ph
 \def\ph{\relax\ifmmode*\else$*$\fi}
 
-\newcommand{\todo}[1]{}
-\renewcommand{\todo}[1]{{\color{red} TODO: {#1}}}
-
-\usepackage{tabularx}
-\newcolumntype{L}[1]{>{\hsize=#1\hsize\raggedright\arraybackslash}X}%
-\newcolumntype{J}[1]{>{\hyphenpenalty=100\hsize=#1\hsize\arraybackslash}X}%
-\newcolumntype{R}[1]{>{\hsize=#1\hsize\raggedleft\arraybackslash}X}%
-\newcolumntype{C}[2]{>{\hsize=#1\hsize\columncolor{#2}\centering\arraybackslash}X}%
-
-\usepackage{float}
-\usepackage[plain]{algorithm}
-\makeatletter
-\renewcommand{\fps@algorithm}{H}
-\makeatother
-
-\usepackage[noend]{algpseudocode}
-\def\algcolon{\textbf{:}}
-\algrenewtext{Function}[2]{\algorithmicfunction\ \textsc{#1}(#2)\algcolon}
-\algrenewtext{ForAll}[1]{\algorithmicforall\ #1\algcolon}
-\algrenewtext{For}[1]{\algorithmicfor\ #1\algcolon}
-\algrenewtext{While}[1]{\algorithmicwhile\ #1\algcolon}
-\algrenewtext{If}[1]{\algorithmicif\ #1\algcolon}
-\algrenewtext{ElsIf}[1]{\algorithmicelse\ \algorithmicif\ #1\algcolon}
-\algrenewtext{Else}{\algorithmicelse\algcolon}
-
-\algnewcommand\Break{\textbf{break}}
-
-\setlength{\floatsep}{5pt plus 2pt minus 2pt}
-\setlength{\textfloatsep}{5pt plus 2pt minus 2pt}
-\setlength{\intextsep}{5pt plus 2pt minus 2pt}
-%\setlength{\abovecaptionskip}{0pt}
-%\setlength{\abovecaptionskip}{10pt}
-%\renewcommand\textfraction{0.0}
-%\setcounter{totalnumber}{100}
-%\renewcommand\floatpagefraction{0.1}
-
-\usepackage{environ}
-%\RenewEnviron{algorithmic}[2][\relax]{}
-
+% DEFINITION of percent
 \let\percent\%
 \def\%{\ifmmode\mathbin{\percent}\else\percent\fi}
 
+% DEFINITION of \stuct
+\def\struct#1#2{#1{:}\ #2}
+
+% DEFINITION of \todo
+\newcommand{\todo}[1]{}
+\renewcommand{\todo}[1]{{\color{red} TODO: {#1}}}
+
+% DEFINITION of \str
+\def\str#1{\relax\ifmmode\texttt{"#1"}\else\texttt{"#1"}\fi}
+\def\openingParen{\str(}
+\def\closingParen{\str)}
+
+% DEFINITION of titles
+\usepackage[section]{placeins}
+\usepackage[nobottomtitles*]{titlesec}
+\renewcommand{\bottomtitlespace}{.2\textheight}
+
+% ALLOWS 
+\makeatletter
+\newcommand{\DeclareMathActive}[2]{%
+  % #1 is the character, #2 is the definition
+  \expandafter\edef\csname keep@#1@code\endcsname{\mathchar\the\mathcode`#1 }
+  \begingroup\lccode`~=`#1\relax
+  \lowercase{\endgroup\def~}{#2}%
+  \AtBeginDocument{\mathcode`#1="8000 }%
+}
+
+\newcommand{\std}[1]{\csname keep@#1@code\endcsname}
+%\patchcmd{\newmcodes@}{\mathcode`\-\relax}{\std@minuscode\relax}{}{\ddt}
+%\AtBeginDocument{\edef\std@minuscode{\the\mathcode`-}}
+% \DeclareMathActive{;}{,\ }
+\makeatother
+
+% REDEFINITION of underscore
+\makeatletter
+\newcommand*{\IfBoldFaceTF}{%
+  \ifx\f@series\my@test@bx
+    \expandafter\@firstoftwo
+  \else
+    \expandafter\@secondoftwo
+  \fi
+}
+\newcommand*{\my@test@bx}{bx}
+\makeatother
+
+
+\let\origUnderscore\_
+\def\_{\leavevmode%
+	\kern.03em\ifmmode%
+		\vbox{\hrule width.4em height.4pt}%
+	\else%
+		\vbox{\IfBoldFaceTF{\hrule width.4em height.6pt}{\hrule width.4em height.4pt}}%
+	\fi%
+}
+
+% DEFINITION of mathematic opertors
 \newcommand{\bitnot}{\mathord{\sim}}
 \newcommand{\bitand}{\mathbin{\&}}
 \newcommand{\bitor}{\mathbin{|}}
@@ -151,22 +173,61 @@
 \DeclareMathOperator*{\argmin}{arg\,min}
 \DeclareMathOperator*{\argmax}{arg\,max}
 
-\DeclareMathOperator{\textif}{\ \textrm{if}\ }
-\DeclareMathOperator{\textthen}{\ \textrm{then}\ }
-\DeclareMathOperator{\textelse}{\ \textrm{else}\ }
-\DeclareMathOperator{\textotherwise}{\ \textrm{otherwise}\ }
+\def\textif{\ \textrm{if}\ }
+\def\textthen{\ \textrm{then}\ }
+\def\textelse{\ \textrm{else}\ }
+\def\textotherwise{\ \textrm{otherwise}}
 
-\def\str#1{\relax\ifmmode\texttt{"#1"}\else\texttt{"#1"}\fi}
-\def\openingParen{\str(}
-\def\closingParen{\str)}
+% DEFINITION of tables
+\usepackage{tabularx}
+\newcolumntype{L}[1]{>{\hsize=#1\hsize\raggedright\arraybackslash}X}%
+\newcolumntype{J}[1]{>{\hyphenpenalty=100\hsize=#1\hsize\arraybackslash}X}%
+\newcolumntype{R}[1]{>{\hsize=#1\hsize\raggedleft\arraybackslash}X}%
+\newcolumntype{C}[2]{>{\hsize=#1\hsize\columncolor{#2}\centering\arraybackslash}X}%
+\usepackage{rotating} % provides sidewise table
 
+% DEFINITION of algorithm with default placement
+\usepackage{float}
+\usepackage[plain]{algorithm}
+\makeatletter
+\renewcommand{\fps@algorithm}{H}
+\makeatother
+
+\setlength{\floatsep}{5pt plus 2pt minus 2pt}
+\setlength{\textfloatsep}{5pt plus 2pt minus 2pt}
+\setlength{\intextsep}{5pt plus 2pt minus 2pt}
+%\setlength{\abovecaptionskip}{0pt}
+%\setlength{\abovecaptionskip}{10pt}
+%\renewcommand\textfraction{0.0}
+%\setcounter{totalnumber}{100}
+%\renewcommand\floatpagefraction{0.1}
+
+% DEFINITION of algorithmic with some tweaks
+\usepackage[noend]{algpseudocode}
+\def\algcolon{\textbf{:}}
+\algrenewtext{Function}[2]{\algorithmicfunction\ \textsc{#1}(#2)\algcolon}
+\algrenewtext{ForAll}[1]{\algorithmicforall\ #1\algcolon}
+\algrenewtext{For}[1]{\algorithmicfor\ #1\algcolon}
+\algrenewtext{While}[1]{\algorithmicwhile\ #1\algcolon}
+\algrenewtext{If}[1]{\algorithmicif\ #1\algcolon}
+\algrenewtext{ElsIf}[1]{\algorithmicelse\ \algorithmicif\ #1\algcolon}
+\algrenewtext{Else}{\algorithmicelse\algcolon}
+\algnewcommand\Break{\textbf{break}}
+\def\Instr{,\quad}
+
+% ALLOWS removing algorithms
+\usepackage{environ}
+%\RenewEnviron{algorithmic}[2][\relax]{}
+
+
+%DEFINITIONS of \defineName
 \usepackage{xifthen}
 \newcommand{\defineName}[2][]{%
 	\expandafter\newcommand\csname \if\relax\detokenize{#1}\relax#2\else#1\fi\endcsname{\hyphenpenalty=500\relax\ifmmode\mathit{#2}\else\textsc{#2}\fi}%
 }
 \def\m#1{\relax\ifmmode#1\else$#1$\fi}
 
-
+%DEFINITIONS of names
 
 % deque and array operations
 \defineName{push}
@@ -180,7 +241,6 @@
 
 % output
 \defineName[out]{output}
-
 
 % in Introduction
 \defineName{val}
@@ -506,49 +566,3 @@
 % in structures, USR general
 \defineName[bpNext]{bp\_next}
 \defineName[dfudsNext]{dfuds\_next}
-
-\def\struct#1#2{#1{:}\ #2}
-
-\usepackage[nobottomtitles*]{titlesec}
-\renewcommand{\bottomtitlespace}{.2\textheight}
-
-\makeatletter
-\newcommand{\DeclareMathActive}[2]{%
-  % #1 is the character, #2 is the definition
-  \expandafter\edef\csname keep@#1@code\endcsname{\mathchar\the\mathcode`#1 }
-  \begingroup\lccode`~=`#1\relax
-  \lowercase{\endgroup\def~}{#2}%
-  \AtBeginDocument{\mathcode`#1="8000 }%
-}
-
-\newcommand{\std}[1]{\csname keep@#1@code\endcsname}
-%\patchcmd{\newmcodes@}{\mathcode`\-\relax}{\std@minuscode\relax}{}{\ddt}
-%\AtBeginDocument{\edef\std@minuscode{\the\mathcode`-}}
-\DeclareMathActive{;}{,\ }
-\makeatother
-
-\usepackage[section]{placeins}
-
-\usepackage{rotating}
-
-
-\makeatletter
-\newcommand*{\IfBoldFaceTF}{%
-  \ifx\f@series\my@test@bx
-    \expandafter\@firstoftwo
-  \else
-    \expandafter\@secondoftwo
-  \fi
-}
-\newcommand*{\my@test@bx}{bx}
-\makeatother
-
-
-\let\origUnderscore\_
-\def\_{\leavevmode%
-	\kern.03em\ifmmode%
-		\vbox{\hrule width.4em height.4pt}%
-	\else%
-		\vbox{\IfBoldFaceTF{\hrule width.4em height.6pt}{\hrule width.4em height.4pt}}%
-	\fi%
-}

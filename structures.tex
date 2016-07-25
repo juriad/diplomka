@@ -24,7 +24,7 @@ Here we present data structures which are fundamentally different in either the 
 	Its main advantage is that it automatically benefits from any indices which are proposed for either BP, DFUDS, or TC representations.
 \end{description}
 
-\todo{Mention transformation into a binary tree}
+%\todo{Mention transformation into a binary tree}
 
 \section{Fully Functional Representation}
 
@@ -32,6 +32,9 @@ The BP representation which we described in the previous chapter was based on us
 There were several operations which required an additional index (\childAny{} and \levelAncestor{}), and several operations which were not supported at all (\levelAny{}).
 All the operations which we have just listed have one thing in common: they can all be expressed using more general operations.
 We did not show the indices for \levelAncestor{} in the BP and DFUDS representations for a reason: they were unnecessarily complicated, whereas here in the Fully Functional data structure, it is going to be one of the easiest operations.
+
+The data structure was developed by \cite{sadakane2010fully}.
+The name Fully Functional refers to the set of operations, that the structure offers full range of functionality.
 
 We define a new set of primitive operations for which we then design a single index, incorporating even the range operation.
 The index will be general -- any of the representations (LOUDS, BP, DFUDS) can use it, however only BP will benefit from it.
@@ -254,7 +257,7 @@ We say that the small block $j$ \emph{covers} a value $v$ if $m[j] \le v \le M[j
 \end{proof}
 
 When we process the search operations, we first check the small block containing $i$ for an answer.
-If the answer is present there, we return the position, and end.
+If the answer is present there, we return the position, and stop.
 
 Otherwise, we compute the desired value $v$ and traverse the tree up until we find the answer or until we reach the root.
 If we get to root, we signal that this block does not contain the answer by returning a special value.
@@ -321,9 +324,10 @@ We combine the lists into a single list and find the answer to the queries in it
 \begin{algorithm}
 \begin{algorithmic}
 \Function{\rmqList}{$S, g, i, j$} \Comment{$b(i) \ne b(j)$}
-	\State $L \gets [\,]; R \gets [\,]$ \Comment{Initialization of the empty lists}
-	\State $i_m \gets \rmq[S_{b(i)}, g, i \% b, b - 1] + e[b(i) - 1];$ \Comment{Similarly $j_m; i_M; j_M$}
-	\State $i_{\ms} \gets \rmqSize[S_{b(i)}, g, i \% b, b - 1];$ \Comment{Similarly $j_{\ms}; i_{\Ms}; j_{\Ms}$}
+	\State $L \gets [\,]$%
+	\Instr $R \gets [\,]$ \Comment{Initialization of the empty lists}
+	\State $i_m \gets \rmq[S_{b(i)}, g, i \% b, b - 1] + e[b(i) - 1]$ \Comment{Similarly $j_m, i_M, j_M$}
+	\State $i_{\ms} \gets \rmqSize[S_{b(i)}, g, i \% b, b - 1]$ \Comment{Similarly $j_{\ms}, i_{\Ms}, j_{\Ms}$}
 	\State $\append(L, \{\struct{f}{b(i)}, \struct{l}{b(i)}, \struct{m}{i_m}, \struct{\ms}{i_{\ms}}, \struct{M}{i_M}, \struct{\Ms}{i_{\Ms}} \})$ \Comment{Info for $b(i)$}
 	\State $\prepend(R, \{\struct{f}{b(j)}, \struct{l}{b(j)}, \struct{m}{j_m}, \struct{\ms}{j_{\ms}}, \struct{M}{j_M}, \struct{\Ms}{j_{\Ms}} \})$ \Comment{Info for $b(j)$}
 	\While{$\parent(u) \ne \parent(v)$} \Comment{$u, v$ in different subtrees}
@@ -419,7 +423,8 @@ We first search the restricted range of nodes provided by $I$, keeping track of 
 		\While{$\boolnot \isLeaf(p)$}
 			\State $(p, r) \gets \minSearch^*[\children(p), r]$
 		\EndWhile
-		\State $x \gets \max(i, p b) \% b; y \gets \min(j, (p + 1) b - 1) \% b$
+		\State $x \gets \max(i, p b) \% b$%
+		\Instr $y \gets \min(j, (p + 1) b - 1) \% b$
 		\State \Return{$b(p)b + \rmqSelect[S_{p}, g, x, y]$}
 	\EndIf
 \EndFunction
@@ -634,17 +639,17 @@ Since the size of the overlapping part is not a power of two in general, and so 
 
 \subsubsection{Structures for \rmqSize{} and \rmqSelect{}}
 
-We store the several indexed and fully indexed dictionaries which use the properties of the minima of the blocks.
+We store the several indexable and fully indexable dictionaries which use the properties of the minima of the blocks.
 The idea is to reorder the blocks, which are represented by elements in $m[\cdot]$, so that all blocks containing the same minimum are stored consecutively. 
 
 There are at most $\frac{N}{B}$ distinct minima in range $[-N, N]$.
-We store the minima in an indexed dictionary $\mr{}$ offsetted by $N$ to become a range $[0, 2 N]$
-The indexed dictionary uses $O(\frac{N}{B} \log B)$ bits and it supports \rank{} on the minima in constant time.
+We store the minima in an indexable dictionary $\mr{}$ offsetted by $N$ to become a range $[0, 2 N]$
+The indexable dictionary uses $O(\frac{N}{B} \log B)$ bits and it supports \rank{} on the minima in constant time.
 This is used for referring to $k$-th smallest minimum in the following structures.
 We omit the correction of an off-by-one error caused by \rank{} as the smallest minimum has $k = 1$ instead of desired $k = 0$.
 
 For each block minimum $m$ (which is the $k$-th smallest), we define a set containing all blocks which have minimum $m$: $\{ i : m[i] = m\}$.
-We represent the set as an indexed dictionary $\mi_k$.
+We represent the set as an indexable dictionary $\mi_k$.
 Because of the inequality derived from the generalized Vandermonde's identity \ref{ss:sublinear-fid}, the space complexity of all $\mi_m$ together can be bounded to:
 \begin{align*}
 	\sum_m S(\mi_k) &= \sum_m \left( \log {\frac{N}{B} \choose |\mi_k|} + o(|\mi_k|) + O(\log \log N) \right) \\
@@ -667,7 +672,9 @@ As we restricted our queries to their spans, and from \rmqiSpan{} we know the in
 \begin{algorithm}
 \begin{algorithmic}
 \Function{\rmqSize}{$S, g, i, j$}
-	\State $\ms_1 \gets 0; \ms_2 \gets 0; \ms_3 \gets 0$
+	\State $\ms_1 \gets 0$%
+	\Instr $\ms_2 \gets 0$%
+	\Instr $\ms_3 \gets 0$
 	\State $m \gets \rmq(S, g, i, j)$
 	
 	\If{$e[B(i) - 1] + \rmqBlock(S_{B(i)}, g, \prefix(i, j)) = m$} \Comment{In prefix?}
@@ -1043,20 +1050,25 @@ This can result in at most two permanent undersized components which we charge t
 	\If{$\isLeaf(v)$}
 		\State \Return{$[\,], v, -1$} \Comment{No permanent, itself as temporary, heavy children}
 	\Else
-		\State $P \gets [\,]; T \gets [\,]$ \Comment{All permanent and temporary from children}
-		\State $R \gets[\,]; h \gets 0$ \Comment{Split vertices in children; number of heavy comps}
+		\State $P \gets [\,]$%
+		\Instr $T \gets [\,]$ \Comment{All permanent and temporary from children}
+		\State $R \gets[\,]$%
+		\Instr $h \gets 0$ \Comment{Split vertices in children, number of heavy comps}
 		\State $d \gets 0$ \Comment{Total size of temporary components}
 		\ForAll{$u \gets \children(v)$}
 			\State $(p, t, r') = \decompose(u, B)$ \Comment{Process child}
 			\State $\concatenate(P, p)$ \Comment{Gather permanent}
-			\State $\append(T, t); \append(R, r'); d \gets d + |t|$ \Comment{Store and count temp}
+			\State $\append(T, t)$%
+			\Instr $\append(R, r')$%
+			\Instr $d \gets d + |t|$ \Comment{Store and count temp}
 			\If{$\subtreeSize(u) \ge B$} \Comment{Count number of heavy children}
 				\State $h \gets h + 1$
 			\EndIf
 		\EndFor
 		\Statex
 		
-		\State $s \gets [v]; i \gets 0; r \gets -1$ \Comment{Working component}
+		\State $s \gets [v]$%
+		\Instr $i \gets 0, r \gets -1$ \Comment{Working component}
 		\ForAll{$(u, t, r') \gets \zip(\children(v), T, R)$}
 			\If{$\subtreeSize(u) \ge B \booland |t| > 0 \booland h \ge 2$} \Comment{Heavy, temp, c. 3}
 				\If{$r' \ne -1$} \Comment{Needs to be split}
@@ -1064,7 +1076,8 @@ This can result in at most two permanent undersized components which we charge t
 					\ForAll{$u' \gets t$} \Comment{Revise the component}
 						\State $\append(s', u')$
 						\If{$u' = r'$} \Comment{Split vertex found}
-							\State $\append(P, s'); s' = [u]$ \Comment{Declare permanent, reset}
+							\State $\append(P, s')$%
+							\Instr $s' = [u]$ \Comment{Declare permanent, reset}
 						\EndIf
 					\EndFor
 					\State $\append(P, s')$ \Comment{Declare permanent}
@@ -1073,18 +1086,23 @@ This can result in at most two permanent undersized components which we charge t
 				\EndIf
 				\State $t \gets [\,]$ \Comment{$t$ has been processed}
 			\ElsIf{$|t| = 0 \booland |s| > 1 \booland d > B$} \Comment{Heavy, perm, case 2, large}
-				\State $\append(P, s); s \gets [v]; i \gets i + 1$ \Comment{Declare permanent}
+				\State $\append(P, s)$%
+				\Instr $s \gets [v]$%
+				\Instr $i \gets i + 1$ \Comment{Declare permanent}
 			\ElsIf{$|t| = 0$} \Comment{Heavy, permanent, case 2, small}
 				\If{$\childFirst(v) \ne u \booland \childLast(v) \ne u$}
 					\State $r \gets \childPrev(u)$ \Comment{Mark prev for potential splitting}
 				\EndIf
 			\EndIf
 			\If{$|t| = 0 \booland |s| > 1 \booland h \ge 2$} \Comment{Permanent, non-empty $s$, case 3}
-				\State $\append(P, s); s \gets [v]$  \Comment{Declare permanent, reset}
+				\State $\append(P, s)$%
+				\Instr $s \gets [v]$  \Comment{Declare permanent, reset}
 			\ElsIf{$|t| \ne 0$} \Comment{Temporary}
 				\State $\concatenate(s, t)$ \Comment{Merge $t$ into $s$}
 				\If{$|s| \ge B$} \Comment{Regular sized}
-					\State $\append(P, s); s \gets [v]; i \gets i + 1$ \Comment{Declare permanent}
+					\State $\append(P, s)$%
+					\Instr $s \gets [v]$%
+					\Instr $i \gets i + 1$ \Comment{Declare permanent}
 				\EndIf
 			\EndIf
 		\EndFor
@@ -1093,7 +1111,8 @@ This can result in at most two permanent undersized components which we charge t
 		\If{$|s| = 1$}
 			\State $s \gets [\,]$ \Comment{Reset before returning}
 		\ElsIf{$i \ge 1 \boolor h \ge 2$} \Comment{At least one regular sized or case 3}
-			\State $\append(P, s); s \gets [\,]$ \Comment{Declare permanent}
+			\State $\append(P, s)$%
+			\Instr $s \gets [\,]$ \Comment{Declare permanent}
 		\EndIf
 		\If{$h = \degree(v) \booland h \ge 2$} \Comment{All are heavy, case 3}
 			\State $\append(P, [v])$ \Comment{Declare $v$ as permanent}
@@ -2064,7 +2083,8 @@ They can easily be detected by checking the pre-order number of the dummy vertic
 			\If{$p.\tau_3 \ne 0$}
 				\State $r \gets \rootII(i)$
 				\If{$r.\tau_2 \ne 0$} \Comment{Descendant of a micro-tree root}
-					\State $d \gets i.D_2 + D_3[i.\size, i.\rep, i.\tau_3]; e \gets E[i.\size, i.\rep, i.\tau_3]$
+					\State $d \gets i.D_2 + D_3[i.\size, i.\rep, i.\tau_3]$%
+					\Instr $e \gets E[i.\size, i.\rep, i.\tau_3]$
 					\State $s \gets s + i.A + i.B_1 + i.B_2 + i.B_3 + i.C + d + e$
 				\Else \Comment{Descendant of a mini-tree root}
 					\State $e \gets E[i.\size, i.\rep, i.\tau_3]$
@@ -2901,11 +2921,14 @@ We can restore the original mini-tree from this representation:
 	\begin{algorithm}
 	\begin{algorithmic}
 	\Function{\bpSkinnyDown}{}
-		\State $p_D \gets 0; t_D \gets 0$
+		\State $p_D \gets 0$%
+		\Instr $t_D \gets 0$
 		\While{$p_D < |P_D|$}
 			\State $\out(\openingParen)$
 			\While{$P_D[p_D] = \openingParen$}
-				\State $t \gets \readTree(t_D); t_D \gets t_D + |t|; p_D \gets p_D + 1$
+				\State $t \gets \readTree(t_D)$%
+				\Instr $t_D \gets t_D + |t|$%
+				\Instr $p_D \gets p_D + 1$
 				\State $\out(\bpRep[t])$
 			\EndWhile
 			\State $p_D \gets p_D + 1$ \Comment{Consume the closing parenthesis}
@@ -2913,10 +2936,13 @@ We can restore the original mini-tree from this representation:
 	\EndFunction
 
 	\Function{\bpSkinnyUp}{}
-		\State $p_U \gets 0; t_U \gets 0$
+		\State $p_U \gets 0$%
+		\Instr $t_U \gets 0$
 		\While{$p_U < |P_U|$}
 			\While{$P_U[p_U] = \openingParen$}
-				\State $t \gets \readTree(t_U); t_U \gets t_U + |t|; p_U \gets p_U + 1$
+				\State $t \gets \readTree(t_U)$%
+				\Instr $t_U \gets t_U + |t|$%
+				\Instr $p_U \gets p_U + 1$
 				\State $\out(\bpRep[t])$
 			\EndWhile
 			\State $p_U \gets p_U + 1$ \Comment{Consume the closing parenthesis}
@@ -2956,7 +2982,10 @@ We can restore the original mini-tree from this representation:
 		\If{$f = 0$} \Comment{Function for going down}
 			\State $S \gets (P_D[p:p+q'], T_D[t:t + q' + 4d'], |P_D|, |T_D|)$
 			\State $(r, s) \gets \bpSkinnyDown[S, \ip, p, t, o, s]$
-			\State $\ip \gets 0; p \gets 0; t \gets 0; o \gets 0$
+			\State $\ip \gets 0$%
+			\Instr $p \gets 0$%
+			\Instr $t \gets 0$%
+			\Instr $o \gets 0$
 		\EndIf
 		
 		\If{$s > 0$} \Comment{Function for going up}
@@ -2984,7 +3013,9 @@ We can restore the original mini-tree from this representation:
 	\begin{algorithm}
 	\begin{algorithmic}
 	\Function{\dfudsSkinnyDown}{}
-		\State $p_D \gets 0;  p_U \gets |P_U| - 2; t_D \gets 0$
+		\State $p_D \gets 0$%
+		\Instr $p_U \gets |P_U| - 2$%
+		\Instr $t_D \gets 0$
 		\While{$p_D < |P_D|$}
 			\State $p_D \gets p_D$ \Comment{First we output the degree sequence}
 			\While{$P_D[p_D] = \openingParen$} \Comment{Left dangling children}
@@ -3002,7 +3033,9 @@ We can restore the original mini-tree from this representation:
 			\State $p_U \gets p_U - 1$ \Comment{Consume the closing parenthesis}
 			\State $\out(\closingParen)$ \Comment{End of unary degree sequence}
 			\While{$P_D[p_D] = \openingParen$} \Comment{Then we output the left dangling children}
-				\State $t \gets \readTree(t_D); t_D \gets t_D + |t|; p_D \gets p_D + 1$
+				\State $t \gets \readTree(t_D)$%
+				\Instr $t_D \gets t_D + |t|$%
+				\Instr $p_D \gets p_D + 1$
 				\State $\out(\dfudsRep[t])$
 			\EndWhile
 			\State $p_D \gets p_D + 1$ \Comment{Consume the closing parenthesis}
@@ -3014,10 +3047,12 @@ We can restore the original mini-tree from this representation:
 	\begin{algorithm}
 	\begin{algorithmic}
 	\Function{\dfudsSkinnyDown}{}
-		\State{$p_U \gets 0; t_U \gets 0$}
+		\State{$p_U \gets 0$%
+		\Instr $t_U \gets 0$}
 		\While{$p_U < |P_U|$} \Comment{Output the right dangling trees}
 			\If{$P_U[p_U] = \openingParen$}
-				\State $t \gets \readTree(t_U); t_U \gets t_U + |t|$
+				\State $t \gets \readTree(t_U)$%
+				\Instr $t_U \gets t_U + |t|$
 				\State $\out(\dfudsRep[t])$
 			\EndIf
 			\State $p_U \gets p_U + 1$ \Comment{Consume the closing parenthesis}
@@ -3150,11 +3185,13 @@ A similar algorithm is for DFUDS representation (with its constraint on the valu
 	
 	\If{$f = 0$} \Comment{Function for going down}
 		\State $S \gets (k.P_D[p:p+q'], k.T_D[t:t + q' + 4d'], |k.P_D|, |k.T_D|)$
-		\State $c \gets \runLast(\bp\_C_D, k, p); C \gets \bp\_C_D[k, c]$
+		\State $c \gets \runLast(\bp\_C_D, k, p)$%
+		\Instr $C \gets \bp\_C_D[k, c]$
 		\State $(r, s, e) \gets \bpSkinnyDown[S, I, s, c]$
 	\ElsIf{$f = 1$} \Comment{Function for going up}
 		\State $S \gets (k.P_U[p:p+q'], k.T_U[t:t + q' + 4d'], |k.P_U|, |k.T_U|)$
-		\State $c \gets \runLast(\bp\_C_U, k, p); C \gets \bp\_C_U[k, c]$
+		\State $c \gets \runLast(\bp\_C_U, k, p)$%
+		\Instr $C \gets \bp\_C_U[k, c]$
 		\State $(r, s, e) \gets \bpSkinnyUp[S, I, s, c]$
 	\EndIf
 	

@@ -29,7 +29,9 @@ RAM has access to two types of memory:
 	\item Constant number of \textbf{registers}; each of them stores a single word.
 \end{itemize}
 
-The instructions supported by the word-RAM are:
+The instruction set of our model is inspired by the assembly language of current computers and the C language \cite{kernighan2006c}.
+All single letter arguments can be either names of the registers or constants of size $w$ bits.
+
 \begin{description}
 	\item[Flow control]
 	Instructions which are used for determining which instruction to process next.
@@ -38,7 +40,7 @@ The instructions supported by the word-RAM are:
 		Stops the program immediately.
 		\item[Jumps: \textnormal{$\mathit{label}{:}\ \mathit{instruction}, \texttt{goto}\ \mathit{label}, \texttt{goto}\ \mathit{label}\ \texttt{if}\ a$}]
 		Continues with execution of the instruction at the specified label.
-		In the latter case, it goes to the label only if $a$ is $\true$, otherwise it continues with the next instruction.
+		In the latter case, it goes to the label only if condition $a$ is satisfied ($\true$), otherwise it continues with the next instruction.
 		\item[Functions: \textnormal{$\texttt{function}\ \mathit{fn}(\mathit{args}\ldots), \texttt{return}\ a$}]
 		Defines a function $\mathit{fn}$ with a constant number of arguments, possibly zero.
 		A function has access to the main memory but not to any registers which were used by its caller.
@@ -59,11 +61,17 @@ The instructions supported by the word-RAM are:
 	Instructions on values which are stored registers; the resulting value is always stored to a register: $\mathit{register} \gets \mathit{operation}$.
 	\begin{description}
 		\item[Arithmetic: $a + b, a - b, a \cdot b, a \mathbin{/} b, a \% b$]
-		All overflows are silently discarded; the division is integral.
+		Arithmetic operations interpret the values $a$ and $b$, and their result as a numbers encoded as two's complement.
+		Only the least significant $w$ bits of the result are used.
+		The division is integral. $\%$ denotes the operations remainder after division of $a$ by $b$.
 		\item[Bitwise: $a \bitand b, a \bitor b, a \bitxor b, \bitnot a, a \bitlsh b, a \bitrsh b$]
-		Bit shifts are padded with zeros.
+		The last two instructions represent shift of the binary value $a$ to left/right by $b$ positions; the result is then padded by zeros.
 		\item[Boolean: \textnormal{$a \booland b, a \boolor b, \boolnot a$}]
-		Integers are implicitly converted to boolean ($0 \Leftrightarrow \false$), and booleans to integers ($\true \Rightarrow 1; \false \Rightarrow 0$).
+		Booleans are converted to integers using Iverson's bracket convention:
+		$$[a] = \begin{cases}
+			1 & \textif a \textrm{ is } \true; \\ 
+			0 & \textotherwise.
+		\end{cases}$$
 		\item[Relational: $a < b, a \le b, a > b, a \ge b, a = b, a \ne b$]
 		The result is a boolean value.
 		\item[Function call: $\mathit{fn}(\mathit{args}\ldots)$]
@@ -71,27 +79,22 @@ The instructions supported by the word-RAM are:
 		The result is the value returned by the function.
 	\end{description}
 \end{description}
-All single letter arguments can be either names of the registers or constants of size $w$ bits.
 
 \subsection{RAM for Bit Strings}
 
 The general word-RAM is too restrictive for us as we will need to address individual bits or ranges of bits which are not aligned with words in the main memory.
 
-\begin{lemma}
-	We redefine the operations Read and Write to reflect our needs.
+We redefine the operations Read and Write to reflect our needs.
+\begin{description}
+	\item[Read: $\mathit{register} \gets \mathit{Memory}[\mathit{start}:\mathit{end}\char93$]
+	Reads the $\mathit{end} - \mathit{start} \le w$ bits from the main memory starting with the bit at position $\mathit{start}$, which is in $(\mathit{start} \% w)$-th word and stores them padded with zeros from left in a $register$.
 	
-	\begin{description}
-		\item[Read: $\mathit{register} \gets \mathit{Memory}[\mathit{start}:\mathit{end}\char93$]
-		Reads the $\mathit{end} - \mathit{start} \le w$ bits from the main memory starting with the bit at position $\mathit{start}$, which is in $(\mathit{start} \% w)$-th word and stores them padded with zeros from left in a $register$.
-		\item[Write: $\mathit{Memory}[\mathit{start}:\mathit{end}\char93 \gets a$]
-		Overwrites the $\mathit{end} - \mathit{start} \le w$ bits stored in the main memory at the given starting position with the $\mathit{end} - \mathit{start}$ least significant bits of the value $a$.
-	\end{description}
-	
-	We also redefine $\mathit{Memory}[\mathit{start}]$ to be equal to $\mathit{Memory}[\mathit{start}:\mathit{start} + 1]$.
-\end{lemma}
-\begin{proof}
-	These redefined instructions can be emulated with a constant number of arithmetic, bitwise, and up to two original memory accessing or modifying instructions.
-\end{proof}
+	\item[Write: $\mathit{Memory}[\mathit{start}:\mathit{end}\char93 \gets a$]
+	Overwrites the $\mathit{end} - \mathit{start} \le w$ bits stored in the main memory at the given starting position with the $\mathit{end} - \mathit{start}$ least significant bits of the value $a$.
+\end{description}
+
+We also redefine $\mathit{Memory}[\mathit{start}]$ to be equal to $\mathit{Memory}[\mathit{start}:\mathit{start} + 1]$.
+These redefined instructions can be emulated with a constant number of arithmetic, bitwise, and up to two original memory accessing or modifying instructions.
 
 We define the precise way how the input is stored in the main memory.
 The first word (at position $0$) contains the total number of bits -- that can require up to $\log w S = \Theta(\log S)$ bits.
@@ -109,6 +112,7 @@ Many operations cannot be supported unless the object is fully decoded into a mo
 
 The goal of space-efficient data structures is to allow some additional space in exchange for more and faster operations.
 There are three major representatives depending on their space complexity.
+In this thesis, we are only interested in succinct data structures.
 
 \begin{description}
 	\item[Implicit data structure]
@@ -129,19 +133,16 @@ There are three major representatives depending on their space complexity.
 	Extending our example of a general graph by an operation for querying out-degrees of vertices results in a succinct data structure.
 	We simply add an array of precomputed out-degrees which requires $n \log n = o(n^2)$ bits.
 	
-	Moreover, there is a succinct structure which supports adjacency testing and iteration over the list of neighbors and more in constant time. \cite[Theorem~6.1]{raman2007succinct}
+	Moreover, there is a succinct structure which supports adjacency testing and iteration over the list of neighbors and more in constant time (\cite[Theorem~6.1]{raman2007succinct}).
 	
 	\item[Compact data structure]
-	A \emph{compact data structure} is a data structure which uses $ O(\log |U|) $ bits of space.
+	A \emph{compact data structure} is a data structure which uses $ O(\log |U|) $ bits.
 	
-	A compact structure is often a byproduct of a succinct structure when the constants in space or time complexity prove to be too big for a real use. \cite{gonzalez2005practical}
+	A compact structure is often a byproduct of a succinct structure when the constants in space or time complexity prove to be too big for a real use.
+	An example of such compact structure is \cite{gonzalez2005practical}.
 	
 	We can easily extend the succinct structure for directed graphs into a compact structure for undirected graphs by simply using it twice: for the original graph and the graph with reversed edges.
 \end{description}
-
-\bigbreak
-
-In this thesis, we are only interested in succinct data structures.
 
 \section{Storage}
 
@@ -157,7 +158,7 @@ The \emph{systematic approach} splits the encoding into two parts:
 	Indices store additional information which is intended to offer answers to queries which are non-local, such as depth of a vertex, or the lowest common ancestor.
 
 	The size of the indices is dominated by the size of the data.	
-	We call an index succinct if its size if $o(N)$.
+	We call an \emph{index succinct} if its size if $o(N)$; recall that we defined $\lceil \log |U| \rceil = N$.
 	
 	Sometimes it is easier to think about \emph{density} of an index (or its part) in bits per bit of data.
 	The density of a succinct index is $o(1)$.
@@ -176,10 +177,6 @@ Non-systematic representations are designed with the set of supported operations
 It is not possible to remove support for any operation in order to spare some space.
 Adding support of a new operation which was not planned beforehand requires its composition from the already supported operations.
 It is also possible to add an additional index to a non-systematic data-structure, which results in a hybrid structure.
-
-\bigbreak
-
-Most of the presented results are about complex indices for simple encodings of trees.
 
 \section{Basic Techniques}
 
@@ -211,18 +208,19 @@ There will be a lot of pointers within individual parts, however they require on
 
 \subsection{Precomputation}
 
-The goal of most succinct data structures is to perform queries in constant time.
-Even if this was possible on high level, in the end the query must be processed on data of size close to a machine word.
-The following lemma shows that we can precompute all queries restricted to a small block of data.
+The goal of most succinct data structures is to perform operations in constant time.
+Even if this was possible on high level, in the end the operation must be processed on data of size close to a machine word.
+The following lemma shows that we can precompute all queries of an operation which are restricted to a small block of data.
 
 \begin{lemma}
-	All answers to a query $Q$ with parameters of total size $P$ restricted to $B$ consecutive bits of memory with an answer of size $R$ bits can be solved in $O(1)$ time with an index of additional $2^{B+P} R$ bits.
-	
-	As long as $B + P + \log R < \log N$, this results in a succinct index.
+	Let $O$ an operation with some parameters which take $P$ bits and returns $R$ bits, such that its access to the memory is restricted to $B$ consecutive bits which are the same for all values of the parameters.
+	The operations $O$ can be then solved in $O(1)$ time with an index of additional $2^{B+P} R$ bits.
+
+	As long as $B + P + \log R < \alpha \log N$ for $0 < \alpha < 1$, this results in a succinct index.
 \end{lemma}
 \begin{proof}
 	We represent this as a table of consecutively stored precomputed answers to $2^{B+P}$ possible queries.
-	The index of the table is the $B$ bits of data concatenated with $P$ bits of parameters interpreted as a number.
+	The index of the table is the $B$ bits of data concatenated with $P$ bits of parameters, interpreted as a number.
 
 	Lookup is easy: $B$ and $P$ bits are concatenated and multiplied by $R$, which gives the offset of the result.
 	
@@ -231,8 +229,8 @@ The following lemma shows that we can precompute all queries restricted to a sma
 
 We can say that a look-up table captures the result of an algorithm with parameters of size $P$ accessing $B$ consecutive bits of the main memory and returning a result of $R$ bits.
 
-We call the structure from the lemma a look-up table; this technique is also known as the Method of Four Russians.
-All our look-up tables will be succinct indices.
+We call the structure from the lemma a \emph{look-up table}.
+All our look-up tables in this thesis will be succinct indices.
 
 \bigbreak
 
@@ -241,18 +239,31 @@ The look-up tables are sometimes used merely as a way to overcome the difference
 If the algorithm captured by the look-up table can be split into several parts, then a single large look-up table can be replaced with two or more look-ups in substantially smaller tables.
 This can result in an implementation which is more considerate to caches in modern CPUs in exchange for a theoretical constant-time slowdown.
 
-\subsection{\label{ss:index-without-data}Index Without Data}
+\begin{example}\label{ex:precomputation}
+	We want to simulate an instruction \texttt{POPCNT} which returns the number of bits set to one.
+	This instruction is provided by CPUs manufactured by Intel (and others) and it is described in the manual \cite{intelsys}.
+	
+	We use a look-up table which returns the number of set bits in a sequence of $b = \frac{\log n}{2}$ consecutive bits.
+	The input of the operation (a word) is split into a constant number of blocks of length $b$ bits.
+	The overall algorithm then iterates over blocks in the input and sums the answers of queries on the look-up table.
+	
+	Note that setting $b = \frac{\log n}{4}$ extends the running time by factor of two, but at the same time lowers the space complexity from $\sqrt{n}\log \log n$ to $\sqrt[4]{n}\log \log n$.
+\end{example}
 
-Let's assume that we want to support an operation on derived data.
-Instead of counting ones, as in the previous example, we want to count the transitions from zero to one in the bit string $S$.
-We can define a new bit string $T$ which has a bit with value one for each such transition:
-$$ T = \bitnot S \bitand (S \bitlsh 1)$$
+\subsection{Index Without Data}\label{ss:index-without-data}
 
-On top of the bit string $T$ we build a succinct rank index.
-Although the index is small, $o(N)$, we cannot afford to store the whole bit string $T$ since it would make our data structure compact and not succinct.
+Let's assume that we want to support an operation on derived bit string $T$, however we cannot afford to store $T$.
+We show on an example how that it possible.
 
-We solve this issue by keeping only the small index while dropping the bit string $T$.
-Whenever the ranking algorithm accesses the bit string $T$, it can only request $w$ bits at a time, which we can compute on the fly with a constant slowdown from the bit string $S$ using the given formula.
+\begin{example}
+	Instead of counting ones, as in the previous example, we want to count the transitions from zero to one in the bit string $S$.
+	We also assume that we do not want to store another look-up table, which would also be a solution.
+	
+	We can define a new bit string $T$ which has a bit set for each such transition:
+	$$ T = \bitnot S \bitand (S \bitlsh 1). $$
+	Then the number of transitions in $S$ is equal to the number of set bits in $T$.
+	Whenever the operation counting transitions needs to access the bit string $T$, it can only request $w$ bits at a time, which we can compute on the fly with a constant slowdown from the bit string $S$ using the given formula.
+\end{example}
 
-This technique works in general; any algorithm on word-RAM can access at most $w$ bits of the input in each step.
+This technique is indeed general; any algorithm on word-RAM can access at most $w$ bits of the input in each step.
 We do not need to know how the operation works as long as we are able to provide it any chunk of $w$ bits of memory in constant time upon request.

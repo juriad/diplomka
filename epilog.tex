@@ -1,7 +1,8 @@
 \chapter*{Conclusion}
 \addcontentsline{toc}{chapter}{Conclusion}
+\setcounter{chapter}{\thechapter+1}
 
-The aim of the thesis was to explore the existing succinct data structures for representing trees, to compares them, and possibly to improve them.
+The aim of the thesis was to explore the existing succinct data structures for representing trees, to compare them, and possibly to improve them.
 We have succeeded in all three tasks.
 
 \bigbreak
@@ -11,11 +12,10 @@ The first three use a direct encoding in a bit string of $2n + 1$ or $2n$ bits.
 The later two representations build on top of them by either replacing the index, or moving the idea of decomposition from bit strings to subtrees.
 Finally, we showed a way how the data part of three different representations can be shared among them.
 
-The representation differ by the set of operations which the support.
+The representations differ in the set of operations which the support.
 We proceeded from the very simples ones which do not offer much, to representations which support almost every operation.
 The comparison of the supported operation can be found in the table \ref{tab:comparison}.
-Our improvements, which are in more detail, described in the next section are typeset in bold.
-
+Our improvements, which are in more detail described in the next section, are typeset in bold.
 
 \begin{sidewaystable}
 	\centering
@@ -64,7 +64,7 @@ Our improvements, which are in more detail, described in the next section are ty
 	
 		\levelAny{} (restrictable)
 		& Yes
-		& No
+		& Only \levelPrev{}, \levelNext{}
 		& No
 		& Only iteration (subtree)
 		& \textbf{Only iteration (alternative) (subtree)}
@@ -130,8 +130,8 @@ All structures and algorithms which we present in this thesis are also described
 	A fusion tree is required for the tiny compressed array.
 	This decision can be advocated by the fact that it is only of a theoretical interest.
 	
-	\item[Succinct indexed dictionaty]
-	The succinct indexed dictionary appears twice in our work: first in the definition of the tiny compressed array, and then also in the solution of the generalized \rmqSize{} and \rmqSelect{}.
+	\item[Succinct indexable dictionary]
+	The succinct indexable dictionary appears twice in our work: first in the definition of the tiny compressed array, and then also in the solution of the generalized \rmqSize{} and \rmqSelect{}.
 	We did not incorporate the description of this structures as it uses technique which are too different from those which we used for representing trees.
 \end{description}
 
@@ -158,7 +158,7 @@ Although the solution uses the same techniques as \dfudsRank{} and \dfudsSelect{
 This stems from the property that one vertex can be assigned multiple in-order numbers.
 
 One more of our results is related to the TC representation.
-We propose an alternative algorithms for the operations \levelFirst{} and \levelLast{} which are restricted to a subtree of a given vertex.
+We propose alternative algorithms for the operations \levelFirst{} and \levelLast{} which are restricted to a subtree of a given vertex.
 The query is reduced to a problem of finding a level ancestor, which we also describe at two different occasions.
 
 The last of our results involves the universal succinct representation where we achieved two improvements.
