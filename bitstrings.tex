@@ -94,12 +94,12 @@ The blocks represent parts of the bit string of size $B$, which is assumed to be
 Each block $k$ has an array $\block_k$ which for each small block $l$ contains the numbers of \ph{} in the block before the beginning of $l$:
 $$ block_k[l] = \sum_{x = k B}^{k B + l b - 1} [S[x] = \ph]. $$
 The sizes of all the block arrays sum up to $\frac{N}{B} \frac{B}{b} \log (B + 1)$.
-When $B$ is set to $\log^2 N$, the size is asymptotically $O(\frac{N}{\log N} \log \log N) = o(N)$.
+When $B$ is set to $\log^2 N$, the size is asymptotically $O\left(\frac{N}{\log N} \log \log N\right) = o(N)$.
 As the arrays $\block_k$ have the same size (with the exception of the last one), we can concatenate them without need of lemma \ref{l:concat}.
 
 We do the same on the level of the whole bit string by storing an array $\glob$:
 $$ \glob[k] = \sum_{x = 0}^{k B - 1} [S[x] = \ph]. $$
-The array $\glob$ has $\frac{N}{B}$ elements each of size $\log (N+1)$ bits resulting in size asymptotically $O(\frac{N}{\log^2 N} \log{N}) = O(\frac{N}{\log N}) = o(N)$.
+The array $\glob$ has $\frac{N}{B}$ elements each of size $\log (N+1)$ bits resulting in size asymptotically $O\left(\frac{N}{\log^2 N} \log{N}\right) = O\left(\frac{N}{\log N}\right) = o(N)$.
 
 \subsubsection{Algorithm}
 
@@ -389,8 +389,13 @@ We provide definitions of special parentheses:
 	Also note that the first opening far parenthesis and the last closing far parenthesis in a block are pioneers.
 \end{description}
 
+\begin{example}
+	In the following bit strings $S$ we mark the positions of the far parentheses (\texttt{focp}), opening pioneers (\texttt{o}), closing pioneers (\texttt{c}), and pioneers (\texttt{ocp}):
+	$$ S = \mathtt{\x(o \x(f ( ( ) ) \mid \x(p ( ) ( ) \x(f \mid \x)f ( ) \x)c \x)f \x)c} $$
+\end{example}
+
 \begin{lemma}
-	There are $O(\frac{N}{B})$ pioneers.
+	There are $O\left(\frac{N}{B}\right)$ pioneers.
 \end{lemma}
 \begin{proof}
 	For every pair of blocks there exists at most one pioneer pair.
@@ -399,7 +404,7 @@ We provide definitions of special parentheses:
 	Because the pioneer parentheses are correctly matched, one pair is enclosed by the other one, and therefore the opening nor the closing parenthesis of the enclosed pair cannot be pioneers by definition.
 	
 	Let's consider a graph whose vertices are blocks of the bit string and edges are between the blocks which are connected by a pioneer pairs.
-	Such graphs is an outerplanar graph with a bound on number of edges: $|E| \le 2 |V| - 3$ while $|V| = O(\frac{N}{B})$.
+	Such graphs is an outerplanar graph with a bound on number of edges: $|E| \le 2 |V| - 3$ while $|V| = O\left(\frac{N}{B}\right)$.
 	There are at most $E$ pioneer pairs, and therefore at most $2 |E|$ pioneers.
 \end{proof}
 
@@ -426,7 +431,7 @@ There are two special cases which we address separately:
 	We assume that $S[i]$ is an opening parenthesis since the other case will never occur.
 	We run two queries for which we return the first non-negative result:
 	\begin{enumerate}
-		\item $\bwdSearch[S, i, -1, \openingParen, \false]$ which returns $\enclose(S, i),$,
+		\item $\bwdSearch[S, i, -1, \openingParen, \false]$ which returns $\enclose(S, i),$
 		\item and $\fwdSearch[S, i, -2, \closingParen, \false]$ returning $\match(\enclose(S, i))$.
 	\end{enumerate}
 \end{description}
@@ -434,7 +439,7 @@ There are two special cases which we address separately:
 \bigbreak
 
 We aim to reduce the queries from the original bit string $S$ to queries on a bit string $P$ consisting of pioneers.
-We are allowed to store the array $P$ since its size is $O(\frac{N}{\log N}) = o(N)$.
+We are allowed to store the array $P$ since its size is $O\left(\frac{N}{\log N}\right) = o(N)$.
 
 We will also use a structure which tells us the positions of pioneers in the bit string $S$.
 A naïve approach would be to use a bit string $P'$ marking the positions of pioneers: $P'[i] = 1 \iff i\ \textrm{is pioneer}$. We equip $P'$ with indices for $\rank_1$ and $\select_1$.
@@ -542,11 +547,11 @@ Once we have $f$, we continue in the similar way as in case of $\findClose$ -- w
 \subsubsection{Recursion}
 
 The recursion as it was defined reduces the query from a bit string of size $N$ to one of size $O(\frac{N}{\log N})$.
-After $t$ levels the bit string has size $O(\frac{N}{\log^t N})$; we could use $t = O(\frac{\log N}{\log\log N})$ to reduce the size to $O(1)$ which would guarantee that the query fits in a single block.
+After $t$ levels the bit string has size $O\left(\frac{N}{\log^t N}\right)$; we could use $t = O\left(\frac{\log N}{\log\log N}\right)$ to reduce the size to $O(1)$ which would guarantee that the query fits in a single block.
 However that would result in a superconstant time complexity of the operation.
 
 We instead require only a constant number of levels of the recursion, $t = 2$ is sufficient.
-For every position in a bit string of size $O(\frac{N}{\log^2 N})$ we can precompute the answers to both operations \match{} and \enclose{}; such table $T$ has size $O(\frac{N}{\log^2 N} \log \frac{N}{\log^2 N}) = O(\frac{N}{\log N}) = o(N)$.
+For every position in a bit string of size $O\left(\frac{N}{\log^2 N}\right)$ we can precompute the answers to both operations \match{} and \enclose{}; such table $T$ has size $O\left(\frac{N}{\log^2 N} \log \frac{N}{\log^2 N}\right) = O\left(\frac{N}{\log N}\right) = o(N)$.
 Note that this table is not a universal look-up table which could be shared among multiple instances of the data structure.
 
 We do not even need to represent the bit string $P$ on the second level since we only need the index to the table $T$ provided by the indexable dictionary $P'_2$.
@@ -555,11 +560,11 @@ We do not even need to represent the bit string $P$ on the second level since we
 
 All space complexities so far are:
 \begin{itemize}
-	\item $O(\frac{N}{\log N})$ -- the bit string $P$ on the first level;
-	\item $O(\frac{N}{\log N}\log \log N)$ -- the fully indexable dictionary $P'$ on the first level;
-	\item $O(\frac{N}{\log^2 N}\log \log N)$ -- the fully indexable dictionary $P'_2$ on the second level;
-	\item $O(\frac{N}{\log N})$ -- the precomputed table $T$ on the second level;
-	\item $O(\sqrt{N}\log^2 N \log\log N)$ -- the universal look-up tables \fwdSearch{} and \bwdSearch{}.
+	\item $O\left(\frac{N}{\log N}\right)$ -- the bit string $P$ on the first level;
+	\item $O\left(\frac{N}{\log N}\log \log N\right)$ -- the fully indexable dictionary $P'$ on the first level;
+	\item $O\left(\frac{N}{\log^2 N}\log \log N\right)$ -- the fully indexable dictionary $P'_2$ on the second level;
+	\item $O\left(\frac{N}{\log N}\right)$ -- the precomputed table $T$ on the second level;
+	\item $O\left(\sqrt{N}\log^2 N \log\log N\right)$ -- the universal look-up tables \fwdSearch{} and \bwdSearch{}.
 \end{itemize}
 Note that we have no special requirements on the operations supported by $S$ and $P$; we only need to access up to $B$ consecutive bits, which bit strings allow.
 
@@ -691,11 +696,11 @@ Although it has a large space complexity depending on the number of block, event
 \end{proof}
 
 The bit string $S$ is covered by blocks of size $B$ and small blocks of size $b = \frac{\log N}{2}$.
-For each block we store the position of its minimum in an array $P_1$, which requires $O(\frac{N}{B} \log B)$ bits of memory.
-We build the \rmqi{} structure by lemma \ref{lemma:rmq2} on top of this array, which adds another $O(\frac{N}{B} \log^2 \frac{N}{B})$ bits of memory.
+For each block we store the position of its minimum in an array $P_1$, which requires $O\left(\frac{N}{B} \log B\right)$ bits of memory.
+We build the \rmqi{} structure by lemma \ref{lemma:rmq2} on top of this array, which adds another $O\left(\frac{N}{B} \log^2 \frac{N}{B}\right)$ bits of memory.
 
-For all small blocks in a block $i$ we precompute an array $P_2[i]$ of positions of their minima; this array uses $O(\frac{B}{b} \log \log N)$ bits per block.
-On top of this array we build again the \rmqi{} structure, which uses $O(\frac{B}{b} \log^2 \frac{B}{b})$ bits per block.
+For all small blocks in a block $i$ we precompute an array $P_2[i]$ of positions of their minima; this array uses $O\left(\frac{B}{b} \log \log N\right)$ bits per block.
+On top of this array we build again the \rmqi{} structure, which uses $O\left(\frac{B}{b} \log^2 \frac{B}{b}\right)$ bits per block.
 
 In order to keep all densities $o(1)$, we set $B = \log^3 N$.
 
@@ -738,7 +743,7 @@ $$ \excess(k) \ge \excess(j) \ \forall j \le k < \match(j). $$
 
 We also observe that $\findClose(p_1) + 1$ is an opening parenthesis of the next parentheses pair following $p_1$.
 These properties allow us to find a parenthesis which is tightly enclosed by $j$ and reduce the query to a one-parameter enclose:
-$$ j = enclose(i_1, i_2) = enclose(rmqi(i_1, i_2) + 1). $$
+$$ j = \enclose(i_1, i_2) = \enclose(\rmqi(i_1, i_2) + 1). $$
 
 \section{Dictionaries}
 
@@ -823,14 +828,14 @@ The space bound for storing all blocks consecutively as a bit string $S'$ follow
 	\sum_i b_i &\le \log {N \choose K} + \frac{N}{B}
 \end{align*}
 
-We also store two arrays of size $O(\frac{N}{B} \log B)$:
+We also store two arrays of size $O\left(\frac{N}{B} \log B\right)$:
 \begin{iteminline}
 	\item $L = [K_i \forall i]$,
 	\item $C = [b_i \forall i]$.
 \end{iteminline}
 
 We can now restore any block $i$ into its characteristic vector by a simple look-up table provided that we know where the representation of the block starts.
-We group $\log N$ blocks into macro-blocks and store where each macro-block starts in an array $\glob$ using $O(\frac{N}{\log^2 N} \log N)$ bits.
+We group $\log N$ blocks into macro-blocks and store where each macro-block starts in an array $\glob$ using $O\left(\frac{N}{\log^2 N} \log N\right)$ bits.
 And for each macro-block we store the macro-block-local positions of beginning of blocks which it contains in an array $\block_i$ using $O(\log N \log \log N)$ bits per macro-block.
 This is essentially the same as the partitioning which we used for \rank{} in section \ref{ss:rank}.
 
@@ -845,7 +850,7 @@ This is essentially the same as the partitioning which we used for \rank{} in se
 \end{algorithm}
 
 The implementation of the operations \rank{}, \select{}, and \inspect{}, which are required by the definition of FID, is straightforward.
-The total size of the structure is ${N \choose K} + O(\frac{N \log \log N}{\log N}) = {N \choose K} + o(N)$.
+The total size of the structure is ${N \choose K} + O\left(\frac{N \log \log N}{\log N}\right) = {N \choose K} + o(N)$.
 
 \subsection{Compressed Array}\label{s:compressed-array}
 
@@ -874,11 +879,11 @@ We can \emph{compress} such array $A$ by storing:
 
 We define several operation for this compressed array:
 \begin{description}
-	\item[\elementIndex(A, i)]
+	\item[\elementIndex{}]
 	Returns the number of the run which contains position $i$:
 	$$ \elementIndex(A, i) = \rank_1(\AFID, \succ_1(\AFID, i)). $$
 
-	\item[$A[i\char93$]
+	\item[\inspect{}, $A[i\char93$]
 	It provides access to any element:
 	$$ A[i] = \AElems[\elementIndex(A, i)]. $$
 

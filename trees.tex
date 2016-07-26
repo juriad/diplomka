@@ -148,6 +148,41 @@ Here we describe how it is possible to store a tree in a bit string of size $N \
 	Authors often compete and equip their DFUDS and BP structures with more indices that support operations with which the other representation comes.
 \end{description}
 
+\begin{figure}[h]
+	\centering
+	\begin{tikzpicture}
+	[
+		every node/.style = {
+			shape=rectangle, rounded corners,
+			draw, align=center
+		},
+		baseline,
+		align=center,
+		level distance=2\baselineskip,
+		text depth=.1em,
+		text height=.8em,
+		level 1/.style={sibling distance=5em},
+		level 2/.style={sibling distance=3em},
+		level 3/.style={sibling distance=2em},
+		level 4/.style={sibling distance=1em}
+	]
+	\node {a}
+		child { node {b} }
+		child { node {c}
+			child { node {f} }
+			child { node {g}
+				child { node {i} }
+			}
+		}
+		child { node {d} }
+		child { node {e}
+			child { node {h} }
+		};
+	\end{tikzpicture}
+	\caption{An example of a tree for demonstration of representations.}
+	\label{fig:tree}
+\end{figure}
+
 \section{Level-Order Unary Degree Sequence}
 
 The first method of representing an ordinal tree succinctly was first described by \cite{jacobson1989space}.
@@ -159,7 +194,7 @@ The representation is prefixed by \str{10}.
 \begin{algorithmic}
 \Function{\LOUDSRepresentation}{$R$}
 	\State $Q \gets [\,]$%
-	\Instr $\enqueue(Q, R)$ \Comment{The queue is initialized with the root of the tree.}
+	\Instr $\enqueue(Q, R)$ \Comment{The queue is initialized with the tree root.}
 	\State $\out(\str{10})$
 	\While{$V \gets \dequeue(Q)$}
 		\ForAll{$C \gets \children(V)$}
@@ -190,6 +225,14 @@ This follows from the the algorithm \LOUDSRepresentation{}: the $i$ vertex assig
 
 We use the position of the associated one for the internal representation of a vertex.
 A zeros-based structure is also possible as was showed by \cite{rahman2006engineering}.
+
+\begin{example}
+	The LOUDS representation of the tree in figure \ref{fig:tree} is:
+	$$ S = \mathtt{\x1a \underline{0} \mid \x1b \x1c \x1d \x1e \underline{0} \mid 0 ~ \x1f \x1g 0 ~ 0 ~ \x1h \underline{0} \mid 0 ~ \x1i 0 ~ \underline{0} \mid \underline{0}} $$
+	Levels are delimited by vertical bars, unary degree sequences of individual vertices by spaces.
+	There is a vertex for each one.
+	The underlined zeros are boundaries defined in section \ref{ss:louds-depth}.
+\end{example}
 
 \subsection{Navigation Operations}
 
@@ -344,7 +387,7 @@ We work around the problem by utilizing the fact that if there are many levels, 
 They are in fact short enough to precompute the level boundaries in a look-up table.
 
 We split the bit string $D$ into blocks of size $b = \frac{\log N}{2}$; for each block $i$ we remember only the position of the first $1$, or lack thereof in a table $D'[i]$.
-The table $D'$ requires $\frac{N}{b} \log b = O(\frac{N \log\log N}{\log N}) = o(N)$ bits.
+The table $D'$ requires $\frac{N}{b} \log b = O\left(\frac{N \log\log N}{\log N}\right) = o(N)$ bits.
 
 \begin{lemma}
 	Using the table $D'$, we can restore any block $i$ of $b$ consecutive bits of the original bit string $D$ in constant time.
@@ -509,10 +552,16 @@ An alternative definition of this schema can be expressed recursively:
 \end{enumerate}
 We can see from this definition that each subtree forms a continuous substring.
 
-\bigbreak
-
 We associate each vertex with its opening parenthesis.
 By using the operation \match{} we can easily switch between these two.
+
+\begin{example}
+	The BP representation of the tree in figure \ref{fig:tree} including vertex association is:
+	$$ S = \mathtt{ \x(a \x(b) ~ \x(c \x(f ) \x(g \x(i) ) ) ~ \x(d) ~ \x(e \x(h) ) ) }$$ 
+	The spaces separate representations of children of the root $a$.
+\end{example}
+
+\bigbreak
 
 The operations \preRank{}, \preSelect{}, \postRank{}, and \postSelect{} are immediately supported by opening-based and closing-based \rank{}s and \select{}s on the underlying bit string $S$.
 We first show implementation of the operations which do not need any auxiliary index and which can be expressed using only the primitives provided by $S$.
@@ -818,6 +867,12 @@ For convenience, one opening parenthesis is prepended to make the sequence of pa
 We associate each vertex with the first symbol of its representation.
 Alternatively, we can associate it with the terminal zero of its degree sequence (we will indeed define functions which switch between them).
 The association with the opening parenthesis in the degree sequence of its parent (similar to LOUDS) is also possible as we show later by defining \dfudsRank{} and \dfudsSelect{}.
+
+\begin{example}
+	The DFUDS representation of the tree in figure \ref{fig:tree} including vertex association is:
+	$$ S = \mathtt{( ~ \x(a((() ~ \x)b ~ \x(c() ~ \x)f ~ \x(g) ~ \x)i ~ \x)d ~ \x(e) ~ \x)h }$$ 
+	The spaces separate the unary degree sequences of vertices.
+\end{example}
 
 \subsection{Navigation Operations}
 

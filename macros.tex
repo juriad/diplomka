@@ -120,7 +120,10 @@
 \usepackage[nobottomtitles*]{titlesec}
 \renewcommand{\bottomtitlespace}{.2\textheight}
 
-% ALLOWS 
+% OVERPAREN
+\def\x#1#2{\underset{#2}{#1}}
+
+% ALLOWS redefinition of math symbols
 \makeatletter
 \newcommand{\DeclareMathActive}[2]{%
   % #1 is the character, #2 is the definition
@@ -185,23 +188,19 @@
 \usepackage{tabularx}
 \newcolumntype{L}[1]{>{\hsize=#1\hsize\raggedright\arraybackslash}X}%
 \newcolumntype{J}[1]{>{\hyphenpenalty=100\hsize=#1\hsize\arraybackslash}X}%
-\newcolumntype{R}[1]{>{\hsize=#1\hsize\raggedleft\arraybackslash}X}%
-\newcolumntype{C}[2]{>{\hsize=#1\hsize\columncolor{#2}\centering\arraybackslash}X}%
+%\newcolumntype{R}[1]{>{\hsize=#1\hsize\raggedleft\arraybackslash}X}%
+%\newcolumntype{C}[2]{>{\hsize=#1\hsize\columncolor{#2}\centering\arraybackslash}X}%
 \usepackage{rotating} % provides sidewise table
 
 % DEFINITION of algorithm with default placement
-\usepackage{float}
 \usepackage[plain]{algorithm}
 \makeatletter
-\renewcommand{\fps@algorithm}{H}
+\renewcommand{\fps@algorithm}{!ht}
 \makeatother
 
-
-
-\setlength{\floatsep}{0.2\baselineskip plus 0.5\baselineskip minus 0.0\baselineskip}
-\setlength{\textfloatsep}{1\baselineskip plus 0.2\baselineskip minus 0.5\baselineskip}
-\setlength{\intextsep}{0.5\baselineskip plus 0.5\baselineskip minus 0.2\baselineskip}
-
+%\setlength{\floatsep}{1\baselineskip plus 0.2\baselineskip minus 0.2\baselineskip}
+%\setlength{\textfloatsep}{1\baselineskip plus 0.5\baselineskip minus 0.5\baselineskip}
+%\setlength{\intextsep}{1\baselineskip plus 0.2\baselineskip minus 0.2\baselineskip}
 
 %\setlength{\floatsep}{5pt plus 2pt minus 2pt}
 %\setlength{\textfloatsep}{10pt plus 5pt minus 5pt}
@@ -440,6 +439,7 @@
 
 % in structures, TC decomposition
 \defineName{heavy}
+\defineName{decomposeSubtree}
 \defineName{decompose}
 \defineName{zip}
 

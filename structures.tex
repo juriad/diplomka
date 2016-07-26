@@ -221,7 +221,7 @@ We can navigate in this tree from an node with number $n$ to the parent ($\lfloo
 
 All children of a node are stored together in consecutive $O(k \log \log N) = O(\log N) = c' b$ bits of memory, for a constant $c'$.
 There are $\frac{k^{c + 1}}{k - 1} = O(k^c)$ nodes, each of them requires $O(\log b)$ bits.
-The density of the tree structure built on top of the sequence of the small blocks is $O(\frac{k^c \log b}{k^c b}) = O(\frac{\log b}{b}) = o(1)$.
+The density of the tree structure built on top of the sequence of the small blocks is $O\left(\frac{k^c \log b}{k^c b}\right) = O\left(\frac{\log b}{b}\right) = o(1)$.
 
 \bigskip
 
@@ -597,7 +597,7 @@ We add an artificial root, in order to make it a tree; it will not be used in al
 			level 3/.style={sibling distance=2em},
 			level 4/.style={sibling distance=1em}
 		]
-		\node {root ($-\infty$)}
+		\node {root}
 			child { node {6 (1)} 
 				child { node {1 (4)}
 					child { node {0 (6)} }
@@ -634,10 +634,10 @@ We split the search into two parts:
 
 \bigbreak
 
-We use the $\langle O(n \log n); O(1) \rangle$ algorithm for querying level ancestor by \cite{bender2004level}.
+We use the $\langle O(n \log n); O(1) \rangle$ algorithm for querying level ancestor introduced in \cite{bender2004level}.
 Instead of searching through the whole array $\lrm_i$, we limit the number of elements to $\log N$:
 $$ \lrm'_i[j] = \lrm_i[2^j]. $$
-This array is turned into a tiny compressed array of jumps $J_i$ requiring only $O(\log^2 N)$ bits of space, which is $O(\frac{N}{B} \log^2 N) = o(N)$ for $c > 2$.
+This array is turned into a tiny compressed array of jumps $J_i$ requiring only $O(\log^2 N)$ bits of space, which is $O\left(\frac{N}{B} \log^2 N\right) = o(N)$ for $c > 2$.
 
 By using the tiny compressed array, we move from node $i$ to a node $j'$ of $T_{\lrm}$ for which we bounds on depth and height, and the number of ancestors which we have to search through.
 \begin{align*}
@@ -658,10 +658,10 @@ Note that the root of the tree $T_{\lrm}$ is not represented in the ladders.
 The previous bound guaranties that the final answer $j$ is in the ladder which was extended from a path containing the node $j'$, to which we got by using the tiny compressed dictionary $J_i$.
 We represent each ladder by an array of block indices (which are nodes of $T_{\lrm}$) covering the value $M[\start(p)] - v$ (using maximum makes sure that the whole block $\start(p)$ is represented).
 We combine all ladders together in a single compressed array $L$ which leads to $2 \frac{N}{B}$ runs in total; as the difference of $m[i] - m[\parent(i)] \le B$ is bounded, the total number of elements is $O(N)$.
-The space complexity of the compressed array $L$ is $O(\frac{N}{B} \log N) + o(N) = o(N)$
+The space complexity of the compressed array $L$ is $O\left(\frac{N}{B} \log N\right) + o(N) = o(N)$
 
 For each block $i$, we also store the index $l$ of the ladder, which is also the index of the part in the compressed dictionary $L$, in an array $\ladder$.
-The size of the array is $O(\frac{N}{B} \log N) = o(N)$ bits.
+The size of the array is $O\left(\frac{N}{B} \log N\right) = o(N)$ bits.
 
 \begin{algorithm}
 \begin{algorithmic}
@@ -712,7 +712,7 @@ The idea is to reorder the blocks, which are represented by elements in $m[\cdot
 
 There are at most $\frac{N}{B}$ distinct minima in range $[-N, N]$.
 We store the minima in an indexable dictionary $\mr{}$ offsetted by $N$ to become a range $[0, 2 N]$
-The indexable dictionary uses $O(\frac{N}{B} \log B)$ bits and it supports \rank{} on the minima in constant time.
+The indexable dictionary uses $O\left(\frac{N}{B} \log B\right)$ bits and it supports \rank{} on the minima in constant time.
 This is used for referring to $k$-th smallest minimum in the following structures.
 We omit the correction of an off-by-one error caused by \rank{} as the smallest minimum has $k = 1$ instead of desired $k = 0$.
 
@@ -721,8 +721,8 @@ We represent the set as an indexable dictionary $\mi_k$.
 Because of the inequality derived from the generalized Chu-Vandermonde's identity \cite{belbachircombinatorial}, the space complexity of all $\mi_m$ together can be bounded by:
 \begin{align*}
 	\sum_m S(\mi_k) &= \sum_m \left( \log {\frac{N}{B} \choose |\mi_k|} + o(|\mi_k|) + O(\log \log N) \right) \\
-	&\le \log {\left(\frac{N}{B}\right)^2 \choose \frac{N}{B}} + o(\frac{N}{B}) + O(\frac{N}{B} \log \log N) \\
-	&= O(\frac{N}{B} \log N) = o(N).
+	&\le \log {\left(\frac{N}{B}\right)^2 \choose \frac{N}{B}} + o\left(\frac{N}{B}\right) + O\left(\frac{N}{B} \log \log N\right) \\
+	&= O\left(\frac{N}{B} \log N\right) = o(N).
 \end{align*}
 
 Finally we define an array $\mpp_k$ for each block minimum $m$ (which is again the $k$-th smallest):
@@ -1009,7 +1009,7 @@ All tree data structures which we have shown so far have one thing in common; th
 	The purpose of this level is to lower the number of blocks for the next level.
 	
 	\item Finally, the macro level which spans the whole structure connects individual blocks.
-	It usually uses data structures which are inspired by the traditional ones which are allowed to use $O(\frac{n}{B} \log^{c'} n)$ bits where $c' < c$.
+	It usually uses data structures which are inspired by the traditional ones which are allowed to use $O\left(\frac{n}{B} \log^{c'} n\right)$ bits where $c' < c$.
 \end{enumerate}
 
 So far, the small blocks and blocks were chunks of a bit string representation of the tree.
@@ -1022,7 +1022,7 @@ Not dissimilar to the other representations, it also uses three levels of scale 
 \bigbreak
 
 The basic operations (\childAny{}, \degree{}, \dep{}, \subtreeSize{}, \preAny{}, \postAny{}) were described by \cite{geary2006succinct}.
-They also supported the operation \levelAncestor{}, which was indeed the main feature of their data structure.
+They were also the first ones who supported the operation \levelAncestor{}.
 
 The more advanced operations (\hei{}, \lca{}, \distance{}, \leafAny{}, \dfudsAny{}, \levelAny{}) were introduced by \cite{he2007succinct}
 
@@ -1038,7 +1038,7 @@ Instead of decomposing a bit string of the encoded tree, we decompose the tree a
 Two decomposition algorithms have been proposed; they are parametrized by a target number of vertices $B$ to be present in a component.
 The first algorithm \cite{geary2006succinct} decomposes the tree into connected components of size $[B, 3 B - 2]$ with the exception of the component containing the root, which can be undersized.
 Such decomposition cannot exist unless the components are allowed to overlap; more specifically to overlap in their common root.
-It follows from the bounds that there exist $O(\frac{n}{B})$ components.
+It follows from the bounds that there exist $O\left(\frac{n}{B}\right)$ components.
 
 This decomposition was used and it leads to a succinct data structure which at the time of its introduction supported more operations than BP (child operations) or DFUDS (depth).
 The problem of the decomposition was that the components were connected together in too many ways and the structure had to handle many cases.
@@ -1122,6 +1122,7 @@ Moreover, a heavy temporary component is forcefully declared permanent in case (
 We prevent this situation in case (2) to happen by splitting the children of $v$ into two intervals (one can be empty) and solving them separately similar to the case (3).
 In case (3) we revise the temporary heavy component and split it in the same way; for that we return from recursion the vertex just before $u$.
 This can result in at most two permanent undersized components which we charge to the permanent regular-sized component which was not created.
+When the root is processed, a temporary component may need to be split.
 
 \begin{lemma}\label{l:decompose-property}
 	The components created by the altered decomposition algorithm satisfy the following property.
@@ -1131,9 +1132,9 @@ This can result in at most two permanent undersized components which we charge t
 	The proof follows from the stated algorithm.
 \end{proof}
 
-\begin{algorithm}[p]
+\begin{algorithm}
 \begin{algorithmic}
-\Function{\decompose}{$v, B$}
+\Function{\decomposeSubtree}{$v, B$}
 	\If{$\isLeaf(v)$}
 		\State \Return{$[\,], v, -1$} \Comment{No permanent, itself as temporary, heavy children}
 	\Else
@@ -1143,7 +1144,7 @@ This can result in at most two permanent undersized components which we charge t
 		\Instr $h \gets 0$ \Comment{Split vertices in children, number of heavy comps}
 		\State $d \gets 0$ \Comment{Total size of temporary components}
 		\ForAll{$u \gets \children(v)$}
-			\State $(p, t, r') = \decompose(u, B)$ \Comment{Process child}
+			\State $(p, t, r') = \decomposeSubtree(u, B)$ \Comment{Process child}
 			\State $\concatenate(P, p)$ \Comment{Gather permanent}
 			\State $\append(T, t)$%
 			\Instr $\append(R, r')$%
@@ -1207,6 +1208,30 @@ This can result in at most two permanent undersized components which we charge t
 		
 		\State \Return{$P, s, r$}
 	\EndIf
+\EndFunction
+\end{algorithmic}
+\end{algorithm}
+
+\begin{algorithm}
+\begin{algorithmic}
+\Function{\decompose}{$v, B$}
+	\State $(P, t, r) \gets \decomposeSubtree(v, B)$ \Comment{Decompose the subtree of root}
+	\If{$|t| \ne 0$} \Comment{A temporary component exists}
+		\If{$r = -1$}
+			\State $\append(P, t)$ \Comment{Declare permanent}
+		\Else \Comment{There is a split vertex}
+			\State $s' \gets [\,]$
+			\ForAll{$u' \gets t$} \Comment{Revise the component}
+				\State $\append(s', u')$
+				\If{$u' = r'$} \Comment{Split vertex found}
+					\State $\append(P, s')$%
+					\Instr $s' = [u]$ \Comment{Declare permanent, reset}
+				\EndIf
+			\EndFor
+			\State $\append(P, s')$ \Comment{Declare permanent}
+		\EndIf
+	\EndIf
+	\State \Return{$P$}
 \EndFunction
 \end{algorithmic}
 \end{algorithm}
@@ -1285,8 +1310,8 @@ We use compressed arrays in two different settings throughout the whole data str
 \begin{itemize}
 	\item A single compressed array for all vertices in a mini-tree or a micro-tree with a bounded number of runs.
 	
-	Specifically, if we store $\tau_1$ names of all vertices of the tree requiring $O(1)$ runs per name, then the space is $O(\frac{n}{B} \log n) + o(n) = o(n)$ bits.
-	Similarly for $\tau_2$ names of vertices of a given mini-tree, the space complexity is $O(\frac{B}{b} \log B) + o(B) = o(B)$ bits.
+	Specifically, if we store $\tau_1$ names of all vertices of the tree requiring $O(1)$ runs per name, then the space is $O\left(\frac{n}{B} \log n\right) + o(n) = o(n)$ bits.
+	Similarly for $\tau_2$ names of vertices of a given mini-tree, the space complexity is $O\left(\frac{B}{b} \log B\right) + o(B) = o(B)$ bits.
 	
 	\item A collection of $O(r)$ compressed arrays $A_i$, containing $a$ elements of size $s$ in $r$ runs in total.
 	
@@ -1420,7 +1445,7 @@ The only difference is that it contains the collection of compressed arrays for 
 		\item[]
 	
 		\item[$\microTreeOffsets$]
-		A table of offsets of the micro-tree structures from lemma \ref{l:concat}.
+		A table of offsets of the micro-tree structures, as in lemma \ref{l:concat}.
 		
 		\item[$\microTrees$]
 		The micro-tree structures stored consecutively.
@@ -1450,7 +1475,7 @@ At the global level, we only need a very simple structure:
 		\item[]
 	
 		\item[$\miniTreeOffsets$]
-		A table of offsets of the mini-tree structures from lemma \ref{l:concat}
+		A table of offsets of the mini-tree structures, as in lemma \ref{l:concat}
 		
 		\item[$\microTrees$]
 		The mini-tree structures stored consecutively.
@@ -2240,7 +2265,7 @@ If $v$ is a micro-tree root, then we look closer at the mini-trees which contain
 The name reported for visits from children in a type (1) connected mini-tree $t$ is simply $t$.
 
 \begin{lemma}
-	The number of runs in the compressed array $\inVerticesI$ is $O(\frac{n}{B})$.
+	The number of runs in the compressed array $\inVerticesI$ is $O\left(\frac{n}{B}\right)$.
 \end{lemma}
 \begin{proof}
 	There are only the following cases when a vertex $v$ has a different $\tau_1$ name than its immediately preceding vertex $u$ in the array $\inVerticesI$.
@@ -2252,14 +2277,14 @@ The name reported for visits from children in a type (1) connected mini-tree $t$
 		The whole subtree is exhausted before DFS continues with the mini-tree containing $v$, therefore this happens at most once per mini-tree.
 
 		\item $v$ is a root and it was visited from a root of a type (2) connected mini-tree.
-		There are at most $O(\frac{n}{B})$ type (2) connections, and so are these visits.
+		There are at most $O\left(\frac{n}{B}\right)$ type (2) connections, and so are these visits.
 		
 		\item $v$ is a root and it was visited from the first child in a non-primary type (1) connected mini-tree.
-		This happens once per a non-primary mini-tree, whose number is bounded by $O(\frac{n}{B})$.
+		This happens once per a non-primary mini-tree, whose number is bounded by $O\left(\frac{n}{B}\right)$.
 	\end{itemize}
 \end{proof}
 
-As the total number of runs is bounded by $O(\frac{n}{B})$, the size required to store such array is $o(n)$ bits.
+As the total number of runs is bounded by $O\left(\frac{n}{B}\right)$, the size required to store such array is $o(n)$ bits.
 
 Using the compressed array $\inVerticesI$ we can navigate to the mini-tree which contains the vertex with the in-order number $r$, however it might not be the primary mini-tree.
 It can happen that $\tau_1$ was used in $\inVerticesI$ in one of the following cases, which we handle separately before searching for a micro-tree.
@@ -2349,11 +2374,11 @@ We can then restrict the leaf operations to a subtree:
 
 We define a tree $T_1$ whose nodes are roots of primary mini-trees.
 A node $u$ is a parent of node $v$ if $v.\parent_1 = u$.
-The tree $T_1$ has $O(\frac{n}{B})$ nodes.
+The tree $T_1$ has $O\left(\frac{n}{B}\right)$ nodes.
 
 Similarly we define a tree $T_2$ for each mini-tree $t$ which consists of nodes corresponding to primary micro-tree roots within the mini-tree $t$.
 A node $u$ is a parent of node $v$ in $T_2$ if $v.\parent_1 = u$.
-This tree $T_1$ has $O(\frac{B}{b})$ nodes.
+This tree $T_1$ has $O\left(\frac{B}{b}\right)$ nodes.
 
 \subsubsection{Lowest Common Ancestor}
 
@@ -2378,11 +2403,11 @@ Otherwise we use an LCA structure which uses the techniques from lemma \ref{lemm
 	
 	In case of $T_1$, we use the field $\depthI$ since the relation of one node being an ancestor of the other is preserved.
 	The name of the node is its $\primaryI$ name.
-	The tree $T_1$ has $O(\frac{n}{B})$ nodes, so the space required is $O(\frac{n}{B} \log^2 n) = o(n)$ bits for $c \ge 3$.
+	The tree $T_1$ has $O\left(\frac{n}{B}\right)$ nodes, so the space required is $O\left(\frac{n}{B} \log^2 n\right) = o(n)$ bits for $c \ge 3$.
 	($c$ is the constant from definition of the size $B$.)
 	
 	In case of $T_2$, we use $\depthII$ for determining the depth and $\primaryII$ as the name of a node.
-	The tree $T_2$ has $O(\frac{B}{b})$ nodes, which results in space $O(\frac{B}{b} \log^2 B) = o(B)$ bits.
+	The tree $T_2$ has $O\left(\frac{B}{b}\right)$ nodes, which results in space $O\left(\frac{B}{b} \log^2 B\right) = o(B)$ bits.
 \end{proof}
 
 If the vertices are in the same mini-tree, we solve it by querying $T_2$ for the lowest common ancestor using the lemma \ref{l:ff-lca} (function \lcaI); in case when they are in different mini-trees, we query the tree $T_1$ (function \lcaII).
@@ -2540,7 +2565,7 @@ We compress the tree by contracting paths between nodes which are either:
 	\item Nodes corresponding to vertices in the arrays $\lfirstI$ such that their predecessor has a different $\tau_1$ name.
 \end{enumerate}
 Not counting branching nodes, there are at most three vertices for each mini-tree, which follows from the previous lemma.
-The number of nodes in the compressed tree is $O(\frac{n}{B})$.
+The number of nodes in the compressed tree is $O\left(\frac{n}{B}\right)$.
 
 We associate each node $n$ with the depth of the vertex which it represents in the original tree.
 We store the information about the nodes in an array; each node knows its $\tau_1$ name, its depth, and its pre-order number $k$ in $T_1$.
@@ -2555,7 +2580,7 @@ Since this tree has increasing values on paths from leaves to the root, we use t
 	Similarly to $J$, the operation \pred{} is used.
 	\item An array $\ladder$ which contains information about to which ladder each node belongs.
 \end{itemize}
-These structures take $O(\frac{n}{B} \log^2 n) = o(n)$ bits for $c \ge 3$.
+These structures take $O\left(\frac{n}{B} \log^2 n\right) = o(n)$ bits for $c \ge 3$.
 
 We use the algorithm \LRMSearch{} which returns the first ancestor node $j$ in the tree $T_1$ such that $\dep(j)$ less than or equal to the desired one.
 In our case, the function returns the $\tau_1$ name of the node.
@@ -2649,7 +2674,7 @@ We distinguish four cases:
 		\item If $i$ is a descendant of the dummy vertex in $t_1$, then we need to find the micro-tree which contains the vertex $v$ such that $\preRank(v) > \preRank(\bottomI(t_1))$.
 		
 		As there is at most one dummy vertex in a mini-tree, we store a compressed array $\dummyNext$ which contains $\tau_2$ names of micro-trees which contain the answer for all admissible levels.
-		This compressed array contains at most $B$ elements in $O(\frac{B}{b})$ runs and therefore uses $O(\frac{B}{b} \log B) = o(B)$ bits of space.
+		This compressed array contains at most $B$ elements in $O\left(\frac{B}{b}\right)$ runs and therefore uses $O\left(\frac{B}{b} \log B\right) = o(B)$ bits of space.
 		The number of runs follows from the constant bound in lemma \ref{l:level-first-3} and the fact that there are $O(\frac{B}{b})$ micro-trees in a mini-tree.
 
 		Let $t_2$ be the micro-tree which is obtained from the compressed array $\dummyNext$.
@@ -2662,7 +2687,7 @@ We distinguish four cases:
 We define a graph $G$ whose nodes are mini-trees and each two nodes $x, y$ are connected whenever there is a vertex $u$ in $x$ and a vertex $v$ in $y$ such that $\levelNext(i, u) = v$.
 
 \begin{lemma}\label{l:level-graph}
-	The graph $G$ has $O(\frac{n}{B})$ edges.
+	The graph $G$ has $O\left(\frac{n}{B}\right)$ edges.
 \end{lemma}
 \begin{proof}
 	The graph is planar, therefore there is a linear bound on number of edges.
@@ -2673,13 +2698,13 @@ $$ \lnextI[j] = \levelNext(\rootI(0), \levelLast(i, \dep(i) + j)).\tau_1$$
 If there is no next vertex, than we use the name $-1$.
 
 We build a collection of compressed arrays out of all $\lnextI$ arrays, which will be stored in the global structure.
-They contain $O(n)$ elements in total as each vertex except for mini-tree roots is the rightmost one in at most one mini-tree, and the number of mini-tree roots is $O(\frac{n}{B})$.
-There are at most $O(\frac{n}{B})$ runs in all arrays, which follows from the lemmas \ref{l:level-graph} and \ref{l:level-first-3}; there are only $O(1)$ ways how three and three runs can be combined together.
+They contain $O(n)$ elements in total as each vertex except for mini-tree roots is the rightmost one in at most one mini-tree, and the number of mini-tree roots is $O\left(\frac{n}{B}\right)$.
+There are at most $O\left(\frac{n}{B}\right)$ runs in all arrays, which follows from the lemmas \ref{l:level-graph} and \ref{l:level-first-3}; there are only $O(1)$ ways how three and three runs can be combined together.
 The extra ``no next vertex'' names do not matter as we they form a single run until the end of the array.
-The collection of compressed arrays requires $O(\frac{n}{B} \log n) = o(n)$ bits of space.
+The collection of compressed arrays requires $O\left(\frac{n}{B} \log n\right) = o(n)$ bits of space.
 
 We construct a similar structure $\lnextII$ for all micro-trees, storing the $\tau_2$ name of the micro-trees containing the level-next vertex.
-This requires $O(\frac{B}{b} \log B) = o(B)$ bits of memory, and it is stored in each mini-tree structure.
+This requires $O\left(\frac{B}{b} \log B\right) = o(B)$ bits of memory, and it is stored in each mini-tree structure.
 
 \begin{algorithm}
 \begin{algorithmic}
@@ -2843,7 +2868,7 @@ We immediately solve all queries which span over multiple $\tau_1$ names in the 
 
 For each run, we store the last and the following $w$ bits of both representations.
 In case of DFUDS and a primary mini-tree, we also store the first $w$ bits starting at the position of the closing parenthesis in the degree sequence of the root.
-This requires $O(\frac{n}{B} w) = o(n)$ bits.
+This requires $O\left(\frac{n}{B} w\right) = o(n)$ bits.
 
 We can detect such queries in $O(1)$ time by the following two conditions:
 \begin{gather*}
@@ -2936,7 +2961,7 @@ We call a vertex \emph{significant} if its subtree size is larger than $d' = \fr
 A \emph{skeleton} of a mini-tree is the subtree induced by significant vertices.
 The skeleton must be connected since each ancestor of a significant vertex is also significant.
 
-There are at most $O(\frac{B}{\log n})$ leaves in the skeleton as the subtree of each of them contains at least $d'$ vertices.
+There are at most $O\left(\frac{B}{\log n}\right)$ leaves in the skeleton as the subtree of each of them contains at least $d'$ vertices.
 We can assume that there is also at least one significant vertex as otherwise the size of the representation of the mini-tree is less than $w$, and so every query has already been solved.
 
 \subsection{Skinny Mini-Trees}
@@ -3178,7 +3203,7 @@ We repeat this until every vertex of the skeleton is in a left-leaning or a righ
 
 The decomposition keeps subtrees of non-significant vertices connected to their parent, which is now in a path; they are again called left and right dangling trees.
 A path together with its dangling trees can be viewed as a skinny mini-tree.
-There are $O(\frac{B}{\log n})$ paths as each of them ends in a leaf.
+There are $O\left(\frac{B}{\log n}\right)$ paths as each of them ends in a leaf.
 We assign each path a number starting with $0$.
 
 The paths are connected with each other in three possible ways:
@@ -3202,7 +3227,7 @@ The size of the index record is $O(\log \log n)$ and we call it a \emph{referenc
 
 First, we add opening parentheses to the bit strings $P_D$ and $P_U$ for all connected paths.
 Without this change reporting the vertex degree in the DFUDS representation would be wrong.
-This change adds $O(\frac{B}{\log n})$ bits because the each path is connected to at most one other path.
+This change adds $O\left(\frac{B}{\log n}\right)$ bits because the each path is connected to at most one other path.
 The root of a path (except for the path containing the mini-tree root) is represented by $3$ bits in total.
 
 For each path we define arrays $C_D$ and $C_U$ which mark the positions of the parentheses which we have just added.
@@ -3339,7 +3364,7 @@ We focus on the transitions of the direction of a path traversal from ``down'' t
 	Since the subtree contains $d'$ vertices, at least $2d'$ bits of representation are generated.
 \end{proof}
 
-From the lemma and from the lengths of the cycles follows that at most $3 \frac{q'}{2d'} + 2 = O(\frac{d}{q}) = O(1)$ recursive calls are required.
+From the lemma and from the lengths of the cycles follows that at most $3 \frac{q'}{2d'} + 2 = O\left(\frac{d}{q}\right) = O(1)$ recursive calls are required.
 The additional $2$ is the number of recursive calls before the first cycle.
 
 Since we want to generate as many bits as possible, we want to set $q$ small, however that results in deeper recursion and longer running time.

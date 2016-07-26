@@ -63,7 +63,7 @@ All single letter arguments can be either names of the registers or constants of
 		\item[Arithmetic: $a + b, a - b, a \cdot b, a \mathbin{/} b, a \% b$]
 		Arithmetic operations interpret the values $a$ and $b$, and their result as a numbers encoded as two's complement.
 		Only the least significant $w$ bits of the result are used.
-		The division is integral. $\%$ denotes the operations remainder after division of $a$ by $b$.
+		The division is integral. $\%$ denotes the operation remainder after division of $a$ by $b$.
 		\item[Bitwise: $a \bitand b, a \bitor b, a \bitxor b, \bitnot a, a \bitlsh b, a \bitrsh b$]
 		The last two instructions represent shift of the binary value $a$ to left/right by $b$ positions; the result is then padded by zeros.
 		\item[Boolean: \textnormal{$a \booland b, a \boolor b, \boolnot a$}]
@@ -189,7 +189,7 @@ Every data structure is only a string of bits and unless we can calculate offset
 In the following lemma we show that a small number of independent parts can be concatenated in one bit string.
 
 \begin{lemma}\label{l:concat}
-	Let $K = o(\frac{N}{\log N})$ be the number of bit strings $S_1, S_2, \ldots, S_K$ and $N_1, N_2, \dots, N_K$ their lengths which sum up to $N$.
+	Let $K = o\left(\frac{N}{\log N}\right)$ be the number of bit strings $S_1, S_2, \ldots, S_K$ and $N_1, N_2, \dots, N_K$ their lengths which sum up to $N$.
 	Then we can combine all bit strings into a single bit string $S$ while maintaining succinctness and constant-time access to the individual bit strings.
 	Typically $K = O(1)$.
 \end{lemma}
