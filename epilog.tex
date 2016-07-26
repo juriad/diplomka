@@ -153,6 +153,9 @@ Until now, only a fixed occurrence, such as the first or the last, could be foun
 We also defined operations \rmqSize{}, \rmqRank{} which return the number of all occurrences of the minimum in range, or in a part of it.
 We used the generalized range operations to propose an alternative algorithm for the \degree{}, \childRank{}, \childSelect{} operations in the FF representation.
 
+We modified the decomposition algorithm for the TC representation, which leads to the components satisfying an extra condition.
+This simplifies the data structure since there is one more case which needs to be handled in a special way.
+
 We solved the operation \inRank{} and \inSelect{} for the TC representation.
 Although the solution uses the same techniques as \dfudsRank{} and \dfudsSelect{}, which have already been published, the in-order operations are more complex.
 This stems from the property that one vertex can be assigned multiple in-order numbers.

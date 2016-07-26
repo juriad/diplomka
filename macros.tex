@@ -173,10 +173,13 @@
 \DeclareMathOperator*{\argmin}{arg\,min}
 \DeclareMathOperator*{\argmax}{arg\,max}
 
-\def\textif{\ \textrm{if}\ }
-\def\textthen{\ \textrm{then}\ }
-\def\textelse{\ \textrm{else}\ }
-\def\textotherwise{\ \textrm{otherwise}}
+\def\textif{\ \textrm{\textnormal{if}}\ }
+\def\textthen{\ \textrm{\textnormal{then}}\ }
+\def\textelse{\ \textrm{\textnormal{else}}\ }
+\def\textotherwise{\ \textrm{\textnormal{otherwise}}}
+
+%DEFINITION for plotting
+\usepackage{tikz}
 
 % DEFINITION of tables
 \usepackage{tabularx}
@@ -193,9 +196,16 @@
 \renewcommand{\fps@algorithm}{H}
 \makeatother
 
-\setlength{\floatsep}{5pt plus 2pt minus 2pt}
-\setlength{\textfloatsep}{5pt plus 2pt minus 2pt}
-\setlength{\intextsep}{5pt plus 2pt minus 2pt}
+
+
+\setlength{\floatsep}{0.2\baselineskip plus 0.5\baselineskip minus 0.0\baselineskip}
+\setlength{\textfloatsep}{1\baselineskip plus 0.2\baselineskip minus 0.5\baselineskip}
+\setlength{\intextsep}{0.5\baselineskip plus 0.5\baselineskip minus 0.2\baselineskip}
+
+
+%\setlength{\floatsep}{5pt plus 2pt minus 2pt}
+%\setlength{\textfloatsep}{10pt plus 5pt minus 5pt}
+%\setlength{\intextsep}{5pt plus 2pt minus 2pt}
 %\setlength{\abovecaptionskip}{0pt}
 %\setlength{\abovecaptionskip}{10pt}
 %\renewcommand\textfraction{0.0}

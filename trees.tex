@@ -656,7 +656,9 @@ We recall how the parentheses are actually stored: \openingParen = 1, \closingPa
 With that in our mind, we derive a bit string $I$ which contains $1$ at the position of the opening parenthesis which is preceded by a closing parenthesis: $I[i] = [S[i] = 1 \booland S[i-1] = 0]$:
 $$ I = \bitnot S \bitand (S \bitrsh 1). $$
 The operations \inRank{} and \inSelect{} are then defined on this derived bit string.
-Note that we cannot use the operation \degree{} since it is not supported.
+
+Note that the operation \inRank{} returns the smallest assigned in-order number, and that \inSelect{} find the vertex by any in-order number which it has been assigned.
+Also, we cannot use the operation \degree{} in the implementation since it is not supported.
 
 \begin{algorithm}
 \begin{algorithmic}
@@ -743,9 +745,7 @@ We may be interested in the two other patterns:
 
 \subsection{Final Thoughts}
 
-\todo{references }
-
-Three more indices were developed for the BP representation:
+Three more indices have been developed for the BP representation:
 \begin{description}
 	\item[\degree{}]
 	An index by \cite{chiang2005orderly}.
