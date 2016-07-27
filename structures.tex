@@ -398,7 +398,7 @@ Once we are in a leaf, we use a look-up table to solve the select there.
 
 \begin{algorithm}
 \begin{algorithmic}
-\Function{\rmqSelectBlock}{$S, g, i, j, r$} \Comment{Assuming $n$-th min exists}
+\Function{\rmqSelectBlock}{$S, g, i, j, r$} \Comment{Assuming $r$-th min exists}
 	\If{$b(i) = b(j)$}
 		\State $p \gets \rmqSelect[S_{b(i)}, g, i \% b, j \% b, r]$
 		\State \Return{$b(i) b + p$}
@@ -439,7 +439,7 @@ We first search the restricted range of nodes provided by $I$, keeping track of 
 \end{algorithmic}
 \end{algorithm}
 
-There are 7 look-up tables necessary for traversal and processing the tree.
+There are seven look-up tables necessary for traversal and processing the tree.
 The tables have an additional (not mentioned) parameter which restricts the size of the block to be processed.
 Whenever an index of a node is returned, it is turned into a node number by adding the number of the leftmost node involved in the query.
 \begin{description}
@@ -637,7 +637,7 @@ We split the search into two parts:
 We use the $\langle O(n \log n); O(1) \rangle$ algorithm for querying level ancestor introduced in \cite{bender2004level}.
 Instead of searching through the whole array $\lrm_i$, we limit the number of elements to $\log N$:
 $$ \lrm'_i[j] = \lrm_i[2^j]. $$
-This array is turned into a tiny compressed array of jumps $J_i$ requiring only $O(\log^2 N)$ bits of space, which is $O\left(\frac{N}{B} \log^2 N\right) = o(N)$ for $c > 2$.
+This array is turned into a tiny compressed array of jumps $J_i$ requiring only $O(\log^2 N)$ bits of space, which is $O\left(\frac{N}{B} \log^2 N\right) = o(N)$ for $c \ge 2$.
 
 By using the tiny compressed array, we move from node $i$ to a node $j'$ of $T_{\lrm}$ for which we bounds on depth and height, and the number of ancestors which we have to search through.
 \begin{align*}
@@ -684,7 +684,7 @@ We use a helper function \rmqiSpan{} which was defined in lemma \ref{lemma:rmq2}
 \begin{enumerate}
 	\item it is defined directly for the array $m[\cdot]$ instead of $E$ and $P$;
 	\item it returns indices of the first and the last block containing the minimum;
-	\item contrary to \rmqi{} shown in \ref{sss:rmq-index}, it is sufficient to use only one level provided that we set $c > 2$.
+	\item contrary to \rmqi{} shown in \ref{sss:rmq-index}, it is sufficient to use only one level provided that we set $c \ge 2$.
 \end{enumerate}
 
 \begin{algorithm}
@@ -981,8 +981,7 @@ The most general ones: \levelSize{}, \levelRank{}, and \levelSelect{} are howeve
 
 \subsection{Final Thoughts}
 
-The constant $c$ needs to be set to $c \ge 3$ because of the level-ancestor and range minimum query macro structure.
-Originally, \cite{sadakane2010fully} showed that $c \ge 2$ is possible by using more complicated data structures.
+The constant $c$ needs to be set to $c \ge 2$ because of the level-ancestor and range minimum query macro structure.
 
 \bigbreak
 
@@ -1220,15 +1219,15 @@ When the root is processed, a temporary component may need to be split.
 		\If{$r = -1$}
 			\State $\append(P, t)$ \Comment{Declare permanent}
 		\Else \Comment{There is a split vertex}
-			\State $s' \gets [\,]$
-			\ForAll{$u' \gets t$} \Comment{Revise the component}
-				\State $\append(s', u')$
-				\If{$u' = r'$} \Comment{Split vertex found}
-					\State $\append(P, s')$%
-					\Instr $s' = [u]$ \Comment{Declare permanent, reset}
+			\State $s \gets [\,]$
+			\ForAll{$u \gets t$} \Comment{Revise the component}
+				\State $\append(s, u)$
+				\If{$u = r$} \Comment{Split vertex found}
+					\State $\append(P, s)$%
+					\Instr $s = [u]$ \Comment{Declare permanent, reset}
 				\EndIf
 			\EndFor
-			\State $\append(P, s')$ \Comment{Declare permanent}
+			\State $\append(P, s)$ \Comment{Declare permanent}
 		\EndIf
 	\EndIf
 	\State \Return{$P$}
@@ -1538,12 +1537,10 @@ As they are not part of the interface of the data structure, the argument $i$ is
 \Function{\canonize}{$i$}
 	\If{$i.\tau_3 \ne 0$} \Comment{Potentially dummy vertex}
 		\State \Return{$\dummyDown(i)$}
-	\Else
-		\If{$i.\primaryII \ne 0$} \Comment{Not a root micro-tree}
-			\State \Return{$(i.\tau_1, i.\primaryII, 0)$}
-		\Else \Comment{Potentially shared with different mini-tree}
-			\State \Return{$(j.\primaryI, 0, 0)$}
-		\EndIf
+	\ElsIf{$i.\primaryII \ne 0$} \Comment{Not a root micro-tree}
+		\State \Return{$(i.\tau_1, i.\primaryII, 0)$}
+	\Else \Comment{Potentially shared with different mini-tree}
+		\State \Return{$(j.\primaryI, 0, 0)$}
 	\EndIf
 \EndFunction
 \end{algorithmic}
@@ -1590,13 +1587,13 @@ The \degree{} look-up table used in \isLeaf{} can therefore be oblivious of the 
 \subsubsection{Parent}
 
 A vertex can potentially use a connection of type (3) to its parent; we handle that by utilizing the \dummyUp{} function.
-Then we need to continue differently in cases of a non-root, a micro-tree root but not a mini-tree root, a mini-tree root, and the tree root.
-This pattern of four (sometimes only three) cases will keep recurring in most of our algorithms.
+Then we continue differently in cases of a non-root, a micro-tree root but not a mini-tree root, a mini-tree root, and the tree root.
+This pattern of four cases will keep recurring in most of our algorithms.
 
 If the $i$ is not a micro-tree root ($\tau_3 \ne 0$), we use a look-up table to obtain the answer.
 If it is a micro-tree root ($\tau_3 = 0$) but not a mini-tree root ($\tau_2 \ne 0$), then the parent is present in a micro-tree $\parentII$ within the same mini-tree.
 If the vertex is a mini-tree root, but not the root of the whole tree ($\tau_2 = 0 \booland \tau_1 \ne 0$), the answer is the root of the parent mini-tree.
-The last case -- a parent of the tree root vertex $(0, 0, 0)$ -- simply leads to a failure.
+The last case of the tree root vertex $(0, 0, 0)$ simply leads to a failure.
 
 \begin{algorithm}
 \begin{algorithmic}
@@ -1810,7 +1807,7 @@ If $i$ is a mini-tree root, we answer immediately with the stored vertex $\deepe
 \end{algorithmic}
 \end{algorithm}
 
-The operation \deepestVertex{} is also used for determining the height of a vertex.
+The operation \deepestVertex{} is also used for supporting of \hei{}.
 
 \begin{algorithm}
 \begin{algorithmic}
@@ -1830,11 +1827,11 @@ Finally, in case of a non-root, we use a look-up table, plus we add the size of 
 \begin{algorithmic}
 \Function{\subtreeSize}{$i$}
 	\If{$i.\tau_3 \ne 0$}
-		\State $ss \gets \subtreeSize[i.\size, i.\rep, i.\tau_3]$
+		\State $s \gets \subtreeSize[i.\size, i.\rep, i.\tau_3]$
 		\If{$\isAncestor[i.\size, i.\rep, i.\tau_3, i.\dummyII]$}
-			\State \Return{$ss - 1 + \subtreeSize(\bottomII(i))$}
+			\State \Return{$s - 1 + \subtreeSize(\bottomII(i))$}
 		\Else
-			\State \Return{$ss$}
+			\State \Return{$s$}
 		\EndIf
 	\ElsIf{$i.\tau_2 \ne 0$}
 		\If{$i.\dummyAncestor$}
@@ -2887,7 +2884,7 @@ It is still necessary to keep it in order to calculate the degree of its parent 
 
 We store the offset of the dummy vertex in the BP and DFUDS representation of the mini-tree.
 The dummy vertex is represented by the sequence \str{()} in BP and by \str{)} in DFUDS representation.
-The position $i$ is transformed to a position $i'$ inside the BP and DFUDS representations of the mini-tree.
+The position $i$ is transformed to a position~$i'$ inside the BP and DFUDS representations of the mini-tree.
 
 \begin{algorithm}
 \begin{algorithmic}
@@ -2957,7 +2954,6 @@ So far we needed the following fields to be stored:
 From now on, we restrict our description to a single mini-tree; we ignore all other mini-trees, including those connected via the dummy vertex.
 
 We call a vertex \emph{significant} if its subtree size is larger than $d' = \frac{\log n}{d}$, for a constant $d$.
-
 A \emph{skeleton} of a mini-tree is the subtree induced by significant vertices.
 The skeleton must be connected since each ancestor of a significant vertex is also significant.
 
@@ -2969,7 +2965,7 @@ We can assume that there is also at least one significant vertex as otherwise th
 We call a mini-tree \emph{skinny} if its skeleton is a path.
 We solve this special case first, and then generalize it to all skeletons.
 
-We use the same notation as in the original article \cite{farzan2009universal}:
+We use the same notation as the authors in \cite{farzan2009universal}:
 Let $P$ by the skeleton, which is a path, $u$ its leaf and $v$ the last child of $u$.
 Let us define the following sets:
 \begin{align*}
@@ -3010,12 +3006,12 @@ We can restore the original mini-tree from this representation:
 	\While{$P_D$ has more symbols}
 		\State $v \gets$ new child of $v$
 		\While{Read a symbol in $P_D$; is it an opening parenthesis}
-			\State Read a tree from $T_D$, decode it and add it as a child to $v$
+			\State Read a tree from $T_D$, decode it and add it as a child to $v$.
 		\EndWhile
 	\EndWhile
 	\While{$P_U$ has more symbols}
 		\While{Read a symbol in $P_U$; is it an opening parenthesis}
-			\State Read a tree from $T_U$, decode it and add it as a child to $v$
+			\State Read a tree from $T_U$, decode it and add it as a child to $v$.
 		\EndWhile
 		\State $v \gets \parent(v)$
 	\EndWhile
@@ -3364,7 +3360,7 @@ We focus on the transitions of the direction of a path traversal from ``down'' t
 	Since the subtree contains $d'$ vertices, at least $2d'$ bits of representation are generated.
 \end{proof}
 
-From the lemma and from the lengths of the cycles follows that at most $3 \frac{q'}{2d'} + 2 = O\left(\frac{d}{q}\right) = O(1)$ recursive calls are required.
+From the lemma and from the lengths of the cycles follows that at most $3 \frac{q'}{2d'} + 2 = O(\frac{d}{q}) = O(1)$ recursive calls are required.
 The additional $2$ is the number of recursive calls before the first cycle.
 
 Since we want to generate as many bits as possible, we want to set $q$ small, however that results in deeper recursion and longer running time.
@@ -3377,9 +3373,9 @@ We reuse the lemma \ref{l:usr-runs} which in this case claims that the BP repres
 We prefer the BP representation over DFUDS because no degree adjustment of the root is necessary.
 
 For each micro-tree $(\tau_1, \tau_2)$ we store positions of the beginning and the end of each run of $\tau_2$ withing the BP representation of the mini-tree $\tau_1$.
-If the micro-tree contains a dummy vertex, then an adjustment of the run boundaries by $1$ is needed.
-The length of each run is bounded by the size of the micro-tree, which is less then $\frac{\log n}{2}$, therefore $O(1)$ queries of the BP representation are necessary.
-If the micro-tree is not primary, an opening parenthesis is prepended and a closing one appended.
+If the micro-tree contains a dummy vertex, an adjustment of the run boundaries by $1$ is needed.
+The length of each run is bounded by the size of the micro-tree, which is less then $\frac{\log n}{2}$, therefore $O(1)$ queries of the BP representation are sufficient.
+If the micro-tree is not a primary one, an opening and a closing parentheses are added.
 
 The size of BP representation of a micro-tree can be calculated from the stored offsets of the runs and its primarity.
 Because of the small size of the micro-tree BP representation, we can use a look-up table to transcode it into any other representation which is native for the TC data structure.
@@ -3387,4 +3383,4 @@ Because of the small size of the micro-tree BP representation, we can use a look
 \subsection{Final Thoughts}
 
 The universal succinct representation provides a way how to combine several data structures which we have shown in the previous sections.
-As two of the three representations (BP/FF, DFUDS, TC) support nearly the same set of operations, its benefits consists in allowing to choose the most space or time efficient implementation of an operation out of several alternatives.
+As two of the three representations (BP/FF, DFUDS, TC) support nearly the same set of operations, its benefits consist in allowing to choose the most space or time efficient implementation of an operation out of several alternatives.

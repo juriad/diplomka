@@ -5,7 +5,7 @@
 We state all our results for \emph{word-RAM}, a version of \emph{Random Access Machine}, which resembles current computers.
 A \emph{word} is a sequence of $w$ consecutive bits which can be accessed and processed in one step of the computation.
 The constant $w$ depends on the space complexity $S$ in words of the problem which is being solved.
-A lower bound of $w \ge \lceil \log S \rceil$\footnote{
+A lower bound on $w \ge \lceil \log S \rceil$\footnote{
 	All logarithms are binary. 
 	We will usually assume the ceiling function of the logarithm while not explicitly writing it.
 	This does not change the asymptotic time nor space complexity of the algorithms as it is only a lower order term.
@@ -158,7 +158,7 @@ The \emph{systematic approach} splits the encoding into two parts:
 	Indices store additional information which is intended to offer answers to queries which are non-local, such as depth of a vertex, or the lowest common ancestor.
 
 	The size of the indices is dominated by the size of the data.	
-	We call an \emph{index succinct} if its size if $o(N)$; recall that we defined $\lceil \log |U| \rceil = N$.
+	We call an \emph{index succinct} if its size is $o(N)$; recall that we defined $\lceil \log |U| \rceil = N$.
 	
 	Sometimes it is easier to think about \emph{density} of an index (or its part) in bits per bit of data.
 	The density of a succinct index is $o(1)$.
@@ -201,7 +201,7 @@ In the following lemma we show that a small number of independent parts can be c
 
 This lemma is used whenever we add indices to a systematic succinct data structure, in such cases we use it as a fact and do not emphasize it.
 
-We store an offset -- which we also call a pointer -- relatively to a certain position in the bit string rather than absolutely from its beginning.
+We store an offset -- which we also call a pointer -- relative to a certain position in the bit string rather than absolutely from its beginning.
 The size of the offset in bits depends on the range into which it points.
 The fact that the pointers can have different sizes allows us to decompose a big structure into small parts with restricted pointers between them.
 There will be a lot of pointers within individual parts, however they require only a small size, and pointers between parts, which are large in size but used only seldom.
@@ -213,7 +213,7 @@ Even if this was possible on high level, in the end the operation must be proces
 The following lemma shows that we can precompute all queries of an operation which are restricted to a small block of data.
 
 \begin{lemma}
-	Let $O$ an operation with some parameters which take $P$ bits and returns $R$ bits, such that its access to the memory is restricted to $B$ consecutive bits which are the same for all values of the parameters.
+	Let $O$ be an operation with some parameters which take $P$ bits and returns $R$ bits, such that its access to the memory is restricted to $B$ consecutive bits which are the same for all values of the parameters.
 	The operations $O$ can be then solved in $O(1)$ time with an index of additional $2^{B+P} R$ bits.
 
 	As long as $B + P + \log R < \alpha \log N$ for $0 < \alpha < 1$, this results in a succinct index.

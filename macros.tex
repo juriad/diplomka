@@ -118,7 +118,7 @@
 % DEFINITION of titles
 \usepackage[section]{placeins}
 \usepackage[nobottomtitles*]{titlesec}
-\renewcommand{\bottomtitlespace}{.2\textheight}
+\renewcommand{\bottomtitlespace}{.15\textheight}
 
 % OVERPAREN
 \def\x#1#2{\underset{#2}{#1}}
@@ -193,14 +193,22 @@
 \usepackage{rotating} % provides sidewise table
 
 % DEFINITION of algorithm with default placement
-\usepackage[plain]{algorithm}
-\makeatletter
-\renewcommand{\fps@algorithm}{!ht}
-\makeatother
+% must be before hyperref
+%\usepackage{float}
+%\usepackage[plain]{algorithm}
+%\makeatletter
+%\renewcommand{\fps@algorithm}{!ht}
+%\makeatother
+\newenvironment{algorithm}[0]{\allowbreak\begin{samepage}}{\end{samepage}\allowbreak}
 
-%\setlength{\floatsep}{1\baselineskip plus 0.2\baselineskip minus 0.2\baselineskip}
-%\setlength{\textfloatsep}{1\baselineskip plus 0.5\baselineskip minus 0.5\baselineskip}
-%\setlength{\intextsep}{1\baselineskip plus 0.2\baselineskip minus 0.2\baselineskip}
+% defaults:
+%\setlength{\floatsep}{12.0pt plus 2.0pt minus 4.0pt}
+%\setlength{\textfloatsep}{20.0pt plus 2.0pt minus 4.0pt}
+%\setlength{\intextsep}{14.0pt plus 4.0pt minus 4.0pt}
+
+%\setlength{\floatsep}{8.0pt plus 2.0pt minus 4.0pt}
+%\setlength{\textfloatsep}{10.0pt plus 2.0pt minus 4.0pt}
+%\setlength{\intextsep}{8.0pt plus 4.0pt minus 4.0pt}
 
 %\setlength{\floatsep}{5pt plus 2pt minus 2pt}
 %\setlength{\textfloatsep}{10pt plus 5pt minus 5pt}

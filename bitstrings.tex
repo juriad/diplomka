@@ -64,12 +64,12 @@ Many improvements were proposed in order to
 	\item spare memory in the practical cases,
 	\item speed up the real implementation.
 \end{iteminline}
-For more details we refer to \cite{gonzalez2005practical}, \cite{kim2005efficient}, \cite{makinen2007rank}.
+For more details we refer to \cite{gonzalez2005practical, kim2005efficient, makinen2007rank}.
 
 \subsection{\rank}\label{ss:rank}
 
 We start our description \rank{} which is conceptually easier.
-We show the data in form in which it was originally described by \cite{jacobson1988succinct}.
+We show the data in the form in which it was originally described by \cite{jacobson1988succinct}.
 
 It is sufficient to support only \rank$_1$ because of the following identity:
 $$ i = \rank_0(i) + \rank_1(i) - 1. $$
@@ -125,7 +125,7 @@ Alternatively an algorithm with a theoretic running time $O(\log \log N)$ can be
 The operation \select{} is more complicated than \rank{} as it handles parts of the bit string differently depending on the local density of \ph{}.
 We show the index as it was proposed by \cite{clark1998compact}.
 
-Two instances of the index are also necessary, since there is no identify would allow a reduction from \select$_1$ to \select$_0$.
+Two instances of the index are also necessary, since there is no identify which would allow a reduction from \select$_1$ to \select$_0$.
 
 \bigbreak
 
@@ -570,11 +570,11 @@ Note that we have no special requirements on the operations supported by $S$ and
 
 \subsection{Index for Range Minimum Query}
 
-The problem of \emph{range minimum query} has applications in many areas and therefore is well studied: \cite{bender2000lca}, \cite{fischer2010optimal}, \cite{durocher2013simple}.
+The problem of \emph{range minimum query} has applications in many areas and therefore is well studied: \cite{bender2000lca, fischer2010optimal, durocher2013simple}.
 In this section we first define a more general problem (as did \cite{sadakane2010fully}) which we fully solve in a later chapter.
 We then show a simple succinct index which will still be sufficient in most cases and will be needed for the general solution.
 
-Although Range Minimum Query can is defined for an arbitrary bit string (or even an array of numbers), it will be useful only for balanced bit strings.
+Although range minimum query can is defined for an arbitrary bit string (or even an array of numbers), it will be useful only for balanced bit strings.
 That is the reason why we present it here.
 
 \subsubsection{$\pm 1$ Functions}\label{ss:rmq-def}
@@ -632,14 +632,14 @@ We only show the case of \rmqi{} as \RMQi{} is realized the same way; also \rmq{
 The array $E$ is never stored explicitly.
 
 When we solve queries on range $[i, j]$ on top of an array which is decomposed into blocks, we split it into three parts based on which blocks are fully contained in the range.
-Since the functions $\min$ and $\max$ are distributive over concatenation of ranges, each part of the original range can be processed independently.
+Since the functions $\min$ and $\max$ are distributive over a concatenation of ranges, each part of the original range can be processed independently.
 We call the three parts, which together form the original range:
 \begin{description}
 	\item[prefix] the non-full block containing $i$;
 	\item[suffix] the non-full block containing $j$;
 	\item[span] the interval of full blocks between $i$ and $j$.
 \end{description}
-A query can have any of prefix, suffix or span (or more of them) empty.
+Any of prefix, suffix or span (or more of them) can be empty in a query.
 
 There is a special case of a range which fully is contained within a single block; we solve it separately using the following lemma.
 \begin{lemma}\label{lemma:rmq1}
@@ -651,7 +651,7 @@ There is a special case of a range which fully is contained within a single bloc
 	All the values depend only on the block $S[i_1 : i_2 + 1]$ and the value of $E[i - 1]$.
 	Because the minimum is independent of the absolute value, the dependence on $E[i - 1]$ is irrelevant.
 	
-	By the precondition of the lemma, the block has size at most $\frac{\log N}{2}$, which makes it possible to use it as an index to a look-up table \rmqi.
+	By the precondition of the lemma, the block has a size of at most $\frac{\log N}{2}$, which makes it possible to use it as an index to a look-up table \rmqi.
 	The look-up table is parametrized by the length of the block, which is the value of $j - i + 1$, which is encoded in $O(\log \log N)$ bits.
 	The parameter is necessary because of the zero-padding of words in our definition of RAM.
 	The table simply returns the position of the minimum.
@@ -659,11 +659,11 @@ There is a special case of a range which fully is contained within a single bloc
 
 \bigbreak
 
-We follow with a lemma which will solves the \rmqi{} for spans.
-Although it has a large space complexity depending on the number of block, eventually, we will be able to lower it to $o(N)$ by the right choice of block sizes.
+We follow with a lemma which will solve the \rmqi{} for spans.
+Although it has a large space complexity depending on the number of blocks, eventually, we will be able to lower it to $o(N)$ by the right choice of block sizes.
 
 \begin{lemma}\label{lemma:rmq2}
-	Given an array $P$ of $p$ positions of minima in blocks on lower level, we can solve the \rmqi{} for span queries in constant time using $O(p \log^2 p)$ bits of memory.
+	Given an array $P$ of $p$ positions of minima in blocks on a lower level, we can solve the \rmqi{} for span queries in constant time using $O(p \log^2 p)$ bits of memory.
 \end{lemma}
 \begin{proof}
 	We call $l = i_2 - i_1 + 1$ the number of blocks over which the query spans.
@@ -680,7 +680,7 @@ Although it has a large space complexity depending on the number of block, event
 		
 		\begin{algorithm}
 		\begin{algorithmic}
-		\Function{\rmqiSpan}{$E, P, i_1, i_2$} \Comment{$i_1, i_2$ are block numbers}
+		\Function{\rmqiSpan}{$E, P, i_1, i_2$} \Comment{$i_1, i_2$ are block numbers.}
 			\State $k \gets \lfloor \log (i_2 - i_1 + 1) \rfloor$
 			\State $p_1 \gets \Tm[i_1, k]$
 			\State $p_2 \gets \Tm[i_2 - 2^k, k]$
@@ -748,7 +748,7 @@ $$ j = \enclose(i_1, i_2) = \enclose(\rmqi(i_1, i_2) + 1). $$
 \section{Dictionaries}
 
 The bit strings which we have been discussing so far can be seen from a different point of view:
-A bit string $S$ of size $N$ is a representation of a set $A$ which is a subset of $[0, N)$ such that a number $x \in A \iff S[x] = 1$.
+A bit string $S$ of size $N$ is a representation of a set $A$, which is a subset of $[0, N)$ such that a number $x \in A \iff S[x] = 1$.
 
 The natural encoding is the one which we have used -- representing the membership of each numbers in the universe $[0, N)$ by a bit in a characteristic vector.
 It is still true that such encoding is succinct as there are $| \mathcal{A}(N) | = 2^{|[0, N)|} = 2^N$ possible sets in the universe, and therefore $N$ bits is required.
@@ -820,7 +820,7 @@ Since any algorithm can access up to $w = O(S)$ bits in a single step, we can pr
 We split the characteristic vector $S$ into blocks $S_1, S_2, \ldots$ of size $B$ with each of them having $K_1, K_2, \ldots$ ones.
 We extend $N$ so that the last block is full; this difference is negligible.
 
-We represent each block $i$ implicitly by a binary number $[0, {B \choose K_i})$ encoded in $b_i \le S$ bits.
+We represent each block $i$ implicitly by a binary number $\big[0, {B \choose K_i}\big)$ encoded in $b_i \le S$ bits.
 The space bound for storing all blocks consecutively as a bit string $S'$ follows from the generalized Chu-Vandermonde's identity (\cite{belbachircombinatorial}).
 \begin{align*}
 	\sum_{K_1 + K_2 + \dots = K} \prod_i {B \choose K_i} &= {N \choose K} \\
@@ -841,7 +841,7 @@ This is essentially the same as the partitioning which we used for \rank{} in se
 
 \begin{algorithm}
 \begin{algorithmic}
-\Function{\characteristicBlock}{$S', b$} \Comment{$b$ is the block number}
+\Function{\characteristicBlock}{$S', b$} \Comment{$b$ is the block number.}
 	\State $m = \frac{b}{\log N}$
 	\State $p \gets \glob[m] + \block_m[b \% \log N]$
 	\State \Return{$\characteristicBlock[S'[p : p + C[b] + 1], L[b]]$}
@@ -888,7 +888,7 @@ We define several operation for this compressed array:
 	$$ A[i] = \AElems[\elementIndex(A, i)]. $$
 
 	\item[\runFirst{}, \runLast{}, \runLength{}]
-	It returns the position of the first and last elements of the run containing $i$.
+	It returns the position of the first and last elements of the run containing~$i$.
 	\runLength{} returns the length of the run.
 	They are defined as:
 	\begin{align*}
@@ -898,7 +898,7 @@ We define several operation for this compressed array:
 	\end{align*}
 	
 	\item[\rank{}]
-	Returns how many elements same as $A[i]$ there has been until the position $i$:
+	Returns how many elements same as $A[i]$ there has been until the position~$i$:
 	$$ \rank(A, i) = \ABefore[\elementIndex(A, i)] + (i - \runFirst(A, i) + 1). $$
 	
 	\item[\size{}]
@@ -919,7 +919,7 @@ We extend the structure of the compressed array by the following field:
 		\AParts[0] &= 0, \\
 		\AParts[i] &= \sum_{j = 0}^{i - 1} |A_{j}|.
 	\end{align*}
-	The size of \AParts{} is the same as the size of \ABefore{} which was built on top of an array of the same size containing a single part.
+	The size of \AParts{} is the same as the size of \ABefore{}, which was built on top of an array of the same size containing a single part.
 \end{description}
 
 The compressed array is then built on top of a concatenated array
@@ -946,7 +946,7 @@ We are interested in developing a more space-efficient structure for $r = O(\log
 
 The polynomial dependency of FID on the size of the universe $a$ is not only problem of our quite simple data structure.
 In fact there is no known FID which does not suffer with this problem.
-The two state of the art data structures by \cite{patrascu2008succincter}, and \cite{grossi2009more} have a similar polynomial dependency.
+The two state of the art data structures \cite{patrascu2008succincter, grossi2009more} have a similar polynomial dependency.
 
 We overcome the problem by replacing the FID by two more advanced data structures which together provide the same result under this restricted $r$.
 The resulting space complexity will be $O(\log^2 a)$ bits.
